@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, ReactNode } from 'react';
-import { Client, Equipment, Inspection, FinancialRecord, Certificate, InspectionStatus, PaymentStatus, View } from '../types';
+import { Client, Equipment, Inspection, FinancialRecord, Certificate, InspectionStatus, PaymentStatus, View } from '../../types';
 import { Card, Modal, getStatusBadge, Button, Input, Select, Textarea, FormField, EmptyState, ConfirmationModal, FloatingActionButton, ToggleSwitch } from './common';
 import { ClientsIcon, EquipmentIcon, PlusIcon, CertificateIcon, AgendaIcon, FinancialIcon, UserCircleIcon, ChevronRightIcon, LogoutIcon, DownloadIcon } from './Icons';
 

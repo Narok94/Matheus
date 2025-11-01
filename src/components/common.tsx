@@ -1,6 +1,6 @@
 
 import React, { ReactNode, useEffect } from 'react';
-import { InspectionStatus, PaymentStatus, ToastMessage } from '../types';
+import { InspectionStatus, PaymentStatus, ToastMessage } from '../../types';
 
 interface CardProps {
   title?: string;

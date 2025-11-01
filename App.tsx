@@ -2,9 +2,9 @@
 import React, { useState, ReactNode, useEffect } from 'react';
 import { View, Client, Equipment, Inspection, FinancialRecord, Certificate, ToastMessage, DetailView } from './types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES } from './data';
-import { Dashboard, Clients, Equipments, Agenda, Certificates, Financial, Settings, ClientDetail } from './components/pages';
-import { LoginPage } from './components/LoginPage';
-import { Toast } from './components/common';
+import { Dashboard, Clients, Equipments, Agenda, Certificates, Financial, Settings, ClientDetail } from './src/components/pages';
+import { LoginPage } from './src/components/LoginPage';
+import { Toast } from './src/components/common';
 import { 
     DashboardIcon, 
     ClientsIcon, 
@@ -13,7 +13,7 @@ import {
     CertificateIcon, 
     FinancialIcon, 
     SettingsIcon 
-} from './components/Icons';
+} from './src/components/Icons';
 
 type CompanyProfile = { name: string; };
 type AppSettings = { notifications: boolean; reminders: boolean; };
