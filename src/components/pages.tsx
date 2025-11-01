@@ -581,10 +581,9 @@ export const Certificates: React.FC<CertificatesProps> = ({ certificates, client
 interface FinancialProps {
     financial: FinancialRecord[];
     clients: Client[];
-    inspections: Inspection[];
     onAddFinancial: (record: Omit<FinancialRecord, 'id'>) => void;
 }
-export const Financial: React.FC<FinancialProps> = ({ financial, clients, inspections, onAddFinancial }) => {
+export const Financial: React.FC<FinancialProps> = ({ financial, clients, onAddFinancial }) => {
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const initialNewRecordState = { clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente };
     const [newRecord, setNewRecord] = useState(initialNewRecordState);

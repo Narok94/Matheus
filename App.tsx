@@ -189,7 +189,7 @@ const App: React.FC = () => {
     const [equipment, setEquipment] = usePersistentState<Equipment[]>('equipment', MOCK_EQUIPMENT);
     const [inspections, setInspections] = usePersistentState<Inspection[]>('inspections', MOCK_INSPECTIONS);
     const [financial, setFinancial] = usePersistentState<FinancialRecord[]>('financial', MOCK_FINANCIAL);
-    const [certificates, setCertificates] = usePersistentState<Certificate[]>('certificates', MOCK_CERTIFICATES);
+    const [certificates] = usePersistentState<Certificate[]>('certificates', MOCK_CERTIFICATES);
     
     useEffect(() => {
         if (theme === 'dark') {
@@ -294,7 +294,7 @@ const App: React.FC = () => {
             case 'equipment': return <Equipments equipment={equipment} clients={clients} onAddEquipment={handleAddEquipment} />;
             case 'agenda': return <Agenda inspections={inspections} clients={clients} onAddInspection={handleAddInspection} />;
             case 'certificates': return <Certificates certificates={certificates} clients={clients}/>;
-            case 'financial': return <Financial financial={financial} clients={clients} inspections={inspections} onAddFinancial={handleAddFinancial} />;
+            case 'financial': return <Financial financial={financial} clients={clients} onAddFinancial={handleAddFinancial} />;
             case 'settings': return <Settings 
                 theme={theme} 
                 setTheme={setTheme}
