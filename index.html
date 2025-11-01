@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InspecPro - Gestão de Inspeções</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'primary': 'var(--color-primary)',
+              'secondary': 'var(--color-secondary)',
+              'accent': 'var(--color-accent)',
+              'text-primary': 'var(--color-text-primary)',
+              'text-secondary': 'var(--color-text-secondary)',
+              'border': 'var(--color-border)',
+              'status-approved': '#28a745',
+              'status-reproved': '#dc3545',
+              'status-pending': '#ffc107',
+              'status-scheduled': '#17a2b8',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+    :root {
+        --color-primary: #f7f8fc;
+        --color-secondary: #ffffff;
+        --color-accent: #007bff;
+        --color-text-primary: #212529;
+        --color-text-secondary: #6c757d;
+        --color-border: #e2e8f0;
+    }
+    .dark {
+        --color-primary: #1a202c;
+        --color-secondary: #2d3748;
+        --color-accent: #4299e1;
+        --color-text-primary: #edf2f7;
+        --color-text-secondary: #a0aec0;
+        --color-border: #4a5568;
+    }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+</head>
+  <body class="bg-primary text-text-primary font-sans antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
