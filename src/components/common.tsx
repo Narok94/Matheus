@@ -1,6 +1,4 @@
 
-
-
 import React, { ReactNode, useEffect } from 'react';
 import { InspectionStatus, PaymentStatus, ToastMessage } from '../../types';
 
@@ -149,14 +147,15 @@ export const ToggleSwitch: React.FC<{
 };
 
 // Form Components
-export const Button: React.FC<{ children: ReactNode, onClick?: () => void, type?: 'button' | 'submit' | 'reset', variant?: 'primary' | 'secondary', className?: string }> = ({ children, onClick, type = 'button', variant = 'primary', className = '' }) => {
+export const Button: React.FC<{ children: ReactNode, onClick?: () => void, type?: 'button' | 'submit' | 'reset', variant?: 'primary' | 'secondary', className?: string, disabled?: boolean }> = ({ children, onClick, type = 'button', variant = 'primary', className = '', disabled = false }) => {
   const baseClasses = "px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary inline-flex items-center justify-center space-x-2 text-sm transform active:scale-95";
   const variantClasses = variant === 'primary' 
     ? "bg-accent text-white hover:brightness-110 focus:ring-accent shadow-lg shadow-blue-500/20 dark:shadow-sky-500/20"
     : "bg-secondary text-text-secondary border border-border hover:bg-primary hover:text-text-primary focus:ring-text-secondary";
+  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
   
   return (
-    <button type={type} onClick={onClick} className={`${baseClasses} ${variantClasses} ${className}`}>
+    <button type={type} onClick={onClick} disabled={disabled} className={`${baseClasses} ${variantClasses} ${disabledClasses} ${className}`}>
       {children}
     </button>
   );

@@ -1,15 +1,8 @@
 
-
-
-
-
-
-
 import React, { useState, useMemo, ReactNode, useEffect } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { Client, Equipment, Inspection, FinancialRecord, Certificate, InspectionStatus, PaymentStatus, View } from '../../types';
 import { Card, Modal, getStatusBadge, Button, Input, Select, Textarea, FormField, EmptyState, ConfirmationModal, FloatingActionButton, ToggleSwitch } from './common';
-import { ClientsIcon, EquipmentIcon, PlusIcon, CertificateIcon, AgendaIcon, FinancialIcon, UserCircleIcon, ChevronRightIcon, LogoutIcon, DownloadIcon, SparklesIcon, SpinnerIcon, ReportsIcon, EditIcon, TrashIcon } from './Icons';
+import { ClientsIcon, EquipmentIcon, PlusIcon, CertificateIcon, AgendaIcon, FinancialIcon, LogoutIcon, DownloadIcon, SparklesIcon, ReportsIcon, EditIcon, TrashIcon } from './Icons';
 
 // --- UTILITY FUNCTIONS ---
 const capitalizeWords = (str: string): string => {

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+// @ts-ignore
 import { GoogleGenAI, FunctionDeclaration, Type } from '@google/genai';
 import { FuturisticOrbIcon, SpinnerIcon, UserCircleIcon } from './Icons';
 import { Modal, Input, Button } from './common';
@@ -26,6 +27,55 @@ const ORB_SIZE = 56;
 const EDGE_MARGIN = 16;
 const LONG_PRESS_DURATION = 700; // ms
 const BOTTOM_NAV_ESTIMATED_HEIGHT = 96; // Corresponds to pb-24 on main content
+
+const assistantTools: FunctionDeclaration[] = [
+    {
+        name: 'navigateTo',
+        parameters: {
+            type: Type.OBJECT,
+            description: 'Navega para uma tela específica do aplicativo.',
+            properties: {
+                viewName: {
+                    type: Type.STRING,
+                    description: 'O nome da tela para navegar. Opções: início, dashboard, clientes, relatórios, equipamentos, agenda, certificados, financeiro, configurações.',
+                },
+            },
+            required: ['viewName'],
+        },
+    },
+    {
+        name: 'findClient',
+        parameters: {
+            type: Type.OBJECT,
+            description: 'Encontra um cliente pelo nome e exibe seus detalhes.',
+            properties: {
+                clientName: {
+                    type: Type.STRING,
+                    description: 'O nome do cliente a ser procurado.',
+                },
+            },
+            required: ['clientName'],
+        },
+    },
+    {
+        name: 'scheduleInspection',
+        parameters: {
+            type: Type.OBJECT,
+            description: 'Abre a tela de agendamento de inspeção, pré-preenchendo para um cliente e data específicos.',
+            properties: {
+                clientName: {
+                    type: Type.STRING,
+                    description: 'O nome do cliente para o qual a inspeção será agendada.',
+                },
+                date: {
+                    type: Type.STRING,
+                    description: 'A data para a inspeção no formato AAAA-MM-DD.',
+                },
+            },
+            required: ['clientName'],
+        },
+    },
+];
 
 const AssistantModal: React.FC<{
     isOpen: boolean;
@@ -139,9 +189,8 @@ export const VirtualAssistantButton: React.FC<VirtualAssistantProps> = ({ userNa
         showToast(`Processando: "${transcript}"`);
     }
 
-    // Fix: Use process.env.API_KEY and initialize GoogleGenAI as per coding guidelines.
-    // This also resolves the TypeScript error for `import.meta.env`.
-    if (!process.env.API_KEY) {
+    const apiKey = (globalThis as any).process?.env?.API_KEY;
+    if (!apiKey) {
         const errorMsg = 'Chave da API não configurada. Verifique suas variáveis de ambiente.';
         showToast(errorMsg, 'error');
         if (isFromModal) setMessages(prev => [...prev, { sender: 'ai', text: errorMsg }]);
@@ -149,15 +198,14 @@ export const VirtualAssistantButton: React.FC<VirtualAssistantProps> = ({ userNa
         return;
     }
     
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     const systemInstruction = `Você é o assistente de IA do InspecPro. Seu tom é estritamente profissional, claro e conciso. Sua principal função é interpretar o comando do usuário e executar a função apropriada com os argumentos corretos. O nome do usuário é ${userName}. Para datas, converta termos como "hoje", "amanhã" ou "próxima sexta-feira" para o formato AAAA-MM-DD, considerando que a data atual é ${new Date().toISOString().split('T')[0]}.`;
-    const tools: FunctionDeclaration[] = [ /* ... tools declarations ... */ ];
 
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-pro',
             contents: `Comando do usuário: "${transcript}"`,
-            config: { tools: [{ functionDeclarations: tools }], systemInstruction }
+            config: { tools: [{ functionDeclarations: assistantTools }], systemInstruction }
         });
 
         if (response.functionCalls && response.functionCalls.length > 0) {
