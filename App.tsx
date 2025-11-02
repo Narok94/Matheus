@@ -306,7 +306,7 @@ const App: React.FC = () => {
         }
 
         switch (currentView) {
-            case 'dashboard': return <Dashboard clients={clients} equipment={equipment} inspections={inspections} financial={financial} setView={handleSetView} />;
+            case 'dashboard': return <Dashboard clients={clients} equipment={equipment} inspections={inspections} setView={handleSetView} />;
             case 'clients': return <Clients clients={clients} onViewClient={handleViewClient} onAddClient={handleAddClient} />;
             case 'equipment': return <Equipments equipment={equipment} clients={clients} onAddEquipment={handleAddEquipment} />;
             case 'agenda': return <Agenda inspections={inspections} clients={clients} onAddInspection={handleAddInspection} prefilledData={prefilledInspectionData} onPrefillHandled={() => setPrefilledInspectionData(null)} showToast={showToast} />;
@@ -323,7 +323,7 @@ const App: React.FC = () => {
                 showToast={showToast}
                 onLogout={handleLogout}
             />;
-            default: return <Dashboard clients={clients} equipment={equipment} inspections={inspections} financial={financial} setView={handleSetView} />;
+            default: return <Dashboard clients={clients} equipment={equipment} inspections={inspections} setView={handleSetView} />;
         }
     };
 

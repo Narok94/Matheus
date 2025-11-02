@@ -72,16 +72,25 @@ const FinancialChart = ({ received, pending }: { received: number; pending: numb
     );
 };
 
+// Helper para auto-ajustar colunas do Excel
+const setWorksheetColumns = (worksheet: any, data: any[]) => {
+    if (!data || data.length === 0) return;
+    const headers = Object.keys(data[0]);
+    const colWidths = headers.map(header => {
+        const maxWidth = Math.max(
+            header.length,
+            ...data.map(row => String(row[header] || '').length)
+        );
+        return { wch: maxWidth + 2 }; // +2 para padding
+    });
+    worksheet['!cols'] = colWidths;
+};
+
 
 // --- DASHBOARD ---
-export const Dashboard = ({ clients, equipment, inspections, financial, setView }: { clients: Client[], equipment: Equipment[], inspections: Inspection[], financial: FinancialRecord[], setView: (view: View) => void }) => {
+export const Dashboard = ({ clients, equipment, inspections, setView }: { clients: Client[], equipment: Equipment[], inspections: Inspection[], setView: (view: View) => void }) => {
   const upcomingInspections = inspections.filter(i => new Date(i.date) > new Date() && i.status === InspectionStatus.Agendada).slice(0, 3);
   const expiringEquipment = equipment.filter(e => new Date(e.expiryDate) < new Date(new Date().setMonth(new Date().getMonth() + 3))).slice(0, 3);
-  const financialSummary = financial.reduce((acc, record) => {
-    if (record.status === PaymentStatus.Pago) acc.received += record.value;
-    if (record.status === PaymentStatus.Pendente) acc.pending += record.value;
-    return acc;
-  }, { received: 0, pending: 0 });
 
   const QuickActionButton = ({ label, icon, onClick }: { label: string, icon: ReactNode, onClick: () => void }) => (
       <button onClick={onClick} className="bg-secondary p-4 rounded-xl text-text-primary flex flex-col items-center justify-center text-center hover:bg-primary transition-colors shadow-sm border border-border space-y-2">
@@ -93,8 +102,8 @@ export const Dashboard = ({ clients, equipment, inspections, financial, setView 
   return (
     <div className="p-4 space-y-6">
         <div className="px-4">
-            <h1 className="text-2xl font-bold text-text-primary">Olá!</h1>
-            <p className="text-text-secondary">Aqui está um resumo do seu dia.</p>
+            <h1 className="text-3xl font-bold text-text-primary">Olá!</h1>
+            <p className="text-text-secondary">Foco nas suas prioridades de hoje.</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <QuickActionButton label="Nova Inspeção" icon={<AgendaIcon className="w-6 h-6"/>} onClick={() => setView('agenda')} />
@@ -103,9 +112,6 @@ export const Dashboard = ({ clients, equipment, inspections, financial, setView 
           <QuickActionButton label="Financeiro" icon={<FinancialIcon className="w-6 h-6"/>} onClick={() => setView('financial')} />
         </div>
         <div className="space-y-6">
-            <Card title="💰 Resumo Financeiro">
-               <FinancialChart received={financialSummary.received} pending={financialSummary.pending} />
-            </Card>
             <Card title="🔔 Alertas de Vencimento">
                 <div className="space-y-3">
                     {expiringEquipment.length > 0 ? expiringEquipment.map(eq => (
@@ -239,6 +245,122 @@ export const ClientDetail: React.FC<{ client: Client; equipment: Equipment[]; in
         onUpdateClient(editedClient);
         setEditModalOpen(false);
     };
+    
+    const handleExportReport = () => {
+        const XLSX = (window as any).XLSX;
+    
+        // --- Style Definitions ---
+        const titleStyle = { font: { bold: true, sz: 16, color: { rgb: "FF007BFF" } } };
+        const labelStyle = { font: { bold: true } };
+        const tableHeaderStyle = {
+            font: { bold: true, color: { rgb: "FFFFFFFF" } },
+            fill: { fgColor: { rgb: "FF007BFF" } }, // Accent blue
+            alignment: { vertical: 'center', horizontal: 'center' },
+            border: {
+                top: { style: "thin", color: { rgb: "FFCCCCCC" } },
+                bottom: { style: "thin", color: { rgb: "FFCCCCCC" } },
+                left: { style: "thin", color: { rgb: "FFCCCCCC" } },
+                right: { style: "thin", color: { rgb: "FFCCCCCC" } },
+            }
+        };
+        const defaultCellStyle = {
+            border: {
+                top: { style: "thin", color: { rgb: "FFEEEEEE" } },
+                bottom: { style: "thin", color: { rgb: "FFEEEEEE" } },
+                left: { style: "thin", color: { rgb: "FFEEEEEE" } },
+                right: { style: "thin", color: { rgb: "FFEEEEEE" } },
+            }
+        };
+        const alternatingRowStyle = {
+            ...defaultCellStyle,
+            fill: { fgColor: { rgb: "FFF0F5FF" } } // A very light lavender blue
+        };
+    
+        // --- 1. Client Data Sheet ---
+        const clientDataSheetData = [
+            [{ v: `Relatório Detalhado do Cliente: ${client.name}`, s: titleStyle }],
+            [],
+            [{ v: "Nome / Razão Social", s: labelStyle }, client.name],
+            [{ v: "CPF / CNPJ", s: labelStyle }, client.document],
+            [{ v: "Endereço", s: labelStyle }, client.address],
+            [{ v: "Cidade", s: labelStyle }, client.city],
+            [{ v: "Contato", s: labelStyle }, client.contact],
+            [{ v: "Email", s: labelStyle }, client.email],
+            [],
+            [{ v: "Relatório gerado em:", s: labelStyle }, new Date().toLocaleString()],
+        ];
+        const clientWorksheet = XLSX.utils.aoa_to_sheet(clientDataSheetData);
+        clientWorksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
+        clientWorksheet['!cols'] = [{ wch: 25 }, { wch: 40 }];
+    
+        // --- 2. Equipment Data Sheet ---
+        let equipmentWorksheet;
+        if (clientEquipment.length > 0) {
+            const equipmentHeaders = ["Nome", "Nº de Série", "Tipo", "Capacidade", "Fabricante", "Status", "Data de Vencimento", "Última Inspeção"];
+            const equipmentDataForSheet = [
+                equipmentHeaders.map(h => ({ v: h, s: tableHeaderStyle })),
+                ...clientEquipment.map((eq, index) => {
+                    const rowStyle = index % 2 === 0 ? alternatingRowStyle : defaultCellStyle;
+                    return [
+                        { v: eq.name, s: rowStyle },
+                        { v: eq.serialNumber, s: rowStyle },
+                        { v: eq.type, s: rowStyle },
+                        { v: eq.capacity, s: rowStyle },
+                        { v: eq.manufacturer, s: rowStyle },
+                        { v: eq.status, s: rowStyle },
+                        { v: new Date(eq.expiryDate).toLocaleDateString(), s: rowStyle },
+                        { v: eq.lastInspectionDate ? new Date(eq.lastInspectionDate).toLocaleDateString() : 'N/A', s: rowStyle },
+                    ];
+                })
+            ];
+            equipmentWorksheet = XLSX.utils.aoa_to_sheet(equipmentDataForSheet);
+    
+            const equipmentDataForWidthCalc = clientEquipment.map(eq => ({
+                "Nome": eq.name, "Nº de Série": eq.serialNumber, "Tipo": eq.type, "Capacidade": eq.capacity, "Fabricante": eq.manufacturer, "Status": eq.status,
+                "Data de Vencimento": new Date(eq.expiryDate).toLocaleDateString(),
+                "Última Inspeção": eq.lastInspectionDate ? new Date(eq.lastInspectionDate).toLocaleDateString() : 'N/A',
+            }));
+            setWorksheetColumns(equipmentWorksheet, equipmentDataForWidthCalc);
+        } else {
+            equipmentWorksheet = XLSX.utils.aoa_to_sheet([[{ v: "Nenhum equipamento cadastrado para este cliente." }]]);
+        }
+    
+        // --- 3. Inspection Data Sheet ---
+        let inspectionWorksheet;
+        if (clientInspections.length > 0) {
+            const inspectionHeaders = ["Data", "Inspetor", "Status", "Observações", "Equipamentos Inspecionados (IDs)"];
+            const inspectionDataForSheet = [
+                inspectionHeaders.map(h => ({ v: h, s: tableHeaderStyle })),
+                ...clientInspections.map((insp, index) => {
+                    const rowStyle = index % 2 === 0 ? alternatingRowStyle : defaultCellStyle;
+                    return [
+                        { v: new Date(insp.date).toLocaleDateString(), s: rowStyle },
+                        { v: insp.inspector, s: rowStyle },
+                        { v: insp.status, s: rowStyle },
+                        { v: insp.observations, s: rowStyle },
+                        { v: insp.equipmentIds.join(', '), s: rowStyle },
+                    ];
+                })
+            ];
+            inspectionWorksheet = XLSX.utils.aoa_to_sheet(inspectionDataForSheet);
+    
+            const inspectionDataForWidthCalc = clientInspections.map(insp => ({
+                "Data": new Date(insp.date).toLocaleDateString(), "Inspetor": insp.inspector, "Status": insp.status,
+                "Observações": insp.observations, "Equipamentos Inspecionados (IDs)": insp.equipmentIds.join(', '),
+            }));
+            setWorksheetColumns(inspectionWorksheet, inspectionDataForWidthCalc);
+        } else {
+            inspectionWorksheet = XLSX.utils.aoa_to_sheet([[{ v: "Nenhum histórico de inspeção para este cliente." }]]);
+        }
+    
+        // --- Create workbook and export ---
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, clientWorksheet, "Dados do Cliente");
+        XLSX.utils.book_append_sheet(workbook, equipmentWorksheet, "Equipamentos");
+        XLSX.utils.book_append_sheet(workbook, inspectionWorksheet, "Histórico de Inspeções");
+    
+        XLSX.writeFile(workbook, `Relatorio_${client.name.replace(/\s+/g, '_')}.xlsx`);
+    };
 
     return (
         <div className="p-4 space-y-6">
@@ -259,10 +381,16 @@ export const ClientDetail: React.FC<{ client: Client; equipment: Equipment[]; in
                 </div>
             </Card>
 
-            <Button onClick={() => onScheduleInspection(client.id)} className="w-full justify-center">
-                <AgendaIcon className="w-5 h-5" />
-                <span>Agendar Inspeção para este Cliente</span>
-            </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Button onClick={() => onScheduleInspection(client.id)} className="w-full justify-center">
+                    <AgendaIcon className="w-5 h-5" />
+                    <span>Agendar Inspeção</span>
+                </Button>
+                 <Button onClick={handleExportReport} variant="secondary" className="w-full justify-center">
+                    <DownloadIcon className="w-5 h-5" />
+                    <span>Exportar Relatório</span>
+                </Button>
+            </div>
 
             <Card title={`Equipamentos (${clientEquipment.length})`}>
                 {clientEquipment.length > 0 ? clientEquipment.map(eq => (
@@ -515,6 +643,12 @@ export const Financial: React.FC<{ financial: FinancialRecord[], clients: Client
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [newRecord, setNewRecord] = useState({ clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente });
     
+    const financialSummary = financial.reduce((acc, record) => {
+        if (record.status === PaymentStatus.Pago) acc.received += record.value;
+        if (record.status === PaymentStatus.Pendente) acc.pending += record.value;
+        return acc;
+    }, { received: 0, pending: 0 });
+    
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onAddFinancial(newRecord);
@@ -523,22 +657,28 @@ export const Financial: React.FC<{ financial: FinancialRecord[], clients: Client
     };
 
     return (
-        <div className="p-4 space-y-4">
-            {financial.length > 0 ? financial.map(rec => {
-                const client = clients.find(c => c.id === rec.clientId);
-                return (
-                    <Card key={rec.id}>
-                        <div className="flex justify-between items-start">
-                             <div>
-                                <h4 className="font-semibold text-text-primary">R$ {rec.value.toFixed(2).replace('.', ',')}</h4>
-                                <p className="text-sm text-text-secondary">{rec.description}</p>
-                                <p className="text-xs text-text-secondary">{client?.name}</p>
+        <div className="p-4 space-y-6">
+            <Card title="💰 Resumo Financeiro" collapsible>
+               <FinancialChart received={financialSummary.received} pending={financialSummary.pending} />
+            </Card>
+
+            <div className="space-y-4">
+                {financial.length > 0 ? financial.map(rec => {
+                    const client = clients.find(c => c.id === rec.clientId);
+                    return (
+                        <Card key={rec.id}>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h4 className="font-semibold text-text-primary">R$ {rec.value.toFixed(2).replace('.', ',')}</h4>
+                                    <p className="text-sm text-text-secondary">{rec.description}</p>
+                                    <p className="text-xs text-text-secondary">{client?.name}</p>
+                                </div>
+                                {getStatusBadge(rec.status)}
                             </div>
-                            {getStatusBadge(rec.status)}
-                        </div>
-                    </Card>
-                );
-            }) : <EmptyState message="Nenhum registro financeiro." icon={<FinancialIcon className="w-12 h-12" />} action={<Button onClick={() => setAddModalOpen(true)}>Adicionar Registro</Button>}/>}
+                        </Card>
+                    );
+                }) : <EmptyState message="Nenhum registro financeiro." icon={<FinancialIcon className="w-12 h-12" />} action={<Button onClick={() => setAddModalOpen(true)}>Adicionar Registro</Button>}/>}
+            </div>
              <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon />} />
              <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Adicionar Registro Financeiro">
                  <form onSubmit={handleFormSubmit} className="space-y-4">

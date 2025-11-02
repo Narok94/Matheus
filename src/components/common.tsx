@@ -1,5 +1,5 @@
 
-import React, { ReactNode, useEffect } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { InspectionStatus, PaymentStatus, ToastMessage } from '../../types';
 
 interface CardProps {
@@ -7,19 +7,46 @@ interface CardProps {
   children: ReactNode;
   className?: string;
   actions?: ReactNode;
+  collapsible?: boolean;
 }
 
-export const Card: React.FC<CardProps> = ({ title, children, className, actions }) => (
-  <div className={`bg-secondary rounded-xl shadow-sm border border-border ${className}`}>
-    {(title || actions) && (
-        <div className="flex justify-between items-center p-4 border-b border-border">
-        {title && <h3 className="text-lg font-semibold text-text-primary">{title}</h3>}
-        {actions && <div>{actions}</div>}
-      </div>
-    )}
-    <div className="p-4">{children}</div>
-  </div>
-);
+export const Card: React.FC<CardProps> = ({ title, children, className, actions, collapsible = false }) => {
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    const ChevronIcon = ({ isUp }: { isUp: boolean }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 transition-transform duration-300 ${isUp ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+    );
+
+    return (
+        <div className={`bg-secondary rounded-xl shadow-sm border border-border ${className}`}>
+            {(title || actions) && (
+                <div className="flex justify-between items-center p-4 border-b border-border">
+                    {title && <h3 className="text-lg font-semibold text-text-primary">{title}</h3>}
+                    <div className="flex items-center space-x-2">
+                        {actions}
+                        {collapsible && title && (
+                            <button
+                                onClick={() => setIsCollapsed(!isCollapsed)}
+                                className="p-1 rounded-full text-text-secondary hover:bg-primary"
+                                aria-label={isCollapsed ? 'Expandir' : 'Minimizar'}
+                                aria-expanded={!isCollapsed}
+                            >
+                                <ChevronIcon isUp={isCollapsed} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${collapsible && isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+                <div className="overflow-hidden">
+                    <div className="p-4">{children}</div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 
 interface ModalProps {
