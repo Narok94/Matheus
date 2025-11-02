@@ -75,4 +75,4 @@ export type DetailView = {
 } | null;
 
 
-export type View = 'dashboard' | 'clients' | 'equipment' | 'agenda' | 'certificates' | 'financial' | 'settings' | 'clientDetail' | 'inspectionDetail';
+export type View = 'dashboard' | 'clients' | 'equipment' | 'agenda' | 'certificates' | 'financial' | 'settings' | 'clientDetail' | 'inspectionDetail' | 'reports';

@@ -1,8 +1,9 @@
 
-import React, { useState, useMemo, ReactNode } from 'react';
+import React, { useState, useMemo, ReactNode, useEffect } from 'react';
+import { GoogleGenAI } from '@google/genai';
 import { Client, Equipment, Inspection, FinancialRecord, Certificate, InspectionStatus, PaymentStatus, View } from '../../types';
 import { Card, Modal, getStatusBadge, Button, Input, Select, Textarea, FormField, EmptyState, ConfirmationModal, FloatingActionButton, ToggleSwitch } from './common';
-import { ClientsIcon, EquipmentIcon, PlusIcon, CertificateIcon, AgendaIcon, FinancialIcon, UserCircleIcon, ChevronRightIcon, LogoutIcon, DownloadIcon } from './Icons';
+import { ClientsIcon, EquipmentIcon, PlusIcon, CertificateIcon, AgendaIcon, FinancialIcon, UserCircleIcon, ChevronRightIcon, LogoutIcon, DownloadIcon, SparklesIcon, SpinnerIcon, ReportsIcon } from './Icons';
 
 // --- UTILITY FUNCTIONS ---
 const capitalizeWords = (str: string): string => {
@@ -42,6 +43,35 @@ const formatPhone = (value: string): string => {
         .replace(onlyDigits.length === 11 ? /(\d{5})(\d)/ : /(\d{4})(\d)/, '$1-$2');
 };
 
+const FinancialChart = ({ received, pending }: { received: number; pending: number; }) => {
+    const total = received + pending;
+    if (total === 0) {
+        return <div className="text-center text-text-secondary p-4">Nenhum dado financeiro para exibir.</div>;
+    }
+    const receivedPercent = (received / total) * 100;
+    
+    return (
+        <div className="space-y-4">
+            <div className="w-full bg-primary rounded-full h-4 flex overflow-hidden border border-border">
+                <div style={{ width: `${receivedPercent}%` }} className="bg-status-approved transition-all duration-500 rounded-full" />
+            </div>
+            <div className="flex justify-between text-sm">
+                 <div className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-status-approved mr-2"></span>
+                    <div>
+                        <p className="text-text-secondary">Recebido</p>
+                        <p className="font-bold text-text-primary">R$ {received.toFixed(2).replace('.', ',')}</p>
+                    </div>
+                 </div>
+                 <div className="text-right">
+                    <p className="text-text-secondary">Pendente</p>
+                    <p className="font-bold text-text-primary">R$ {pending.toFixed(2).replace('.', ',')}</p>
+                 </div>
+            </div>
+        </div>
+    );
+};
+
 
 // --- DASHBOARD ---
 export const Dashboard = ({ clients, equipment, inspections, financial, setView }: { clients: Client[], equipment: Equipment[], inspections: Inspection[], financial: FinancialRecord[], setView: (view: View) => void }) => {
@@ -54,7 +84,7 @@ export const Dashboard = ({ clients, equipment, inspections, financial, setView 
   }, { received: 0, pending: 0 });
 
   const QuickActionButton = ({ label, icon, onClick }: { label: string, icon: ReactNode, onClick: () => void }) => (
-      <button onClick={onClick} className="bg-secondary p-4 rounded-xl text-text-primary flex flex-col items-center justify-center text-center hover:bg-gray-100 transition-colors shadow-sm border border-border space-y-2">
+      <button onClick={onClick} className="bg-secondary p-4 rounded-xl text-text-primary flex flex-col items-center justify-center text-center hover:bg-primary transition-colors shadow-sm border border-border space-y-2">
         <div className="text-accent text-2xl">{icon}</div>
         <p className="text-xs font-semibold">{label}</p>
       </button>
@@ -69,10 +99,13 @@ export const Dashboard = ({ clients, equipment, inspections, financial, setView 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <QuickActionButton label="Nova Inspeção" icon={<AgendaIcon className="w-6 h-6"/>} onClick={() => setView('agenda')} />
           <QuickActionButton label="Novo Cliente" icon={<ClientsIcon className="w-6 h-6"/>} onClick={() => setView('clients')} />
-          <QuickActionButton label="Novo Equip." icon={<EquipmentIcon className="w-6 h-6"/>} onClick={() => setView('equipment')} />
+          <QuickActionButton label="Ver Relatórios" icon={<ReportsIcon className="w-6 h-6"/>} onClick={() => setView('reports')} />
           <QuickActionButton label="Financeiro" icon={<FinancialIcon className="w-6 h-6"/>} onClick={() => setView('financial')} />
         </div>
         <div className="space-y-6">
+            <Card title="💰 Resumo Financeiro">
+               <FinancialChart received={financialSummary.received} pending={financialSummary.pending} />
+            </Card>
             <Card title="🔔 Alertas de Vencimento">
                 <div className="space-y-3">
                     {expiringEquipment.length > 0 ? expiringEquipment.map(eq => (
@@ -94,18 +127,6 @@ export const Dashboard = ({ clients, equipment, inspections, financial, setView 
                             </div>
                         );
                     }) : <p className="text-text-secondary text-sm">Nenhuma inspeção agendada.</p>}
-                </div>
-            </Card>
-            <Card title="💰 Resumo Financeiro">
-                <div className="space-y-4">
-                    <div>
-                        <p className="text-text-secondary text-sm">Total Recebido</p>
-                        <p className="text-2xl font-bold text-status-approved">R$ {financialSummary.received.toFixed(2).replace('.',',')}</p>
-                    </div>
-                    <div>
-                        <p className="text-text-secondary text-sm">Total Pendente</p>
-                        <p className="text-2xl font-bold text-status-pending">R$ {financialSummary.pending.toFixed(2).replace('.',',')}</p>
-                    </div>
                 </div>
             </Card>
         </div>
@@ -209,8 +230,9 @@ interface ClientDetailProps {
     inspections: Inspection[];
     onUpdateClient: (client: Client) => void;
     onDeleteClient: (clientId: string) => void;
+    onScheduleInspection: (clientId: string) => void;
 }
-export const ClientDetail: React.FC<ClientDetailProps> = ({ client, equipment, inspections, onUpdateClient, onDeleteClient }) => {
+export const ClientDetail: React.FC<ClientDetailProps> = ({ client, equipment, inspections, onUpdateClient, onDeleteClient, onScheduleInspection }) => {
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
 
@@ -322,6 +344,8 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, equipment, i
                     <p><strong className="text-text-secondary">Email:</strong> {client.email}</p>
                 </div>
             </Card>
+            
+            <FloatingActionButton onClick={() => onScheduleInspection(client.id)} icon={<AgendaIcon className="w-6 h-6" />} aria-label="Agendar Inspeção para este Cliente" />
 
             <Card title="Equipamentos">
                 {clientEquipment.length > 0 ? (
@@ -476,15 +500,39 @@ export const Equipments: React.FC<EquipmentsProps> = ({ equipment, clients, onAd
 
 
 // --- AGENDA ---
+type PrefilledInspectionData = {
+    clientId?: string;
+    date?: string;
+    observations?: string;
+} | null;
+
 interface AgendaProps {
     inspections: Inspection[];
     clients: Client[];
     onAddInspection: (inspection: Omit<Inspection, 'id'>) => void;
+    prefilledData: PrefilledInspectionData;
+    onPrefillHandled: () => void;
+    showToast: (message: string, type?: 'success' | 'error') => void;
 }
-export const Agenda: React.FC<AgendaProps> = ({ inspections, clients, onAddInspection }) => {
+export const Agenda: React.FC<AgendaProps> = ({ inspections, clients, onAddInspection, prefilledData, onPrefillHandled, showToast }) => {
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const initialNewInspectionState = { clientId: '', equipmentIds: [], date: '', inspector: '', observations: '', status: InspectionStatus.Agendada };
     const [newInspection, setNewInspection] = useState(initialNewInspectionState);
+    const [isOptimizing, setIsOptimizing] = useState(false);
+
+    useEffect(() => {
+        if (prefilledData) {
+            setNewInspection(prev => ({
+                ...prev,
+                clientId: prefilledData.clientId || '',
+                date: prefilledData.date || '',
+                observations: prefilledData.observations || '',
+            }));
+            setAddModalOpen(true);
+            onPrefillHandled();
+        }
+    }, [prefilledData, onPrefillHandled]);
+
 
     const sortedInspections = useMemo(() =>
         [...inspections].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
@@ -495,6 +543,32 @@ export const Agenda: React.FC<AgendaProps> = ({ inspections, clients, onAddInspe
         onAddInspection(newInspection);
         setNewInspection(initialNewInspectionState);
         setAddModalOpen(false);
+    };
+
+    const handleOptimizeText = async () => {
+        if (!newInspection.observations) {
+            showToast("Por favor, insira alguma observação.", "error");
+            return;
+        }
+        setIsOptimizing(true);
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            const prompt = `Reescreva as seguintes anotações de inspeção de forma profissional, clara e concisa para um relatório técnico. Mantenha o sentido original, mas melhore a gramática, a estrutura e a terminologia. Seja objetivo.\n\nAnotações: "${newInspection.observations}"`;
+            
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+            });
+            
+            const optimizedText = response.text;
+            setNewInspection(p => ({ ...p, observations: optimizedText }));
+            showToast("Texto otimizado com IA!");
+        } catch (error) {
+            console.error("Gemini API error:", error);
+            showToast("Erro ao otimizar o texto.", "error");
+        } finally {
+            setIsOptimizing(false);
+        }
     };
 
     const getClientName = (clientId: string) => clients.find(c => c.id === clientId)?.name || 'Cliente desconhecido';
@@ -530,7 +604,14 @@ export const Agenda: React.FC<AgendaProps> = ({ inspections, clients, onAddInspe
                     {/* A multi-select for equipment would be better here, but for simplicity we'll omit it */}
                     <FormField label="Data da Inspeção"><Input name="date" type="date" required value={newInspection.date} onChange={(e) => setNewInspection(p => ({...p, date: e.target.value}))} /></FormField>
                     <FormField label="Inspetor Responsável"><Input name="inspector" required value={newInspection.inspector} onChange={(e) => setNewInspection(p => ({...p, inspector: e.target.value}))} /></FormField>
-                    <FormField label="Observações Iniciais"><Textarea name="observations" value={newInspection.observations} onChange={(e) => setNewInspection(p => ({...p, observations: e.target.value}))} /></FormField>
+                    <FormField label="Observações Iniciais">
+                        <div className="relative">
+                            <Textarea name="observations" value={newInspection.observations} onChange={(e) => setNewInspection(p => ({...p, observations: e.target.value}))} />
+                             <button type="button" onClick={handleOptimizeText} disabled={isOptimizing} title="Otimizar com IA" className="absolute bottom-2.5 right-2.5 p-1.5 rounded-full bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                {isOptimizing ? <SpinnerIcon className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
+                            </button>
+                        </div>
+                    </FormField>
                     <div className="pt-4 flex justify-end">
                         <Button type="submit">Agendar</Button>
                     </div>
@@ -643,6 +724,96 @@ export const Financial: React.FC<FinancialProps> = ({ financial, clients, onAddF
                 </form>
             </Modal>
          </div>
+    );
+};
+
+// --- REPORTS ---
+export const Reports: React.FC<{ equipment: Equipment[], clients: Client[] }> = ({ equipment, clients }) => {
+    const [days, setDays] = useState(90);
+
+    const getClientName = (clientId: string) => clients.find(c => c.id === clientId)?.name || 'Desconhecido';
+
+    const expiringSoon = useMemo(() => {
+        const now = new Date();
+        const futureDate = new Date();
+        futureDate.setDate(now.getDate() + days);
+        return equipment
+            .filter(eq => {
+                const expiry = new Date(eq.expiryDate);
+                return expiry > now && expiry <= futureDate;
+            })
+            .sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
+    }, [days, equipment]);
+    
+    const handleExportReport = () => {
+        if (typeof (window as any).XLSX === 'undefined') {
+            console.error("A biblioteca SheetJS (XLSX) não foi carregada.");
+            return;
+        }
+        const XLSX = (window as any).XLSX;
+    
+        const reportData = [
+            [`Relatório de Equipamentos Vencendo nos Próximos ${days} dias`],
+            [],
+            ["Nome", "Nº Série", "Cliente", "Data de Validade"],
+            ...expiringSoon.map(eq => [
+                eq.name,
+                eq.serialNumber,
+                getClientName(eq.clientId),
+                new Date(eq.expiryDate).toLocaleDateString('pt-BR')
+            ])
+        ];
+    
+        const ws = XLSX.utils.aoa_to_sheet(reportData);
+        ws['!cols'] = [ { wch: 30 }, { wch: 20 }, { wch: 30 }, { wch: 20 } ];
+        ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }];
+    
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Relatorio Vencimentos");
+        XLSX.writeFile(wb, `Relatorio_Vencimentos_${days}dias.xlsx`);
+    };
+
+    const TabButton: React.FC<{ value: number; label: string }> = ({ value, label }) => (
+        <button
+            onClick={() => setDays(value)}
+            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors w-full ${days === value ? 'bg-accent text-white shadow' : 'bg-secondary text-text-primary hover:bg-primary'}`}
+        >
+            {label}
+        </button>
+    );
+
+    return (
+        <div className="p-4 space-y-4">
+            <Card title="Relatório de Vencimentos" actions={
+                <Button onClick={handleExportReport} variant="secondary" className="text-xs !px-3 !py-1.5">
+                    <DownloadIcon className="w-4 h-4 mr-2"/> Exportar
+                </Button>
+            }>
+                <div className="p-4 space-y-4">
+                    <p className="text-text-secondary text-sm">Filtrar equipamentos vencendo nos próximos:</p>
+                    <div className="flex space-x-2 bg-primary p-1 rounded-xl">
+                        <TabButton value={30} label="30 dias" />
+                        <TabButton value={60} label="60 dias" />
+                        <TabButton value={90} label="90 dias" />
+                    </div>
+                </div>
+            </Card>
+
+            <div className="space-y-3">
+                {expiringSoon.length > 0 ? expiringSoon.map(eq => (
+                    <Card key={eq.id}>
+                        <h4 className="font-bold text-text-primary">{eq.name} <span className="text-text-secondary font-normal text-xs">({eq.serialNumber})</span></h4>
+                        <p className="text-sm text-text-secondary">{getClientName(eq.clientId)}</p>
+                        <div className="mt-3 pt-3 border-t border-border text-xs flex justify-between">
+                             <span className="text-text-secondary">Data de Vencimento:</span>
+                             <span className="font-semibold text-status-reproved">{new Date(eq.expiryDate).toLocaleDateString()}</span>
+                        </div>
+                    </Card>
+                )) : (
+                   <EmptyState message={`Nenhum equipamento vencendo nos próximos ${days} dias.`} icon={<CertificateIcon className="w-12 h-12"/>} />
+                )}
+            </div>
+        </div>
     );
 };
 

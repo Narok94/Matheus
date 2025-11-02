@@ -1,10 +1,12 @@
 
+
 import React, { useState, ReactNode, useEffect } from 'react';
 import { View, Client, Equipment, Inspection, FinancialRecord, Certificate, ToastMessage, DetailView } from './types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES } from './data';
-import { Dashboard, Clients, Equipments, Agenda, Certificates, Financial, Settings, ClientDetail } from './src/components/pages';
+import { Dashboard, Clients, Equipments, Agenda, Certificates, Financial, Settings, ClientDetail, Reports } from './src/components/pages';
 import { LoginPage } from './src/components/LoginPage';
 import { Toast } from './src/components/common';
+import { VirtualAssistantButton, AssistantCommand } from './src/components/VirtualAssistant';
 import { 
     DashboardIcon, 
     ClientsIcon, 
@@ -12,11 +14,18 @@ import {
     AgendaIcon, 
     CertificateIcon, 
     FinancialIcon, 
-    SettingsIcon 
+    SettingsIcon,
+    ReportsIcon
 } from './src/components/Icons';
 
 type CompanyProfile = { name: string; };
 type AppSettings = { notifications: boolean; reminders: boolean; };
+type PrefilledInspectionData = {
+    clientId?: string;
+    date?: string;
+    observations?: string;
+} | null;
+
 
 // Custom hook for localStorage persistence
 const usePersistentState = <T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
@@ -44,7 +53,8 @@ const usePersistentState = <T,>(key: string, initialValue: T): [T, React.Dispatc
 const viewTitles: Record<View, string> = {
     dashboard: 'Início', clients: 'Clientes', equipment: 'Equipamentos',
     agenda: 'Agenda', certificates: 'Certificados', financial: 'Financeiro',
-    settings: 'Configurações', clientDetail: 'Detalhes do Cliente', inspectionDetail: 'Detalhes da Inspeção'
+    settings: 'Configurações', clientDetail: 'Detalhes do Cliente', 
+    inspectionDetail: 'Detalhes da Inspeção', reports: 'Relatórios'
 };
 
 
@@ -102,8 +112,8 @@ const BottomNav = ({ currentView, setView }: { currentView: View, setView: (view
     const navItems: { view: View, label: string, icon: ReactNode }[] = [
         { view: 'dashboard', label: 'Início', icon: <DashboardIcon /> },
         { view: 'clients', label: 'Clientes', icon: <ClientsIcon /> },
-        { view: 'equipment', label: 'Equip.', icon: <EquipmentIcon /> },
         { view: 'agenda', label: 'Agenda', icon: <AgendaIcon /> },
+        { view: 'reports', label: 'Relatórios', icon: <ReportsIcon /> },
         { view: 'financial', label: 'Finanças', icon: <FinancialIcon /> },
     ];
     
@@ -129,6 +139,7 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
         { view: 'equipment', label: 'Equipamentos', icon: <EquipmentIcon /> },
         { view: 'agenda', label: 'Agenda', icon: <AgendaIcon /> },
         { view: 'certificates', label: 'Certificados', icon: <CertificateIcon /> },
+        { view: 'reports', label: 'Relatórios', icon: <ReportsIcon /> },
         { view: 'financial', label: 'Financeiro', icon: <FinancialIcon /> },
     ];
     
@@ -178,6 +189,8 @@ const App: React.FC = () => {
     const [currentView, setCurrentView] = useState<View>('dashboard');
     const [detailView, setDetailView] = useState<DetailView>(null);
     const [toast, setToast] = useState<ToastMessage>(null);
+    const [prefilledInspectionData, setPrefilledInspectionData] = useState<PrefilledInspectionData>(null);
+
 
     // App-wide persistent state
     const [theme, setTheme] = usePersistentState<'light' | 'dark'>('theme', 'light');
@@ -270,30 +283,86 @@ const App: React.FC = () => {
         setCurrentView('clientDetail');
     };
 
+    const handleScheduleForClient = (clientId: string) => {
+        setPrefilledInspectionData({ clientId });
+        handleSetView('agenda');
+    };
+
     const handleBack = () => {
         let previousView: View = 'dashboard';
         if (currentView === 'clientDetail') {
             previousView = 'clients';
-        } else if (currentView === 'settings') {
+        } else if (currentView === 'settings' || currentView === 'reports') {
             previousView = 'dashboard';
         }
         setDetailView(null);
         setCurrentView(previousView);
     };
 
+    const handleAssistantCommand = (command: AssistantCommand) => {
+        switch (command.name) {
+            case 'navigateTo': {
+                const viewMap: { [key: string]: View } = {
+                    'início': 'dashboard', 'dashboard': 'dashboard',
+                    'clientes': 'clients', 'relatórios': 'reports',
+                    'equipamentos': 'equipment', 'agenda': 'agenda',
+                    'certificados': 'certificates', 'financeiro': 'financial',
+                    'configurações': 'settings',
+                };
+                const targetView = viewMap[command.args.viewName?.toLowerCase() || ''];
+                if (targetView) {
+                    handleSetView(targetView);
+                    showToast(`Navegando para ${command.args.viewName}.`);
+                } else {
+                    showToast(`Não encontrei a tela: ${command.args.viewName}`, 'error');
+                }
+                break;
+            }
+            case 'findClient': {
+                const clientName = command.args.clientName?.toLowerCase();
+                const client = clients.find(c => c.name.toLowerCase().includes(clientName || ''));
+                if (client) {
+                    handleViewClient(client.id);
+                    showToast(`Exibindo detalhes de ${client.name}.`);
+                } else {
+                    showToast(`Cliente "${command.args.clientName}" não encontrado.`, 'error');
+                }
+                break;
+            }
+            case 'scheduleInspection': {
+                const clientName = command.args.clientName?.toLowerCase();
+                const client = clients.find(c => c.name.toLowerCase().includes(clientName || ''));
+                if (!client) {
+                    showToast(`Cliente "${command.args.clientName}" não encontrado para agendamento.`, 'error');
+                    return;
+                }
+                setPrefilledInspectionData({
+                    clientId: client.id,
+                    date: command.args.date,
+                });
+                handleSetView('agenda');
+                showToast(`Pré-preenchendo agendamento para ${client.name}.`);
+                break;
+            }
+            default:
+                showToast('Comando não reconhecido.', 'error');
+        }
+    };
+
     const renderView = () => {
         if (detailView?.type === 'client') {
             const client = clients.find(c => c.id === detailView.id);
             if (!client) return <p>Cliente não encontrado</p>;
-            return <ClientDetail client={client} equipment={equipment} inspections={inspections} onUpdateClient={handleUpdateClient} onDeleteClient={handleDeleteClient}/>;
+            return <ClientDetail client={client} equipment={equipment} inspections={inspections} onUpdateClient={handleUpdateClient} onDeleteClient={handleDeleteClient} onScheduleInspection={handleScheduleForClient} />;
         }
 
         switch (currentView) {
             case 'dashboard': return <Dashboard clients={clients} equipment={equipment} inspections={inspections} financial={financial} setView={handleSetView} />;
             case 'clients': return <Clients clients={clients} onViewClient={handleViewClient} onAddClient={handleAddClient} />;
             case 'equipment': return <Equipments equipment={equipment} clients={clients} onAddEquipment={handleAddEquipment} />;
-            case 'agenda': return <Agenda inspections={inspections} clients={clients} onAddInspection={handleAddInspection} />;
+            case 'agenda': return <Agenda inspections={inspections} clients={clients} onAddInspection={handleAddInspection} prefilledData={prefilledInspectionData} onPrefillHandled={() => setPrefilledInspectionData(null)} showToast={showToast} />;
             case 'certificates': return <Certificates certificates={certificates} clients={clients}/>;
+            case 'reports': return <Reports equipment={equipment} clients={clients} />;
             case 'financial': return <Financial financial={financial} clients={clients} onAddFinancial={handleAddFinancial} />;
             case 'settings': return <Settings 
                 theme={theme} 
@@ -328,6 +397,7 @@ const App: React.FC = () => {
                 </main>
                 <BottomNav currentView={currentView} setView={handleSetView} />
                 <Toast toast={toast} onDismiss={() => setToast(null)} />
+                <VirtualAssistantButton onCommand={handleAssistantCommand} showToast={showToast} userName={companyProfile.name} />
             </div>
         </div>
     );
