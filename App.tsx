@@ -15,7 +15,7 @@ import {
     FinancialIcon, 
     SettingsIcon,
     ReportsIcon,
-    SpectraAuditLogo
+    InspecProLogo
 } from './src/components/Icons';
 
 type CompanyProfile = { name: string; };
@@ -69,8 +69,8 @@ const Header: React.FC<{
         return (
              <header className="p-4 flex items-center justify-between sticky top-0 z-10 bg-secondary/80 backdrop-blur-sm border-b border-border">
                  <div className="flex items-center">
-                    <SpectraAuditLogo className="h-8 w-8 text-accent" />
-                    <h1 className="text-xl font-bold ml-2 text-text-primary">SPECTRA AUDIT</h1>
+                    <InspecProLogo className="h-8 w-8 text-accent" />
+                    <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
                 </div>
                  <button onClick={() => setView('settings')} className="text-text-secondary hover:text-accent p-2 rounded-full mr-8">
                     <SettingsIcon />
@@ -114,7 +114,7 @@ const BottomNav = ({ currentView, setView }: { currentView: View, setView: (view
     ];
     
     return (
-        <nav className="fixed bottom-0 left-0 right-0 bg-secondary border-t border-border flex justify-around md:hidden z-10">
+        <nav className="fixed bottom-0 left-0 right-0 bg-secondary/80 backdrop-blur-sm border-t border-border flex justify-around md:hidden z-10">
             {navItems.map(item => (
                 <BottomNavLink
                     key={item.view}
@@ -140,7 +140,7 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
     ];
     
     const NavLink: React.FC<{ icon: ReactNode, label: string, isActive: boolean, onClick: () => void }> = ({ icon, label, isActive, onClick }) => (
-    <button onClick={onClick} className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg transition-colors ${isActive ? 'bg-accent text-white' : 'text-text-secondary hover:bg-secondary hover:text-text-primary'}`}>
+    <button onClick={onClick} className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg transition-colors ${isActive ? 'bg-accent text-white' : 'text-text-secondary hover:bg-secondary/50 hover:text-text-primary'}`}>
         {icon}
         <span className="ml-3">{label}</span>
     </button>
@@ -149,8 +149,8 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
     return (
         <aside className="hidden md:flex w-64 bg-primary text-white flex-shrink-0 p-4 border-r border-border flex-col">
             <div className="flex items-center mb-8">
-                <SpectraAuditLogo className="h-8 w-8 text-accent" />
-                <h1 className="text-xl font-bold ml-2 text-text-primary">SPECTRA AUDIT</h1>
+                <InspecProLogo className="h-8 w-8 text-accent" />
+                <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
             </div>
             <nav className="flex-grow space-y-2">
                 {navItems.map(item => (
@@ -188,7 +188,7 @@ const App: React.FC = () => {
 
 
     // App-wide persistent state
-    const [theme, setTheme] = usePersistentState<'light' | 'dark'>('theme', 'light');
+    const [theme, setTheme] = usePersistentState<'light' | 'dark'>('theme', 'dark');
     const [companyProfile, setCompanyProfile] = usePersistentState<CompanyProfile>('companyProfile', { name: 'Empresa ABC' });
     const [appSettings, setAppSettings] = usePersistentState<AppSettings>('appSettings', { notifications: true, reminders: true });
     
@@ -200,10 +200,9 @@ const App: React.FC = () => {
     const [certificates] = usePersistentState<Certificate[]>('certificates', MOCK_CERTIFICATES);
     
     useEffect(() => {
-        if (isAuthenticated) {
+        // Always set dark theme on login page
+        if (!isAuthenticated) {
             document.documentElement.classList.add('dark');
-        } else {
-             document.documentElement.classList.remove('dark');
         }
     }, [isAuthenticated]);
     
@@ -232,9 +231,9 @@ const App: React.FC = () => {
         }
     };
 
-    const handleRegister = (company: string, _email: string, _pass: string) => {
+    const handleRegister = (username: string, _email: string, _pass: string) => {
         // Mock registration
-        showToast(`Empresa "${company}" registrada com sucesso!`, 'success');
+        showToast(`Usuário "${username}" registrado com sucesso!`, 'success');
         setAuthView('login');
     };
 

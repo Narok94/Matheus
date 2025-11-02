@@ -93,7 +93,7 @@ export const Dashboard = ({ clients, equipment, inspections, setView }: { client
   const expiringEquipment = equipment.filter(e => new Date(e.expiryDate) < new Date(new Date().setMonth(new Date().getMonth() + 3))).slice(0, 3);
 
   const QuickActionButton = ({ label, icon, onClick }: { label: string, icon: ReactNode, onClick: () => void }) => (
-      <button onClick={onClick} className="bg-secondary p-4 rounded-xl text-text-primary flex flex-col items-center justify-center text-center hover:bg-primary transition-colors shadow-sm border border-border space-y-2">
+      <button onClick={onClick} className="bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md p-4 rounded-xl text-text-primary flex flex-col items-center justify-center text-center hover:border-accent transition-colors shadow-lg dark:shadow-cyan-900/10 border border-border space-y-2 transform active:scale-95">
         <div className="text-accent text-2xl">{icon}</div>
         <p className="text-xs font-semibold">{label}</p>
       </button>
@@ -192,7 +192,7 @@ export const Clients: React.FC<ClientsProps> = ({ clients, onViewClient, onAddCl
             
             <div className="space-y-3">
                 {filteredClients.length > 0 ? filteredClients.map(client => (
-                    <div key={client.id} className="bg-secondary p-4 rounded-lg shadow-sm border border-border cursor-pointer hover:bg-primary transition-all duration-300 hover:shadow-md hover:border-accent/20 hover:-translate-y-px active:scale-[0.99] active:bg-primary/90" onClick={() => onViewClient(client.id)}>
+                    <div key={client.id} className="bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md p-4 rounded-xl shadow-lg dark:shadow-cyan-900/10 border border-border cursor-pointer hover:border-accent transition-all duration-300 hover:-translate-y-px active:scale-[0.99]" onClick={() => onViewClient(client.id)}>
                          <div className="flex items-center">
                             <div className="bg-accent/10 text-accent rounded-full w-10 h-10 flex items-center justify-center font-bold mr-4 flex-shrink-0">
                                 {client.name.charAt(0)}
@@ -364,7 +364,7 @@ export const ClientDetail: React.FC<{ client: Client; equipment: Equipment[]; in
 
     return (
         <div className="p-4 space-y-6">
-            <Card className="!bg-transparent !shadow-none !border-none">
+            <div className="p-4">
                 <div className="flex justify-between items-start">
                     <div>
                         <h2 className="text-2xl font-bold text-text-primary">{client.name}</h2>
@@ -379,7 +379,7 @@ export const ClientDetail: React.FC<{ client: Client; equipment: Equipment[]; in
                     <p>{client.address}, {client.city}</p>
                     <p>{client.contact} &middot; {client.email}</p>
                 </div>
-            </Card>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Button onClick={() => onScheduleInspection(client.id)} className="w-full justify-center">
@@ -756,7 +756,7 @@ export const Settings: React.FC<{
             </Card>
 
             <Card title="Conta">
-                 <Button variant="secondary" onClick={onLogout} className="w-full justify-center !text-status-reproved">
+                 <Button variant="secondary" onClick={onLogout} className="w-full justify-center !text-status-reproved !border-status-reproved/50 hover:!bg-status-reproved/10">
                     <LogoutIcon className="w-5 h-5 mr-2" />
                     <span>Sair da Conta</span>
                 </Button>

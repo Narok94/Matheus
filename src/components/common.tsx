@@ -1,4 +1,5 @@
 
+
 import React, { ReactNode, useEffect, useState } from 'react';
 import { InspectionStatus, PaymentStatus, ToastMessage } from '../../types';
 
@@ -20,7 +21,7 @@ export const Card: React.FC<CardProps> = ({ title, children, className, actions,
     );
 
     return (
-        <div className={`bg-secondary rounded-xl shadow-sm border border-border ${className}`}>
+        <div className={`bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md rounded-xl shadow-lg dark:shadow-cyan-900/10 border border-border ${className}`}>
             {(title || actions) && (
                 <div className="flex justify-between items-center p-4 border-b border-border">
                     {title && <h3 className="text-lg font-semibold text-text-primary">{title}</h3>}
@@ -59,8 +60,8 @@ interface ModalProps {
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   return (
     <div className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-end transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-      <div className={`bg-primary rounded-t-2xl shadow-xl w-full max-w-2xl max-h-[90dvh] flex flex-col transform transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}>
-        <div className="flex justify-between items-center p-4 border-b border-border sticky top-0 bg-primary z-10">
+      <div className={`bg-primary/80 backdrop-blur-lg border-t border-border rounded-t-2xl shadow-xl w-full max-w-2xl max-h-[90dvh] flex flex-col transform transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div className="flex justify-between items-center p-4 border-b border-border sticky top-0 bg-primary/80 z-10">
           <h2 className="text-xl font-bold text-text-primary">{title}</h2>
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -79,7 +80,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
 export const FloatingActionButton: React.FC<{ onClick: () => void, icon: ReactNode, className?: string }> = ({ onClick, icon, className }) => (
     <button
         onClick={onClick}
-        className={`fixed bottom-24 right-6 bg-accent text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:brightness-110 transition-transform duration-200 ease-in-out active:scale-95 z-10 ${className}`}
+        className={`fixed bottom-24 right-6 bg-gradient-to-br from-cyan-500 to-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-cyan-500/30 hover:brightness-110 transition-transform duration-200 ease-in-out active:scale-95 z-10 ${className}`}
         aria-label="Adicionar"
     >
         {icon}
@@ -110,7 +111,7 @@ export const Toast: React.FC<{ toast: ToastMessage, onDismiss: () => void }> = (
 
     if (!toast) return null;
 
-    const bgColor = toast.type === 'success' ? 'bg-status-approved' : 'bg-status-reproved';
+    const bgColor = toast.type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-red-500 to-rose-600';
 
     return (
         <div className={`fixed top-5 right-5 z-[100] p-4 rounded-lg shadow-lg text-white text-sm font-semibold animate-fade-in-down ${bgColor}`}>
@@ -120,7 +121,7 @@ export const Toast: React.FC<{ toast: ToastMessage, onDismiss: () => void }> = (
 };
 
 export const EmptyState: React.FC<{ message: string, icon: ReactNode, action?: ReactNode }> = ({ message, icon, action }) => (
-    <div className="text-center p-10 bg-secondary rounded-lg border border-border">
+    <div className="text-center p-10 bg-secondary/50 rounded-lg border border-border">
         <div className="flex justify-center items-center text-accent mb-4">{icon}</div>
         <p className="text-text-secondary mb-6">{message}</p>
         {action}
@@ -128,21 +129,21 @@ export const EmptyState: React.FC<{ message: string, icon: ReactNode, action?: R
 );
 
 export const getStatusBadge = (status: InspectionStatus | PaymentStatus) => {
-    let colorClasses = 'bg-gray-100 text-gray-800 border border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600';
+    let colorClasses = 'bg-gray-100 text-gray-800 border border-gray-300 dark:bg-slate-500/20 dark:text-slate-300 dark:border-slate-500/30';
     switch (status) {
         case InspectionStatus.Aprovado:
         case PaymentStatus.Pago:
-            colorClasses = 'bg-green-100 text-status-approved border border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700/50';
+            colorClasses = 'bg-green-100 text-status-approved border border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30';
             break;
         case InspectionStatus.Reprovado:
-            colorClasses = 'bg-red-100 text-status-reproved border border-red-200 dark:bg-red-900/50 dark:text-red-300 dark:border-red-700/50';
+            colorClasses = 'bg-red-100 text-status-reproved border border-red-200 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30';
             break;
         case InspectionStatus.Pendente:
         case PaymentStatus.Pendente:
-             colorClasses = 'bg-yellow-100 text-status-pending border border-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-700/50';
+             colorClasses = 'bg-yellow-100 text-status-pending border border-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-300 dark:border-yellow-500/30';
              break;
         case InspectionStatus.Agendada:
-            colorClasses = 'bg-cyan-100 text-status-scheduled border border-cyan-200 dark:bg-cyan-900/50 dark:text-cyan-300 dark:border-cyan-700/50';
+            colorClasses = 'bg-cyan-100 text-status-scheduled border border-cyan-200 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/30';
             break;
     }
     return <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${colorClasses}`}>{status}</span>;
@@ -157,7 +158,7 @@ export const ToggleSwitch: React.FC<{
     <button
       type="button"
       className={`${
-        enabled ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
+        enabled ? 'bg-accent' : 'bg-gray-300 dark:bg-slate-600'
       } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2`}
       role="switch"
       aria-checked={enabled}
@@ -177,8 +178,8 @@ export const ToggleSwitch: React.FC<{
 export const Button: React.FC<{ children: ReactNode, onClick?: () => void, type?: 'button' | 'submit' | 'reset', variant?: 'primary' | 'secondary', className?: string, disabled?: boolean }> = ({ children, onClick, type = 'button', variant = 'primary', className = '', disabled = false }) => {
   const baseClasses = "px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary inline-flex items-center justify-center space-x-2 text-sm transform active:scale-95";
   const variantClasses = variant === 'primary' 
-    ? "bg-accent text-white hover:brightness-110 focus:ring-accent shadow-lg shadow-blue-500/20 dark:shadow-sky-500/20"
-    : "bg-secondary text-text-secondary border border-border hover:bg-primary hover:text-text-primary focus:ring-text-secondary";
+    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 focus:ring-cyan-400 shadow-lg shadow-cyan-500/20"
+    : "bg-secondary/50 text-text-primary border border-border hover:bg-secondary/80 focus:ring-accent";
   const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
   
   return (
@@ -189,16 +190,16 @@ export const Button: React.FC<{ children: ReactNode, onClick?: () => void, type?
 };
 
 export const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <input {...props} className="w-full mt-1 px-3 py-2 bg-secondary border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-accent placeholder-text-secondary" />
+    <input {...props} className="w-full mt-1 px-3 py-2 bg-secondary/30 border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent placeholder-text-secondary transition-colors" />
 );
 
 export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
-    <select {...props} className="w-full mt-1 px-3 py-2 bg-secondary border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-accent" />
+    <select {...props} className="w-full mt-1 px-3 py-2 bg-secondary/30 border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent" />
 );
 
 
 export const Textarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-    <textarea {...props} rows={4} className="w-full mt-1 px-3 py-2 bg-secondary border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-accent placeholder-text-secondary" />
+    <textarea {...props} rows={4} className="w-full mt-1 px-3 py-2 bg-secondary/30 border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent placeholder-text-secondary transition-colors" />
 );
 
 export const FormField: React.FC<{ label: string, children: ReactNode }> = ({ label, children }) => (

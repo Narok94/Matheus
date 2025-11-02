@@ -1,7 +1,7 @@
 
 
 import React, { useState } from 'react';
-import { SpectraAuditLogo, UserIcon, LockIcon, MailIcon } from './Icons';
+import { InspecProLogo, UserIcon, LockIcon, MailIcon, BuildingIcon } from './Icons';
 
 interface AuthPageProps {
     showToast: (message: string, type?: 'success' | 'error') => void;
@@ -13,7 +13,7 @@ interface LoginPageProps extends AuthPageProps {
 }
 
 interface RegisterPageProps extends AuthPageProps {
-    onRegister: (company: string, email: string, pass: string) => void;
+    onRegister: (username: string, email: string, pass: string) => void;
     onSwitchToLogin: () => void;
 }
 
@@ -127,9 +127,9 @@ const AuthFormCard: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const AuthHeader = () => (
     <div className="flex flex-col items-center mb-6 text-center">
-        <SpectraAuditLogo className="w-20 h-20 text-cyan-300 mb-2" />
-        <h1 className="text-3xl font-bold text-white tracking-wider">SPECTRA AUDIT</h1>
-        <p className="text-cyan-200/70 text-sm">Data-Driven Inspection</p>
+        <InspecProLogo className="w-20 h-20 text-cyan-300 mb-2" />
+        <h1 className="text-3xl font-bold text-white tracking-wider">InspecPro</h1>
+        <p className="text-cyan-200/70 text-sm">Gestão de Inspeções</p>
     </div>
 );
 
@@ -217,7 +217,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, showToast, onSwit
 };
 
 export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, showToast, onSwitchToLogin }) => {
-    const [companyName, setCompanyName] = useState('');
+    const [username, setUsername] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [address, setAddress] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
@@ -227,7 +229,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, showToas
             showToast("A senha deve ter pelo menos 4 caracteres.", "error");
             return;
         }
-        onRegister(companyName, email, password);
+        onRegister(username, email, password);
     };
 
     return (
@@ -236,12 +238,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, showToas
             <AuthFormCard>
                  <h2 className="text-center text-xl text-white font-semibold -mt-2 mb-4">Create Account</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                     <FormInput
+                    <FormInput
                         icon={<UserIcon />}
                         type="text"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="Company Name"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Usuário"
                         required
                     />
                     <FormInput
@@ -257,8 +259,22 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, showToas
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Password"
+                        placeholder="Senha"
                         required
+                    />
+                    <FormInput
+                        icon={<UserIcon />}
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Nome Completo (Opcional)"
+                    />
+                    <FormInput
+                        icon={<BuildingIcon />}
+                        type="text"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Endereço (Opcional)"
                     />
                     <div className="pt-2">
                          <FormButton type="submit">SIGN UP</FormButton>

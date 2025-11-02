@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SPECTRA AUDIT - Data-Driven Inspection</title>
+    <title>InspecPro - Gestão de Inspeções</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
@@ -29,26 +29,41 @@
     </script>
     <style>
     body {
-        background-color: #0a0f1f;
-        background-image: radial-gradient(circle at 10% 15%, rgba(20, 83, 127, 0.3) 0%, transparent 40%),
-                          radial-gradient(circle at 85% 80%, rgba(56, 189, 248, 0.2) 0%, transparent 50%);
+        background-color: var(--color-primary);
+        background-image: radial-gradient(circle at 15% 20%, var(--color-accent-trans-1) 0%, transparent 30%),
+                          radial-gradient(circle at 85% 80%, var(--color-accent-trans-2) 0%, transparent 35%);
         background-attachment: fixed;
     }
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-image: radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.15) 1px, transparent 0);
+        background-size: 2rem 2rem;
+        z-index: -2;
+        opacity: 0.3;
+        pointer-events: none;
+    }
     :root {
-        --color-primary: #f7f8fc;
+        --color-primary: #f8fafc; /* Slate 50 - Clean and professional */
         --color-secondary: #ffffff;
-        --color-accent: #007bff;
-        --color-text-primary: #212529;
-        --color-text-secondary: #6c757d;
-        --color-border: #e2e8f0;
+        --color-accent: #0ea5e9; /* Sky Blue 500 */
+        --color-accent-trans-1: rgba(14, 165, 233, 0.08); /* Subtle glow */
+        --color-accent-trans-2: rgba(56, 189, 248, 0.08); /* Subtle glow */
+        --color-text-primary: #0f172a; /* Slate 900 */
+        --color-text-secondary: #64748b; /* Slate 500 */
+        --color-border: #e2e8f0; /* Slate 200 */
     }
     .dark {
-        --color-primary: #0f172a; /* Deeper navy */
-        --color-secondary: #1e293b; /* Slightly lighter navy */
-        --color-accent: #38bdf8; /* Sky blue */
-        --color-text-primary: #f1f5f9; /* Lighter text */
-        --color-text-secondary: #94a3b8; /* Muted text */
-        --color-border: #334155; /* Softer border */
+        --color-primary: #0f172a; /* Slate 900 */
+        --color-secondary: #1e293b; /* Slate 800 */
+        --color-accent: #38bdf8; /* Sky 400 */
+        --color-accent-trans-1: rgba(56, 189, 248, 0.2);
+        --color-accent-trans-2: rgba(14, 165, 233, 0.2);
+        --color-text-primary: #f1f5f9; /* Slate 100 */
+        --color-text-secondary: #94a3b8; /* Slate 400 */
+        --color-border: rgba(56, 189, 248, 0.2); /* Transparent Sky */
     }
     </style>
 <script type="importmap">
