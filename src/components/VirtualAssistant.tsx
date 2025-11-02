@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const VirtualAssistantBackground = () => (
     <svg width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 z-0">

@@ -232,7 +232,7 @@ const App: React.FC = () => {
         }
     };
 
-    const handleRegister = (company: string, email: string, pass: string) => {
+    const handleRegister = (company: string, _email: string, _pass: string) => {
         // Mock registration
         showToast(`Empresa "${company}" registrada com sucesso!`, 'success');
         setAuthView('login');
