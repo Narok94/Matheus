@@ -1,12 +1,10 @@
 
 
-
-
 import React, { useState, ReactNode, useEffect } from 'react';
 import { View, Client, Equipment, Inspection, FinancialRecord, Certificate, ToastMessage, DetailView } from './types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES } from './data';
 import { Dashboard, Clients, Equipments, Agenda, Certificates, Financial, Settings, ClientDetail, Reports } from './src/components/pages';
-import { LoginPage } from './src/components/LoginPage';
+import { LoginPage, RegisterPage } from './src/components/LoginPage';
 import { Toast } from './src/components/common';
 import { 
     DashboardIcon, 
@@ -16,7 +14,8 @@ import {
     CertificateIcon, 
     FinancialIcon, 
     SettingsIcon,
-    ReportsIcon
+    ReportsIcon,
+    SpectraAuditLogo
 } from './src/components/Icons';
 
 type CompanyProfile = { name: string; };
@@ -70,10 +69,8 @@ const Header: React.FC<{
         return (
              <header className="p-4 flex items-center justify-between sticky top-0 z-10 bg-secondary/80 backdrop-blur-sm border-b border-border">
                  <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                    <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
+                    <SpectraAuditLogo className="h-8 w-8 text-accent" />
+                    <h1 className="text-xl font-bold ml-2 text-text-primary">SPECTRA AUDIT</h1>
                 </div>
                  <button onClick={() => setView('settings')} className="text-text-secondary hover:text-accent p-2 rounded-full mr-8">
                     <SettingsIcon />
@@ -152,10 +149,8 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
     return (
         <aside className="hidden md:flex w-64 bg-primary text-white flex-shrink-0 p-4 border-r border-border flex-col">
             <div className="flex items-center mb-8">
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
+                <SpectraAuditLogo className="h-8 w-8 text-accent" />
+                <h1 className="text-xl font-bold ml-2 text-text-primary">SPECTRA AUDIT</h1>
             </div>
             <nav className="flex-grow space-y-2">
                 {navItems.map(item => (
@@ -185,6 +180,7 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
 
 const App: React.FC = () => {
     const [isAuthenticated, setIsAuthenticated] = usePersistentState('isAuthenticated', false);
+    const [authView, setAuthView] = useState<'login' | 'register'>('login');
     const [currentView, setCurrentView] = useState<View>('dashboard');
     const [detailView, setDetailView] = useState<DetailView>(null);
     const [toast, setToast] = useState<ToastMessage>(null);
@@ -204,30 +200,47 @@ const App: React.FC = () => {
     const [certificates] = usePersistentState<Certificate[]>('certificates', MOCK_CERTIFICATES);
     
     useEffect(() => {
-        if (theme === 'dark') {
+        if (isAuthenticated) {
             document.documentElement.classList.add('dark');
         } else {
-            document.documentElement.classList.remove('dark');
+             document.documentElement.classList.remove('dark');
         }
-    }, [theme]);
+    }, [isAuthenticated]);
+    
+    useEffect(() => {
+        if(isAuthenticated) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+    }, [theme, isAuthenticated]);
     
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ id: Date.now(), message, type });
     };
 
     // --- Auth Handlers ---
-    const handleLogin = (email: string, pass: string) => {
+    const handleLogin = (username: string, pass: string) => {
         // Mock authentication
-        if (email === 'teste@a.com' && pass === '1234') {
+        if (username === 'admin' && pass === 'admin') {
             setIsAuthenticated(true);
             showToast('Login realizado com sucesso!');
         } else {
-            showToast('Email ou senha inválidos.', 'error');
+            showToast('Credenciais inválidas.', 'error');
         }
+    };
+
+    const handleRegister = (company: string, email: string, pass: string) => {
+        // Mock registration
+        showToast(`Empresa "${company}" registrada com sucesso!`, 'success');
+        setAuthView('login');
     };
 
     const handleLogout = () => {
         setIsAuthenticated(false);
+        setAuthView('login');
         showToast('Você saiu da sua conta.');
     };
 
@@ -330,7 +343,19 @@ const App: React.FC = () => {
     if (!isAuthenticated) {
         return (
             <>
-                <LoginPage onLogin={handleLogin} showToast={showToast} />
+                {authView === 'login' ? (
+                    <LoginPage 
+                        onLogin={handleLogin} 
+                        showToast={showToast}
+                        onSwitchToRegister={() => setAuthView('register')}
+                    />
+                ) : (
+                    <RegisterPage 
+                        onRegister={handleRegister}
+                        showToast={showToast}
+                        onSwitchToLogin={() => setAuthView('login')}
+                    />
+                )}
                 <Toast toast={toast} onDismiss={() => setToast(null)} />
             </>
         );

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>InspecPro - Gestão de Inspeções</title>
+    <title>SPECTRA AUDIT - Data-Driven Inspection</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
@@ -28,14 +28,11 @@
       }
     </script>
     <style>
-    @keyframes subtle-gradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
     body {
-        background-size: 200% 200%;
-        animation: subtle-gradient 30s ease infinite;
+        background-color: #0a0f1f;
+        background-image: radial-gradient(circle at 10% 15%, rgba(20, 83, 127, 0.3) 0%, transparent 40%),
+                          radial-gradient(circle at 85% 80%, rgba(56, 189, 248, 0.2) 0%, transparent 50%);
+        background-attachment: fixed;
     }
     :root {
         --color-primary: #f7f8fc;
@@ -44,7 +41,6 @@
         --color-text-primary: #212529;
         --color-text-secondary: #6c757d;
         --color-border: #e2e8f0;
-        background-image: linear-gradient(-45deg, #f7f8fc, #eff2f8, #f7f8fc);
     }
     .dark {
         --color-primary: #0f172a; /* Deeper navy */
@@ -53,7 +49,6 @@
         --color-text-primary: #f1f5f9; /* Lighter text */
         --color-text-secondary: #94a3b8; /* Muted text */
         --color-border: #334155; /* Softer border */
-        background-image: linear-gradient(-45deg, #0f172a, #131c31, #0f172a);
     }
     </style>
 <script type="importmap">
