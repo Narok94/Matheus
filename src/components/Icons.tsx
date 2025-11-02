@@ -54,12 +54,6 @@ export const PlusIcon = ({ className = 'w-6 h-6' }: { className?: string }) => (
   </svg>
 );
 
-export const UserCircleIcon = ({ className = 'w-6 h-6' }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
-
 export const ChevronRightIcon = ({ className = 'w-6 h-6' }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -76,28 +70,6 @@ export const DownloadIcon = ({ className = 'w-6 h-6' }: { className?: string }) 
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
   </svg>
-);
-
-export const SparklesIcon = ({ className = 'w-6 h-6' }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m1-12a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1h-6a1 1 0 01-1-1V6zM17.657 17.657L19.07 19.07m-1.414-1.414l-1.414 1.414m1.414-1.414L19.07 16.243m-1.414 1.414l-1.414-1.414M12 21a9 9 0 110-18 9 9 0 010 18z" />
-  </svg>
-);
-
-export const SpinnerIcon = ({ className = 'w-6 h-6' }: { className?: string }) => (
-    <svg className={`${className} animate-spin`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-);
-
-export const FuturisticOrbIcon = ({ isListening = false, isProcessing = false, className = 'w-10 h-10' }: { isListening?: boolean, isProcessing?: boolean, className?: string }) => (
-  <div className={`relative ${className} flex items-center justify-center`}>
-      <div className={`absolute inset-0 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full transition-transform duration-500 ${isListening || isProcessing ? 'animate-pulse' : ''}`}></div>
-      <div className={`absolute inset-1 bg-black/40 rounded-full`}></div>
-      <div className={`absolute w-3/4 h-3/4 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full opacity-70 blur-md`}></div>
-      <div className="absolute inset-0 rounded-full border-2 border-white/20"></div>
-  </div>
 );
 
 export const EditIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (

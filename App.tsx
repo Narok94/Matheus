@@ -1,13 +1,13 @@
 
 
 
+
 import React, { useState, ReactNode, useEffect } from 'react';
 import { View, Client, Equipment, Inspection, FinancialRecord, Certificate, ToastMessage, DetailView } from './types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES } from './data';
 import { Dashboard, Clients, Equipments, Agenda, Certificates, Financial, Settings, ClientDetail, Reports } from './src/components/pages';
 import { LoginPage } from './src/components/LoginPage';
 import { Toast } from './src/components/common';
-import { VirtualAssistantButton, AssistantCommand } from './src/components/VirtualAssistant';
 import { 
     DashboardIcon, 
     ClientsIcon, 
@@ -23,8 +23,6 @@ type CompanyProfile = { name: string; };
 type AppSettings = { notifications: boolean; reminders: boolean; };
 type PrefilledInspectionData = {
     clientId?: string;
-    date?: string;
-    observations?: string;
 } | null;
 
 
@@ -300,56 +298,6 @@ const App: React.FC = () => {
         setCurrentView(previousView);
     };
 
-    const handleAssistantCommand = (command: AssistantCommand) => {
-        switch (command.name) {
-            case 'navigateTo': {
-                const viewMap: { [key: string]: View } = {
-                    'início': 'dashboard', 'dashboard': 'dashboard',
-                    'clientes': 'clients', 'relatórios': 'reports',
-                    'equipamentos': 'equipment', 'agenda': 'agenda',
-                    'certificados': 'certificates', 'financeiro': 'financial',
-                    'configurações': 'settings',
-                };
-                const targetView = viewMap[command.args.viewName?.toLowerCase() || ''];
-                if (targetView) {
-                    handleSetView(targetView);
-                    showToast(`Navegando para ${command.args.viewName}.`);
-                } else {
-                    showToast(`Não encontrei a tela: ${command.args.viewName}`, 'error');
-                }
-                break;
-            }
-            case 'findClient': {
-                const clientName = command.args.clientName?.toLowerCase();
-                const client = clients.find(c => c.name.toLowerCase().includes(clientName || ''));
-                if (client) {
-                    handleViewClient(client.id);
-                    showToast(`Exibindo detalhes de ${client.name}.`);
-                } else {
-                    showToast(`Cliente "${command.args.clientName}" não encontrado.`, 'error');
-                }
-                break;
-            }
-            case 'scheduleInspection': {
-                const clientName = command.args.clientName?.toLowerCase();
-                const client = clients.find(c => c.name.toLowerCase().includes(clientName || ''));
-                if (!client) {
-                    showToast(`Cliente "${command.args.clientName}" não encontrado para agendamento.`, 'error');
-                    return;
-                }
-                setPrefilledInspectionData({
-                    clientId: client.id,
-                    date: command.args.date,
-                });
-                handleSetView('agenda');
-                showToast(`Pré-preenchendo agendamento para ${client.name}.`);
-                break;
-            }
-            default:
-                showToast('Comando não reconhecido.', 'error');
-        }
-    };
-
     const renderView = () => {
         if (detailView?.type === 'client') {
             const client = clients.find(c => c.id === detailView.id);
@@ -398,7 +346,6 @@ const App: React.FC = () => {
                 </main>
                 <BottomNav currentView={currentView} setView={handleSetView} />
                 <Toast toast={toast} onDismiss={() => setToast(null)} />
-                <VirtualAssistantButton onCommand={handleAssistantCommand} showToast={showToast} userName={companyProfile.name} />
             </div>
         </div>
     );

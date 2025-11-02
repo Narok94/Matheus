@@ -1,7 +1,5 @@
 {
   "name": "InspecPro - Gestão de Inspeções",
   "description": "Um aplicativo web para empresas de inspeção e certificação gerenciarem clientes, equipamentos, agendamentos e finanças de forma eficiente.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
+  "requestFramePermissions": []
 }

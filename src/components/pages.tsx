@@ -1,8 +1,9 @@
 
+
 import React, { useState, useMemo, ReactNode, useEffect } from 'react';
 import { Client, Equipment, Inspection, FinancialRecord, Certificate, InspectionStatus, PaymentStatus, View } from '../../types';
 import { Card, Modal, getStatusBadge, Button, Input, Select, Textarea, FormField, EmptyState, ConfirmationModal, FloatingActionButton, ToggleSwitch } from './common';
-import { ClientsIcon, EquipmentIcon, PlusIcon, CertificateIcon, AgendaIcon, FinancialIcon, LogoutIcon, DownloadIcon, SparklesIcon, ReportsIcon, EditIcon, TrashIcon } from './Icons';
+import { ClientsIcon, EquipmentIcon, PlusIcon, CertificateIcon, AgendaIcon, FinancialIcon, LogoutIcon, DownloadIcon, ReportsIcon, EditIcon, TrashIcon } from './Icons';
 
 // --- UTILITY FUNCTIONS ---
 const capitalizeWords = (str: string): string => {
@@ -384,7 +385,7 @@ export const Equipments: React.FC<{ equipment: Equipment[], clients: Client[], o
 
 
 // --- AGENDA ---
-export const Agenda: React.FC<{ inspections: Inspection[], clients: Client[], onAddInspection: (insp: Omit<Inspection, 'id'>) => void, prefilledData: { clientId?: string, date?: string, observations?: string } | null, onPrefillHandled: () => void, showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ inspections, clients, onAddInspection, prefilledData, onPrefillHandled, showToast }) => {
+export const Agenda: React.FC<{ inspections: Inspection[], clients: Client[], onAddInspection: (insp: Omit<Inspection, 'id'>) => void, prefilledData: { clientId?: string } | null, onPrefillHandled: () => void, showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ inspections, clients, onAddInspection, prefilledData, onPrefillHandled, showToast }) => {
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [newInspection, setNewInspection] = useState({ clientId: '', equipmentIds: [] as string[], date: '', inspector: 'João Silva', observations: '', status: InspectionStatus.Agendada });
     
@@ -393,8 +394,8 @@ export const Agenda: React.FC<{ inspections: Inspection[], clients: Client[], on
             setNewInspection(prev => ({
                 ...prev,
                 clientId: prefilledData.clientId || '',
-                date: prefilledData.date || new Date().toISOString().split('T')[0],
-                observations: prefilledData.observations || '',
+                date: new Date().toISOString().split('T')[0],
+                observations: '',
             }));
             setAddModalOpen(true);
             onPrefillHandled();
@@ -504,12 +505,6 @@ export const Reports: React.FC<{ equipment: Equipment[], clients: Client[] }> = 
                     <DownloadIcon className="w-5 h-5 mr-2" />
                     Baixar Relatório .xlsx
                 </Button>
-            </Card>
-             <Card title="Insights com IA (Em Breve)">
-                <div className="flex items-center text-text-secondary">
-                    <SparklesIcon className="w-8 h-8 mr-4 text-accent" />
-                    <p>Em breve, nosso assistente de IA poderá gerar análises e insights sobre seus dados, como prever manutenções e identificar clientes em risco.</p>
-                </div>
             </Card>
         </div>
     );
