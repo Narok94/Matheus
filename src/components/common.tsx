@@ -1,4 +1,6 @@
 
+
+
 import React, { ReactNode, useEffect } from 'react';
 import { InspectionStatus, PaymentStatus, ToastMessage } from '../../types';
 
@@ -52,7 +54,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
 export const FloatingActionButton: React.FC<{ onClick: () => void, icon: ReactNode, className?: string }> = ({ onClick, icon, className }) => (
     <button
         onClick={onClick}
-        className={`fixed bottom-24 right-6 bg-accent text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-600 transition-transform duration-200 ease-in-out active:scale-95 z-10 ${className}`}
+        className={`fixed bottom-24 right-6 bg-accent text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:brightness-110 transition-transform duration-200 ease-in-out active:scale-95 z-10 ${className}`}
         aria-label="Adicionar"
     >
         {icon}
@@ -148,9 +150,9 @@ export const ToggleSwitch: React.FC<{
 
 // Form Components
 export const Button: React.FC<{ children: ReactNode, onClick?: () => void, type?: 'button' | 'submit' | 'reset', variant?: 'primary' | 'secondary', className?: string }> = ({ children, onClick, type = 'button', variant = 'primary', className = '' }) => {
-  const baseClasses = "px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary inline-flex items-center justify-center space-x-2 text-sm";
+  const baseClasses = "px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary inline-flex items-center justify-center space-x-2 text-sm transform active:scale-95";
   const variantClasses = variant === 'primary' 
-    ? "bg-accent text-white hover:bg-blue-600 focus:ring-accent shadow-lg shadow-blue-500/20"
+    ? "bg-accent text-white hover:brightness-110 focus:ring-accent shadow-lg shadow-blue-500/20 dark:shadow-sky-500/20"
     : "bg-secondary text-text-secondary border border-border hover:bg-primary hover:text-text-primary focus:ring-text-secondary";
   
   return (

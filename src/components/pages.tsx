@@ -1,5 +1,10 @@
 
 
+
+
+
+
+
 import React, { useState, useMemo, ReactNode, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { Client, Equipment, Inspection, FinancialRecord, Certificate, InspectionStatus, PaymentStatus, View } from '../../types';
@@ -187,7 +192,7 @@ export const Clients: React.FC<ClientsProps> = ({ clients, onViewClient, onAddCl
             
             <div className="space-y-3">
                 {filteredClients.length > 0 ? filteredClients.map(client => (
-                    <div key={client.id} className="bg-secondary p-4 rounded-lg shadow-sm border border-border cursor-pointer hover:bg-primary transition-colors" onClick={() => onViewClient(client.id)}>
+                    <div key={client.id} className="bg-secondary p-4 rounded-lg shadow-sm border border-border cursor-pointer hover:bg-primary transition-all duration-300 hover:shadow-md hover:border-accent/20 hover:-translate-y-px active:scale-[0.99] active:bg-primary/90" onClick={() => onViewClient(client.id)}>
                          <div className="flex items-center">
                             <div className="bg-accent/10 text-accent rounded-full w-10 h-10 flex items-center justify-center font-bold mr-4 flex-shrink-0">
                                 {client.name.charAt(0)}
@@ -198,219 +203,115 @@ export const Clients: React.FC<ClientsProps> = ({ clients, onViewClient, onAddCl
                             </div>
                         </div>
                     </div>
-                )) : (
-                   <EmptyState message="Nenhum cliente encontrado." icon={<ClientsIcon className="w-12 h-12"/>} action={
-                       <Button onClick={() => setAddModalOpen(true)}>Adicionar Primeiro Cliente</Button>
-                   } />
-                )}
+                )) : <EmptyState message="Nenhum cliente encontrado." icon={<ClientsIcon className="w-12 h-12" />} action={<Button onClick={() => setAddModalOpen(true)}>Adicionar Cliente</Button>} /> }
             </div>
-            
-            <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon className="w-6 h-6" />} />
-
+            <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon />} />
             <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Adicionar Novo Cliente">
                 <form onSubmit={handleFormSubmit} className="space-y-4">
-                    <FormField label="Nome / Empresa"><Input name="name" required value={newClient.name} onChange={handleInputChange} /></FormField>
-                    <FormField label="CNPJ / CPF"><Input name="document" required value={newClient.document} onChange={handleInputChange} /></FormField>
-                    <FormField label="Endereço"><Input name="address" required value={newClient.address} onChange={handleInputChange} /></FormField>
-                    <FormField label="Cidade"><Input name="city" required value={newClient.city} onChange={handleInputChange} /></FormField>
-                    <FormField label="Contato (Telefone)"><Input name="contact" type="tel" required value={newClient.contact} onChange={handleInputChange} /></FormField>
-                    <FormField label="Email"><Input name="email" type="email" required value={newClient.email} onChange={handleInputChange} /></FormField>
-                    <div className="pt-4 flex justify-end">
-                        <Button type="submit">Salvar Cliente</Button>
-                    </div>
+                    <FormField label="Nome Completo / Razão Social"><Input name="name" value={newClient.name} onChange={handleInputChange} required /></FormField>
+                    <FormField label="CPF / CNPJ"><Input name="document" value={newClient.document} onChange={handleInputChange} required /></FormField>
+                    <FormField label="Endereço"><Input name="address" value={newClient.address} onChange={handleInputChange} /></FormField>
+                    <FormField label="Cidade"><Input name="city" value={newClient.city} onChange={handleInputChange} required /></FormField>
+                    <FormField label="Contato (Telefone)"><Input name="contact" type="tel" value={newClient.contact} onChange={handleInputChange} required /></FormField>
+                    <FormField label="Email"><Input name="email" type="email" value={newClient.email} onChange={handleInputChange} /></FormField>
+                    <div className="flex justify-end pt-4"><Button type="submit">Salvar Cliente</Button></div>
                 </form>
             </Modal>
         </div>
     );
 };
 
+
 // --- CLIENT DETAIL ---
-interface ClientDetailProps {
-    client: Client;
-    equipment: Equipment[];
-    inspections: Inspection[];
-    onUpdateClient: (client: Client) => void;
-    onDeleteClient: (clientId: string) => void;
-    onScheduleInspection: (clientId: string) => void;
-}
-export const ClientDetail: React.FC<ClientDetailProps> = ({ client, equipment, inspections, onUpdateClient, onDeleteClient, onScheduleInspection }) => {
+export const ClientDetail: React.FC<{ client: Client; equipment: Equipment[]; inspections: Inspection[]; onUpdateClient: (client: Client) => void; onDeleteClient: (clientId: string) => void; onScheduleInspection: (clientId: string) => void; }> = ({ client, equipment, inspections, onUpdateClient, onDeleteClient, onScheduleInspection }) => {
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [editedClient, setEditedClient] = useState(client);
 
     const clientEquipment = equipment.filter(e => e.clientId === client.id);
     const clientInspections = inspections.filter(i => i.clientId === client.id);
 
-    const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const updatedClient: Client = {
-            ...client,
-            name: formData.get('name') as string, document: formData.get('document') as string,
-            address: formData.get('address') as string, city: formData.get('city') as string,
-            contact: formData.get('contact') as string, email: formData.get('email') as string,
-        };
-        onUpdateClient(updatedClient);
-        setEditModalOpen(false);
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        let formattedValue = value;
+        if (name === 'document') formattedValue = formatDocument(value);
+        if (name === 'contact') formattedValue = formatPhone(value);
+        if (['name', 'address', 'city'].includes(name)) formattedValue = capitalizeWords(value);
+        setEditedClient(prev => ({ ...prev, [name]: formattedValue }));
     };
 
-    const handleExportXLSX = () => {
-        if (typeof (window as any).XLSX === 'undefined') {
-            console.error("A biblioteca SheetJS (XLSX) não foi carregada.");
-            return;
-        }
-        const XLSX = (window as any).XLSX;
-    
-        // 1. Client Data
-        const clientData = [
-            ["DADOS DO CLIENTE"],
-            [],
-            ["Nome:", client.name],
-            ["Documento:", client.document],
-            ["Endereço:", `${client.address}, ${client.city}`],
-            ["Contato:", client.contact],
-            ["Email:", client.email],
-            [],
-        ];
-    
-        // 2. Equipment Data
-        const equipmentData = [
-            ["RELATÓRIO DE EQUIPAMENTOS"],
-            [],
-            ["Nome", "Nº Série", "Tipo", "Capacidade", "Fabricante", "Validade", "Status"],
-            ...clientEquipment.map(eq => [
-                eq.name,
-                eq.serialNumber,
-                eq.type,
-                eq.capacity,
-                eq.manufacturer,
-                new Date(eq.expiryDate).toLocaleDateString('pt-BR'),
-                eq.status
-            ]),
-            [],
-        ];
-    
-        // 3. Inspection Data
-        const inspectionData = [
-            ["HISTÓRICO DE INSPEÇÕES"],
-            [],
-            ["Data", "Inspetor", "Status", "Observações"],
-            ...clientInspections.map(insp => [
-                new Date(insp.date).toLocaleDateString('pt-BR'),
-                insp.inspector,
-                insp.status,
-                insp.observations
-            ]),
-        ];
-    
-        const finalData = [...clientData, ...equipmentData, ...inspectionData];
-        const ws = XLSX.utils.aoa_to_sheet(finalData);
-    
-        const maxCols = 7; 
-        ws['!cols'] = [ { wch: 25 }, { wch: 25 }, { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 } ];
-    
-        const merges = [];
-        let currentRow = 0;
-    
-        merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow, c: maxCols - 1 } });
-        currentRow += clientData.length;
-    
-        merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow, c: maxCols - 1 } });
-        currentRow += equipmentData.length;
-    
-        merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow, c: maxCols - 1 } });
-        
-        ws['!merges'] = merges;
-    
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Relatório Cliente");
-    
-        XLSX.writeFile(wb, `Relatorio_${client.name.replace(/\s+/g, '_')}.xlsx`);
+    const handleUpdate = (e: React.FormEvent) => {
+        e.preventDefault();
+        onUpdateClient(editedClient);
+        setEditModalOpen(false);
     };
 
     return (
         <div className="p-4 space-y-6">
-            <Card title="Dados do Cliente" actions={
-                <div className="flex items-center space-x-2">
-                     <Button onClick={handleExportXLSX} variant="secondary" className="!p-2" aria-label="Exportar" title="Exportar">
-                        <DownloadIcon className="w-5 h-5"/>
-                     </Button>
-                     <Button onClick={() => setEditModalOpen(true)} variant="secondary" className="!p-2" aria-label="Editar" title="Editar">
-                        <EditIcon className="w-5 h-5"/>
-                     </Button>
-                     <Button onClick={() => setDeleteModalOpen(true)} className="bg-status-reproved/80 hover:bg-status-reproved text-white !p-2" aria-label="Excluir" title="Excluir">
-                         <TrashIcon className="w-5 h-5"/>
-                     </Button>
+            <Card className="!bg-transparent !shadow-none !border-none">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h2 className="text-2xl font-bold text-text-primary">{client.name}</h2>
+                        <p className="text-text-secondary">{client.document}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                        <button onClick={() => setEditModalOpen(true)} className="p-2 text-text-secondary hover:text-accent"><EditIcon /></button>
+                        <button onClick={() => setDeleteModalOpen(true)} className="p-2 text-text-secondary hover:text-status-reproved"><TrashIcon /></button>
+                    </div>
                 </div>
-            }>
-                <div className="space-y-2 text-text-primary text-sm">
-                    <p><strong className="text-text-secondary">CNPJ/CPF:</strong> {client.document}</p>
-                    <p><strong className="text-text-secondary">Endereço:</strong> {client.address}, {client.city}</p>
-                    <p><strong className="text-text-secondary">Contato:</strong> {client.contact}</p>
-                    <p><strong className="text-text-secondary">Email:</strong> {client.email}</p>
+                 <div className="mt-4 text-sm text-text-secondary space-y-1">
+                    <p>{client.address}, {client.city}</p>
+                    <p>{client.contact} &middot; {client.email}</p>
                 </div>
+            </Card>
+
+            <Button onClick={() => onScheduleInspection(client.id)} className="w-full justify-center">
+                <AgendaIcon className="w-5 h-5" />
+                <span>Agendar Inspeção para este Cliente</span>
+            </Button>
+
+            <Card title={`Equipamentos (${clientEquipment.length})`}>
+                {clientEquipment.length > 0 ? clientEquipment.map(eq => (
+                    <div key={eq.id} className="flex justify-between items-center py-2 border-b border-border last:border-b-0">
+                        <div>
+                            <p className="font-semibold text-text-primary">{eq.name} <span className="text-text-secondary text-xs">({eq.serialNumber})</span></p>
+                            <p className="text-sm text-text-secondary">Vencimento: {new Date(eq.expiryDate).toLocaleDateString()}</p>
+                        </div>
+                        {getStatusBadge(eq.status)}
+                    </div>
+                )) : <p className="text-text-secondary text-sm">Nenhum equipamento cadastrado.</p>}
+            </Card>
+
+            <Card title={`Histórico de Inspeções (${clientInspections.length})`}>
+                {clientInspections.length > 0 ? clientInspections.map(insp => (
+                    <div key={insp.id} className="flex justify-between items-center py-2 border-b border-border last:border-b-0">
+                        <div>
+                            <p className="font-semibold text-text-primary">Data: {new Date(insp.date).toLocaleDateString()}</p>
+                            <p className="text-sm text-text-secondary">Inspetor: {insp.inspector}</p>
+                        </div>
+                        {getStatusBadge(insp.status)}
+                    </div>
+                )) : <p className="text-text-secondary text-sm">Nenhuma inspeção realizada.</p>}
             </Card>
             
-            <FloatingActionButton onClick={() => onScheduleInspection(client.id)} icon={<AgendaIcon className="w-6 h-6" />} aria-label="Agendar Inspeção para este Cliente" />
-
-            <Card title="Equipamentos">
-                {clientEquipment.length > 0 ? (
-                    <ul className="space-y-2">
-                        {clientEquipment.map(eq => (
-                            <li key={eq.id} className="p-3 bg-primary rounded-md flex justify-between items-center text-sm">
-                                <div>
-                                    <p className="font-semibold text-text-primary">{eq.name} ({eq.serialNumber})</p>
-                                    <p className="text-text-secondary">Validade: {new Date(eq.expiryDate).toLocaleDateString()}</p>
-                                </div>
-                                {getStatusBadge(eq.status)}
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-text-secondary text-sm">Nenhum equipamento cadastrado para este cliente.</p>
-                )}
-            </Card>
-
-            <Card title="Histórico de Inspeções">
-                {clientInspections.length > 0 ? (
-                    <ul className="space-y-2">
-                        {clientInspections.map(insp => (
-                            <li key={insp.id} className="p-3 bg-primary rounded-md text-sm">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <p className="font-semibold text-text-primary">Data: {new Date(insp.date).toLocaleDateString()}</p>
-                                        <p className="text-text-secondary">Inspetor: {insp.inspector}</p>
-                                    </div>
-                                    {getStatusBadge(insp.status)}
-                                </div>
-                                <p className="mt-2 text-text-secondary text-xs italic">"{insp.observations}"</p>
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-text-secondary text-sm">Nenhuma inspeção registrada para este cliente.</p>
-                )}
-            </Card>
-
-            <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Cliente">
-                <form onSubmit={handleFormSubmit} className="space-y-4">
-                    <FormField label="Nome / Empresa"><Input name="name" required defaultValue={client.name} /></FormField>
-                    <FormField label="CNPJ / CPF"><Input name="document" required defaultValue={client.document} /></FormField>
-                    <FormField label="Endereço"><Input name="address" required defaultValue={client.address} /></FormField>
-                    <FormField label="Cidade"><Input name="city" required defaultValue={client.city} /></FormField>
-                    <FormField label="Contato (Telefone)"><Input name="contact" type="tel" required defaultValue={client.contact} /></FormField>
-                    <FormField label="Email"><Input name="email" type="email" required defaultValue={client.email} /></FormField>
-                    <div className="pt-4 flex justify-end">
-                        <Button type="submit">Salvar Alterações</Button>
-                    </div>
+            {/* Modals */}
+             <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Cliente">
+                <form onSubmit={handleUpdate} className="space-y-4">
+                    <FormField label="Nome Completo / Razão Social"><Input name="name" value={editedClient.name} onChange={handleInputChange} required /></FormField>
+                    <FormField label="CPF / CNPJ"><Input name="document" value={editedClient.document} onChange={handleInputChange} required /></FormField>
+                    <FormField label="Endereço"><Input name="address" value={editedClient.address} onChange={handleInputChange} /></FormField>
+                    <FormField label="Cidade"><Input name="city" value={editedClient.city} onChange={handleInputChange} required /></FormField>
+                    <FormField label="Contato (Telefone)"><Input name="contact" type="tel" value={editedClient.contact} onChange={handleInputChange} required /></FormField>
+                    <FormField label="Email"><Input name="email" type="email" value={editedClient.email} onChange={handleInputChange} /></FormField>
+                    <div className="flex justify-end pt-4"><Button type="submit">Salvar Alterações</Button></div>
                 </form>
             </Modal>
-            
             <ConfirmationModal 
-                isOpen={isDeleteModalOpen} 
-                onClose={() => setDeleteModalOpen(false)} 
-                onConfirm={() => { onDeleteClient(client.id); setDeleteModalOpen(false); }}
+                isOpen={isDeleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={() => onDeleteClient(client.id)}
                 title="Confirmar Exclusão"
-                message="Tem certeza que deseja excluir este cliente? Todos os equipamentos e inspeções associados também serão removidos. Esta ação não pode ser desfeita."
+                message={`Tem certeza que deseja excluir ${client.name}? Todos os equipamentos e inspeções associados também serão removidos. Esta ação não pode ser desfeita.`}
             />
         </div>
     );
@@ -418,85 +319,70 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, equipment, i
 
 
 // --- EQUIPMENTS ---
-interface EquipmentsProps {
-    equipment: Equipment[];
-    clients: Client[];
-    onAddEquipment: (equipment: Omit<Equipment, 'id'>) => void;
-}
-export const Equipments: React.FC<EquipmentsProps> = ({ equipment, clients, onAddEquipment }) => {
+export const Equipments: React.FC<{ equipment: Equipment[], clients: Client[], onAddEquipment: (eq: Omit<Equipment, 'id'>) => void }> = ({ equipment, clients, onAddEquipment }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterClient, setFilterClient] = useState('');
     const [isAddModalOpen, setAddModalOpen] = useState(false);
-    const initialNewEquipmentState = { clientId: '', name: '', serialNumber: '', expiryDate: '', type: '', capacity: '', manufacturer: '', status: InspectionStatus.Agendada };
-    const [newEquipment, setNewEquipment] = useState(initialNewEquipmentState);
+    const [newEquipment, setNewEquipment] = useState({ clientId: '', name: '', serialNumber: '', expiryDate: '', type: '', capacity: '', manufacturer: '', status: InspectionStatus.Agendada });
 
-    const filteredEquipment = useMemo(() =>
-        equipment.filter(eq =>
-            (eq.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            eq.serialNumber.toLowerCase().includes(searchTerm.toLowerCase())) &&
-            (filterClient === '' || eq.clientId === filterClient)
-        ), [searchTerm, filterClient, equipment]);
-    
-    const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const filteredEquipment = useMemo(() => {
+        return equipment.filter(eq => {
+            const client = clients.find(c => c.id === eq.clientId);
+            return eq.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                   eq.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                   client?.name.toLowerCase().includes(searchTerm.toLowerCase());
+        });
+    }, [searchTerm, equipment, clients]);
+
+    const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onAddEquipment(newEquipment);
-        setNewEquipment(initialNewEquipmentState);
+        setNewEquipment({ clientId: '', name: '', serialNumber: '', expiryDate: '', type: '', capacity: '', manufacturer: '', status: InspectionStatus.Agendada });
         setAddModalOpen(false);
     };
 
-    const getClientName = (clientId: string) => clients.find(c => c.id === clientId)?.name || 'Cliente desconhecido';
-
     return (
         <div className="p-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input type="text" placeholder="🔍 Buscar por nome ou nº de série..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                <Select value={filterClient} onChange={(e) => setFilterClient(e.target.value)}>
-                    <option value="">Todos os Clientes</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </Select>
+             <Input type="text" placeholder="🔍 Buscar por nome, série ou cliente..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+             <div className="space-y-3">
+                {filteredEquipment.length > 0 ? filteredEquipment.map(eq => {
+                    const client = clients.find(c => c.id === eq.clientId);
+                    return (
+                        <Card key={eq.id} className="p-0">
+                             <div className="p-4">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-text-primary">{eq.name}</h4>
+                                        <p className="text-sm text-text-secondary">{eq.serialNumber}</p>
+                                    </div>
+                                    {getStatusBadge(eq.status)}
+                                </div>
+                                <div className="text-xs text-text-secondary mt-2">
+                                    <p>Cliente: <span className="font-semibold text-text-primary">{client?.name}</span></p>
+                                    <p>Vencimento: {new Date(eq.expiryDate).toLocaleDateString()}</p>
+                                </div>
+                             </div>
+                        </Card>
+                    );
+                }) : <EmptyState message="Nenhum equipamento encontrado." icon={<EquipmentIcon className="w-12 h-12" />} action={<Button onClick={() => setAddModalOpen(true)}>Adicionar Equipamento</Button>} />}
             </div>
-            
-            <div className="space-y-3">
-                {filteredEquipment.length > 0 ? filteredEquipment.map(eq => (
-                    <Card key={eq.id}>
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h4 className="font-bold text-text-primary">{eq.name} <span className="text-text-secondary font-normal text-xs">({eq.serialNumber})</span></h4>
-                                <p className="text-sm text-text-secondary">{getClientName(eq.clientId)}</p>
-                                <p className="text-xs text-text-secondary mt-1">{eq.type} - {eq.capacity} - {eq.manufacturer}</p>
-                            </div>
-                            {getStatusBadge(eq.status)}
-                        </div>
-                        <div className="mt-3 pt-3 border-t border-border text-xs flex justify-between">
-                             <span className="text-text-secondary">Última Inspeção:</span>
-                             <span className="font-semibold text-text-primary">{eq.lastInspectionDate ? new Date(eq.lastInspectionDate).toLocaleDateString() : 'N/A'}</span>
-                        </div>
-                         <div className="text-xs flex justify-between">
-                             <span className="text-text-secondary">Vencimento:</span>
-                             <span className="font-semibold text-status-reproved">{new Date(eq.expiryDate).toLocaleDateString()}</span>
-                        </div>
-                    </Card>
-                )) : (
-                   <EmptyState message="Nenhum equipamento encontrado." icon={<EquipmentIcon className="w-12 h-12"/>} action={
-                       <Button onClick={() => setAddModalOpen(true)}>Adicionar Equipamento</Button>
-                   } />
-                )}
-            </div>
-            
-            <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon className="w-6 h-6" />} />
-
-            <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Adicionar Novo Equipamento">
+             <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon />} />
+              <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Adicionar Equipamento">
                 <form onSubmit={handleFormSubmit} className="space-y-4">
-                    <FormField label="Cliente"><Select name="clientId" required value={newEquipment.clientId} onChange={(e) => setNewEquipment(p => ({...p, clientId: e.target.value}))}><option value="" disabled>Selecione...</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select></FormField>
-                    <FormField label="Nome do Equipamento"><Input name="name" required value={newEquipment.name} onChange={(e) => setNewEquipment(p => ({...p, name: e.target.value}))} /></FormField>
-                    <FormField label="Nº de Série"><Input name="serialNumber" required value={newEquipment.serialNumber} onChange={(e) => setNewEquipment(p => ({...p, serialNumber: e.target.value}))} /></FormField>
-                    <FormField label="Data de Validade"><Input name="expiryDate" type="date" required value={newEquipment.expiryDate} onChange={(e) => setNewEquipment(p => ({...p, expiryDate: e.target.value}))} /></FormField>
-                    <FormField label="Tipo"><Input name="type" required value={newEquipment.type} onChange={(e) => setNewEquipment(p => ({...p, type: e.target.value}))} /></FormField>
-                    <FormField label="Capacidade"><Input name="capacity" required value={newEquipment.capacity} onChange={(e) => setNewEquipment(p => ({...p, capacity: e.target.value}))} /></FormField>
-                    <FormField label="Fabricante"><Input name="manufacturer" required value={newEquipment.manufacturer} onChange={(e) => setNewEquipment(p => ({...p, manufacturer: e.target.value}))} /></FormField>
-                    <div className="pt-4 flex justify-end">
-                        <Button type="submit">Salvar Equipamento</Button>
+                    <FormField label="Cliente">
+                        <Select name="clientId" value={newEquipment.clientId} onChange={(e) => setNewEquipment(p => ({...p, clientId: e.target.value}))} required>
+                            <option value="">Selecione um cliente</option>
+                            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </Select>
+                    </FormField>
+                    <FormField label="Nome do Equipamento"><Input name="name" value={newEquipment.name} onChange={(e) => setNewEquipment(p => ({...p, name: e.target.value}))} required /></FormField>
+                    <FormField label="Número de Série"><Input name="serialNumber" value={newEquipment.serialNumber} onChange={(e) => setNewEquipment(p => ({...p, serialNumber: e.target.value}))} required /></FormField>
+                    <FormField label="Data de Vencimento"><Input type="date" name="expiryDate" value={newEquipment.expiryDate} onChange={(e) => setNewEquipment(p => ({...p, expiryDate: e.target.value}))} required /></FormField>
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField label="Tipo"><Input name="type" value={newEquipment.type} onChange={(e) => setNewEquipment(p => ({...p, type: e.target.value}))} /></FormField>
+                        <FormField label="Capacidade"><Input name="capacity" value={newEquipment.capacity} onChange={(e) => setNewEquipment(p => ({...p, capacity: e.target.value}))} /></FormField>
                     </div>
+                    <FormField label="Fabricante"><Input name="manufacturer" value={newEquipment.manufacturer} onChange={(e) => setNewEquipment(p => ({...p, manufacturer: e.target.value}))} /></FormField>
+                    <div className="flex justify-end pt-4"><Button type="submit">Adicionar Equipamento</Button></div>
                 </form>
             </Modal>
         </div>
@@ -505,121 +391,68 @@ export const Equipments: React.FC<EquipmentsProps> = ({ equipment, clients, onAd
 
 
 // --- AGENDA ---
-type PrefilledInspectionData = {
-    clientId?: string;
-    date?: string;
-    observations?: string;
-} | null;
-
-interface AgendaProps {
-    inspections: Inspection[];
-    clients: Client[];
-    onAddInspection: (inspection: Omit<Inspection, 'id'>) => void;
-    prefilledData: PrefilledInspectionData;
-    onPrefillHandled: () => void;
-    showToast: (message: string, type?: 'success' | 'error') => void;
-}
-export const Agenda: React.FC<AgendaProps> = ({ inspections, clients, onAddInspection, prefilledData, onPrefillHandled, showToast }) => {
+export const Agenda: React.FC<{ inspections: Inspection[], clients: Client[], onAddInspection: (insp: Omit<Inspection, 'id'>) => void, prefilledData: { clientId?: string, date?: string, observations?: string } | null, onPrefillHandled: () => void, showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ inspections, clients, onAddInspection, prefilledData, onPrefillHandled, showToast }) => {
     const [isAddModalOpen, setAddModalOpen] = useState(false);
-    const initialNewInspectionState = { clientId: '', equipmentIds: [], date: '', inspector: '', observations: '', status: InspectionStatus.Agendada };
-    const [newInspection, setNewInspection] = useState(initialNewInspectionState);
-    const [isOptimizing, setIsOptimizing] = useState(false);
-
+    const [newInspection, setNewInspection] = useState({ clientId: '', equipmentIds: [] as string[], date: '', inspector: 'João Silva', observations: '', status: InspectionStatus.Agendada });
+    
     useEffect(() => {
-        if (prefilledData) {
+        if(prefilledData) {
             setNewInspection(prev => ({
                 ...prev,
                 clientId: prefilledData.clientId || '',
-                date: prefilledData.date || '',
+                date: prefilledData.date || new Date().toISOString().split('T')[0],
                 observations: prefilledData.observations || '',
             }));
             setAddModalOpen(true);
             onPrefillHandled();
         }
     }, [prefilledData, onPrefillHandled]);
-
-
-    const sortedInspections = useMemo(() =>
-        [...inspections].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-    [inspections]);
-
-    const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    
+    const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (newInspection.equipmentIds.length === 0) {
+            showToast("Selecione ao menos um equipamento para a inspeção.", "error");
+            return;
+        }
         onAddInspection(newInspection);
-        setNewInspection(initialNewInspectionState);
+        setNewInspection({ clientId: '', equipmentIds: [], date: '', inspector: 'João Silva', observations: '', status: InspectionStatus.Agendada });
         setAddModalOpen(false);
     };
 
-    const handleOptimizeText = async () => {
-        if (!newInspection.observations) {
-            showToast("Por favor, insira alguma observação.", "error");
-            return;
-        }
-        setIsOptimizing(true);
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const prompt = `Reescreva as seguintes anotações de inspeção de forma profissional, clara e concisa para um relatório técnico. Mantenha o sentido original, mas melhore a gramática, a estrutura e a terminologia. Seja objetivo.\n\nAnotações: "${newInspection.observations}"`;
-            
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-            });
-            
-            const optimizedText = response.text;
-            setNewInspection(p => ({ ...p, observations: optimizedText }));
-            showToast("Texto otimizado com IA!");
-        } catch (error) {
-            console.error("Gemini API error:", error);
-            showToast("Erro ao otimizar o texto.", "error");
-        } finally {
-            setIsOptimizing(false);
-        }
-    };
-
-    const getClientName = (clientId: string) => clients.find(c => c.id === clientId)?.name || 'Cliente desconhecido';
+    const sortedInspections = useMemo(() => [...inspections].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()), [inspections]);
 
     return (
         <div className="p-4 space-y-4">
-            <h2 className="text-xl font-bold text-text-primary px-2">Histórico e Agendamentos</h2>
-             <div className="space-y-3">
-                {sortedInspections.length > 0 ? sortedInspections.map(insp => (
-                    <Card key={insp.id}>
-                         <div className="flex justify-between items-start">
-                            <div>
-                                <h4 className="font-bold text-text-primary">{getClientName(insp.clientId)}</h4>
-                                <p className="text-sm text-text-secondary">Data: {new Date(insp.date).toLocaleDateString()}</p>
-                                <p className="text-xs text-text-secondary mt-1">Inspetor: {insp.inspector}</p>
+            {sortedInspections.length > 0 ? sortedInspections.map(insp => {
+                const client = clients.find(c => c.id === insp.clientId);
+                return (
+                    <Card key={insp.id} className="p-0">
+                        <div className="p-4">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h4 className="font-bold text-text-primary">{client?.name}</h4>
+                                    <p className="text-sm text-text-secondary">{new Date(insp.date).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                </div>
+                                {getStatusBadge(insp.status)}
                             </div>
-                            {getStatusBadge(insp.status)}
+                            <p className="text-xs text-text-secondary mt-2">Inspetor: {insp.inspector}</p>
                         </div>
-                         <p className="mt-3 pt-3 border-t border-border text-text-secondary text-sm italic">"{insp.observations}"</p>
                     </Card>
-                )) : (
-                     <EmptyState message="Nenhuma inspeção agendada ou realizada." icon={<AgendaIcon className="w-12 h-12"/>} action={
-                       <Button onClick={() => setAddModalOpen(true)}>Agendar Inspeção</Button>
-                   } />
-                )}
-            </div>
-            
-            <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon className="w-6 h-6" />} />
-
-            <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Agendar Nova Inspeção">
+                )
+            }) : <EmptyState message="Nenhuma inspeção na agenda." icon={<AgendaIcon className="w-12 h-12" />} action={<Button onClick={() => setAddModalOpen(true)}>Agendar Inspeção</Button>} />}
+             <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon />} />
+             <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Agendar Nova Inspeção">
                 <form onSubmit={handleFormSubmit} className="space-y-4">
-                    <FormField label="Cliente"><Select name="clientId" required value={newInspection.clientId} onChange={(e) => setNewInspection(p => ({...p, clientId: e.target.value}))}><option value="" disabled>Selecione...</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select></FormField>
-                    {/* A multi-select for equipment would be better here, but for simplicity we'll omit it */}
-                    <FormField label="Data da Inspeção"><Input name="date" type="date" required value={newInspection.date} onChange={(e) => setNewInspection(p => ({...p, date: e.target.value}))} /></FormField>
-                    <FormField label="Inspetor Responsável"><Input name="inspector" required value={newInspection.inspector} onChange={(e) => setNewInspection(p => ({...p, inspector: e.target.value}))} /></FormField>
-                    <FormField label="Observações Iniciais">
-                        <div className="relative">
-                            <Textarea name="observations" value={newInspection.observations} onChange={(e) => setNewInspection(p => ({...p, observations: e.target.value}))} />
-                             <button type="button" onClick={handleOptimizeText} disabled={isOptimizing} title="Otimizar com IA" className="absolute bottom-2.5 right-2.5 p-1.5 rounded-full bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                                {isOptimizing ? <SpinnerIcon className="w-5 h-5" /> : <SparklesIcon className="w-5 h-5" />}
-                            </button>
-                        </div>
+                    <FormField label="Cliente">
+                        <Select name="clientId" value={newInspection.clientId} onChange={(e) => setNewInspection(p => ({...p, clientId: e.target.value, equipmentIds: []}))} required>
+                            <option value="">Selecione um cliente</option>
+                            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </Select>
                     </FormField>
-                    <div className="pt-4 flex justify-end">
-                        <Button type="submit">Agendar</Button>
-                    </div>
+                    <FormField label="Data da Inspeção"><Input type="date" name="date" value={newInspection.date} onChange={(e) => setNewInspection(p => ({...p, date: e.target.value}))} required /></FormField>
+                    {/* Add Equipment Selector Here */}
+                    <FormField label="Observações"><Textarea name="observations" value={newInspection.observations} onChange={(e) => setNewInspection(p => ({...p, observations: e.target.value}))} /></FormField>
+                    <div className="flex justify-end pt-4"><Button type="submit">Agendar</Button></div>
                 </form>
             </Modal>
         </div>
@@ -627,270 +460,178 @@ export const Agenda: React.FC<AgendaProps> = ({ inspections, clients, onAddInspe
 };
 
 // --- CERTIFICATES ---
-interface CertificatesProps {
-    certificates: Certificate[];
-    clients: Client[];
-}
-export const Certificates: React.FC<CertificatesProps> = ({ certificates, clients }) => {
-    const getClientName = (clientId: string) => clients.find(c => c.id === clientId)?.name || 'Cliente desconhecido';
-
+export const Certificates: React.FC<{ certificates: Certificate[], clients: Client[] }> = ({ certificates, clients }) => {
     return (
         <div className="p-4 space-y-4">
-             <div className="space-y-3">
-                {certificates.length > 0 ? certificates.map(cert => (
+            {certificates.length > 0 ? certificates.map(cert => {
+                const client = clients.find(c => c.id === cert.clientId);
+                return (
                     <Card key={cert.id}>
-                         <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center">
                             <div>
-                                <h4 className="font-bold text-text-primary">{getClientName(cert.clientId)}</h4>
-                                <p className="text-sm text-text-secondary">Certificado #{cert.id.split('-')[1]}</p>
+                                <h4 className="font-semibold text-text-primary">{client?.name}</h4>
+                                <p className="text-sm text-text-secondary">Certificado #{cert.id.slice(-6)}</p>
+                                <p className="text-xs text-text-secondary">Válido até: {new Date(cert.expiryDate).toLocaleDateString()}</p>
                             </div>
-                             <Button variant="secondary" className="text-xs !px-3 !py-1.5"><DownloadIcon className="w-4 h-4 mr-2" /> Baixar PDF</Button>
-                        </div>
-                        <div className="mt-3 pt-3 border-t border-border text-xs flex justify-between">
-                            <span className="text-text-secondary">Emitido em:</span>
-                            <span className="font-semibold text-text-primary">{new Date(cert.issueDate).toLocaleDateString()}</span>
-                        </div>
-                        <div className="text-xs flex justify-between">
-                            <span className="text-text-secondary">Válido até:</span>
-                            <span className="font-semibold text-text-primary">{new Date(cert.expiryDate).toLocaleDateString()}</span>
+                            <Button variant="secondary" onClick={() => alert('Download')}>Baixar</Button>
                         </div>
                     </Card>
-                )) : (
-                    <EmptyState message="Nenhum certificado emitido." icon={<CertificateIcon className="w-12 h-12"/>} />
-                )}
-            </div>
+                );
+            }) : <EmptyState message="Nenhum certificado emitido." icon={<CertificateIcon className="w-12 h-12" />} />}
         </div>
-    );
-};
-
-// --- FINANCIAL ---
-interface FinancialProps {
-    financial: FinancialRecord[];
-    clients: Client[];
-    onAddFinancial: (record: Omit<FinancialRecord, 'id'>) => void;
-}
-export const Financial: React.FC<FinancialProps> = ({ financial, clients, onAddFinancial }) => {
-    const [isAddModalOpen, setAddModalOpen] = useState(false);
-    const initialNewRecordState = { clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente };
-    const [newRecord, setNewRecord] = useState(initialNewRecordState);
-    
-    const sortedFinancial = useMemo(() =>
-        [...financial].sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime()),
-    [financial]);
-
-    const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        onAddFinancial(newRecord);
-        setNewRecord(initialNewRecordState);
-        setAddModalOpen(false);
-    };
-
-    const getClientName = (clientId: string) => clients.find(c => c.id === clientId)?.name || 'Cliente desconhecido';
-    
-    return (
-         <div className="p-4 space-y-4">
-             <div className="space-y-3">
-                {sortedFinancial.length > 0 ? sortedFinancial.map(rec => (
-                    <Card key={rec.id}>
-                         <div className="flex justify-between items-start">
-                            <div>
-                                <h4 className="font-bold text-text-primary">{rec.description}</h4>
-                                <p className="text-sm text-text-secondary">{getClientName(rec.clientId)}</p>
-                                <p className="text-lg font-bold text-text-primary mt-2">R$ {rec.value.toFixed(2).replace('.', ',')}</p>
-                            </div>
-                            {getStatusBadge(rec.status)}
-                        </div>
-                        <div className="mt-3 pt-3 border-t border-border text-xs flex justify-between">
-                            <span className="text-text-secondary">Vencimento:</span>
-                            <span className="font-semibold text-text-primary">{new Date(rec.dueDate).toLocaleDateString()}</span>
-                        </div>
-                    </Card>
-                )) : (
-                     <EmptyState message="Nenhum registro financeiro encontrado." icon={<FinancialIcon className="w-12 h-12"/>} action={
-                       <Button onClick={() => setAddModalOpen(true)}>Adicionar Registro</Button>
-                   } />
-                )}
-            </div>
-            
-            <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon className="w-6 h-6" />} />
-
-            <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Adicionar Registro Financeiro">
-                 <form onSubmit={handleFormSubmit} className="space-y-4">
-                    <FormField label="Cliente"><Select name="clientId" required value={newRecord.clientId} onChange={(e) => setNewRecord(p => ({...p, clientId: e.target.value}))}><option value="" disabled>Selecione...</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select></FormField>
-                    {/* A select for inspection would be good here, filtered by client */}
-                    <FormField label="Descrição"><Input name="description" required value={newRecord.description} onChange={(e) => setNewRecord(p => ({...p, description: e.target.value}))} /></FormField>
-                    <FormField label="Valor (R$)"><Input name="value" type="number" step="0.01" required value={newRecord.value} onChange={(e) => setNewRecord(p => ({...p, value: parseFloat(e.target.value)}))} /></FormField>
-                    <FormField label="Data de Emissão"><Input name="issueDate" type="date" required value={newRecord.issueDate} onChange={(e) => setNewRecord(p => ({...p, issueDate: e.target.value}))} /></FormField>
-                    <FormField label="Data de Vencimento"><Input name="dueDate" type="date" required value={newRecord.dueDate} onChange={(e) => setNewRecord(p => ({...p, dueDate: e.target.value}))} /></FormField>
-                     <FormField label="Status"><Select name="status" required value={newRecord.status} onChange={(e) => setNewRecord(p => ({...p, status: e.target.value as PaymentStatus}))}><option value={PaymentStatus.Pendente}>Pendente</option><option value={PaymentStatus.Pago}>Pago</option></Select></FormField>
-                    <div className="pt-4 flex justify-end">
-                        <Button type="submit">Salvar Registro</Button>
-                    </div>
-                </form>
-            </Modal>
-         </div>
     );
 };
 
 // --- REPORTS ---
 export const Reports: React.FC<{ equipment: Equipment[], clients: Client[] }> = ({ equipment, clients }) => {
-    const [days, setDays] = useState(90);
+    const handleDownload = () => {
+        const dataToExport = equipment.map(eq => {
+            const client = clients.find(c => c.id === eq.clientId);
+            return {
+                "Equipamento": eq.name,
+                "Número de Série": eq.serialNumber,
+                "Cliente": client?.name || 'N/A',
+                "Status": eq.status,
+                "Data de Vencimento": new Date(eq.expiryDate).toLocaleDateString(),
+                "Última Inspeção": eq.lastInspectionDate ? new Date(eq.lastInspectionDate).toLocaleDateString() : 'N/A',
+            };
+        });
 
-    const getClientName = (clientId: string) => clients.find(c => c.id === clientId)?.name || 'Desconhecido';
-
-    const expiringSoon = useMemo(() => {
-        const now = new Date();
-        const futureDate = new Date();
-        futureDate.setDate(now.getDate() + days);
-        return equipment
-            .filter(eq => {
-                const expiry = new Date(eq.expiryDate);
-                return expiry > now && expiry <= futureDate;
-            })
-            .sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
-    }, [days, equipment]);
-    
-    const handleExportReport = () => {
-        if (typeof (window as any).XLSX === 'undefined') {
-            console.error("A biblioteca SheetJS (XLSX) não foi carregada.");
-            return;
-        }
-        const XLSX = (window as any).XLSX;
-    
-        const reportData = [
-            [`Relatório de Equipamentos Vencendo nos Próximos ${days} dias`],
-            [],
-            ["Nome", "Nº Série", "Cliente", "Data de Validade"],
-            ...expiringSoon.map(eq => [
-                eq.name,
-                eq.serialNumber,
-                getClientName(eq.clientId),
-                new Date(eq.expiryDate).toLocaleDateString('pt-BR')
-            ])
-        ];
-    
-        const ws = XLSX.utils.aoa_to_sheet(reportData);
-        ws['!cols'] = [ { wch: 30 }, { wch: 20 }, { wch: 30 }, { wch: 20 } ];
-        ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }];
-    
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Relatorio Vencimentos");
-        XLSX.writeFile(wb, `Relatorio_Vencimentos_${days}dias.xlsx`);
+        const worksheet = (window as any).XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = (window as any).XLSX.utils.book_new();
+        (window as any).XLSX.utils.book_append_sheet(workbook, worksheet, "Equipamentos");
+        (window as any).XLSX.writeFile(workbook, "Relatorio_Equipamentos_InspecPro.xlsx");
     };
 
-    const TabButton: React.FC<{ value: number; label: string }> = ({ value, label }) => (
-        <button
-            onClick={() => setDays(value)}
-            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors w-full ${days === value ? 'bg-accent text-white shadow' : 'bg-secondary text-text-primary hover:bg-primary'}`}
-        >
-            {label}
-        </button>
+    return (
+        <div className="p-4 space-y-6">
+            <Card title="Relatório de Equipamentos">
+                <p className="text-text-secondary mb-4">Gere um relatório completo de todos os equipamentos cadastrados no sistema em formato Excel.</p>
+                <Button onClick={handleDownload}>
+                    <DownloadIcon className="w-5 h-5 mr-2" />
+                    Baixar Relatório .xlsx
+                </Button>
+            </Card>
+             <Card title="Insights com IA (Em Breve)">
+                <div className="flex items-center text-text-secondary">
+                    <SparklesIcon className="w-8 h-8 mr-4 text-accent" />
+                    <p>Em breve, nosso assistente de IA poderá gerar análises e insights sobre seus dados, como prever manutenções e identificar clientes em risco.</p>
+                </div>
+            </Card>
+        </div>
     );
+};
+
+// --- FINANCIAL ---
+export const Financial: React.FC<{ financial: FinancialRecord[], clients: Client[], onAddFinancial: (rec: Omit<FinancialRecord, 'id'>) => void }> = ({ financial, clients, onAddFinancial }) => {
+    const [isAddModalOpen, setAddModalOpen] = useState(false);
+    const [newRecord, setNewRecord] = useState({ clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente });
+    
+    const handleFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onAddFinancial(newRecord);
+        setNewRecord({ clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente });
+        setAddModalOpen(false);
+    };
 
     return (
         <div className="p-4 space-y-4">
-            <Card title="Relatório de Vencimentos" actions={
-                <Button onClick={handleExportReport} variant="secondary" className="text-xs !px-3 !py-1.5">
-                    <DownloadIcon className="w-4 h-4 mr-2"/> Exportar
-                </Button>
-            }>
-                <div className="p-4 space-y-4">
-                    <p className="text-text-secondary text-sm">Filtrar equipamentos vencendo nos próximos:</p>
-                    <div className="flex space-x-2 bg-primary p-1 rounded-xl">
-                        <TabButton value={30} label="30 dias" />
-                        <TabButton value={60} label="60 dias" />
-                        <TabButton value={90} label="90 dias" />
-                    </div>
-                </div>
-            </Card>
-
-            <div className="space-y-3">
-                {expiringSoon.length > 0 ? expiringSoon.map(eq => (
-                    <Card key={eq.id}>
-                        <h4 className="font-bold text-text-primary">{eq.name} <span className="text-text-secondary font-normal text-xs">({eq.serialNumber})</span></h4>
-                        <p className="text-sm text-text-secondary">{getClientName(eq.clientId)}</p>
-                        <div className="mt-3 pt-3 border-t border-border text-xs flex justify-between">
-                             <span className="text-text-secondary">Data de Vencimento:</span>
-                             <span className="font-semibold text-status-reproved">{new Date(eq.expiryDate).toLocaleDateString()}</span>
+            {financial.length > 0 ? financial.map(rec => {
+                const client = clients.find(c => c.id === rec.clientId);
+                return (
+                    <Card key={rec.id}>
+                        <div className="flex justify-between items-start">
+                             <div>
+                                <h4 className="font-semibold text-text-primary">R$ {rec.value.toFixed(2).replace('.', ',')}</h4>
+                                <p className="text-sm text-text-secondary">{rec.description}</p>
+                                <p className="text-xs text-text-secondary">{client?.name}</p>
+                            </div>
+                            {getStatusBadge(rec.status)}
                         </div>
                     </Card>
-                )) : (
-                   <EmptyState message={`Nenhum equipamento vencendo nos próximos ${days} dias.`} icon={<CertificateIcon className="w-12 h-12"/>} />
-                )}
-            </div>
+                );
+            }) : <EmptyState message="Nenhum registro financeiro." icon={<FinancialIcon className="w-12 h-12" />} action={<Button onClick={() => setAddModalOpen(true)}>Adicionar Registro</Button>}/>}
+             <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon />} />
+             <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Adicionar Registro Financeiro">
+                 <form onSubmit={handleFormSubmit} className="space-y-4">
+                     {/* Simplified form */}
+                    <FormField label="Cliente">
+                        <Select name="clientId" value={newRecord.clientId} onChange={e => setNewRecord(p => ({...p, clientId: e.target.value}))} required>
+                            <option value="">Selecione um cliente</option>
+                            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </Select>
+                    </FormField>
+                    <FormField label="Descrição"><Input value={newRecord.description} onChange={e => setNewRecord(p => ({...p, description: e.target.value}))} required/></FormField>
+                    <FormField label="Valor (R$)"><Input type="number" step="0.01" value={newRecord.value} onChange={e => setNewRecord(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField label="Data de Emissão"><Input type="date" value={newRecord.issueDate} onChange={e => setNewRecord(p => ({...p, issueDate: e.target.value}))} required /></FormField>
+                        <FormField label="Data de Vencimento"><Input type="date" value={newRecord.dueDate} onChange={e => setNewRecord(p => ({...p, dueDate: e.target.value}))} required /></FormField>
+                    </div>
+                     <FormField label="Status">
+                        <Select value={newRecord.status} onChange={e => setNewRecord(p => ({...p, status: e.target.value as PaymentStatus}))}>
+                            <option value={PaymentStatus.Pendente}>Pendente</option>
+                            <option value={PaymentStatus.Pago}>Pago</option>
+                        </Select>
+                    </FormField>
+                    <div className="flex justify-end pt-4"><Button type="submit">Salvar Registro</Button></div>
+                 </form>
+             </Modal>
         </div>
     );
 };
 
 // --- SETTINGS ---
-type CompanyProfile = { name: string; };
-type AppSettings = { notifications: boolean; reminders: boolean; };
-
-interface SettingsProps {
-    theme: 'light' | 'dark';
-    setTheme: (theme: 'light' | 'dark') => void;
-    profile: CompanyProfile;
-    setProfile: (profile: CompanyProfile) => void;
-    settings: AppSettings;
-    setSettings: (settings: AppSettings) => void;
-    showToast: (message: string, type?: 'success' | 'error') => void;
-    onLogout: () => void;
-}
-export const Settings: React.FC<SettingsProps> = ({
-    theme, setTheme, profile, setProfile, settings, setSettings, showToast, onLogout
-}) => {
+export const Settings: React.FC<{ 
+    theme: 'light' | 'dark', setTheme: (theme: 'light' | 'dark') => void,
+    profile: { name: string }, setProfile: (profile: { name: string }) => void,
+    settings: { notifications: boolean, reminders: boolean }, setSettings: (s: { notifications: boolean, reminders: boolean }) => void,
+    showToast: (msg: string) => void,
+    onLogout: () => void,
+}> = ({ theme, setTheme, profile, setProfile, settings, setSettings, showToast, onLogout }) => {
+    
     const [companyName, setCompanyName] = useState(profile.name);
-    
-    const handleProfileSave = (e: React.FormEvent) => {
-        e.preventDefault();
+
+    const handleProfileSave = () => {
         setProfile({ name: companyName });
-        showToast("Perfil da empresa salvo com sucesso!");
+        showToast("Perfil da empresa atualizado!");
     };
-    
+
     return (
-        <div className="p-4 space-y-6">
+        <div className="p-4 space-y-8">
             <Card title="Perfil da Empresa">
-                <form onSubmit={handleProfileSave} className="space-y-4">
+                <div className="space-y-4">
                     <FormField label="Nome da Empresa">
                         <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
                     </FormField>
-                    <div className="flex justify-end">
-                         <Button type="submit">Salvar</Button>
-                    </div>
-                </form>
+                    <Button onClick={handleProfileSave}>Salvar Alterações</Button>
+                </div>
             </Card>
 
-             <Card title="Preferências">
+            <Card title="Aparência">
+                <div className="flex items-center justify-between">
+                    <span className="text-text-primary font-medium">Modo Escuro</span>
+                    <ToggleSwitch enabled={theme === 'dark'} onChange={(enabled) => setTheme(enabled ? 'dark' : 'light')} />
+                </div>
+            </Card>
+
+             <Card title="Notificações">
                 <div className="space-y-4">
-                     <div className="flex justify-between items-center">
-                        <span className="text-text-primary">Modo Escuro</span>
-                        <ToggleSwitch enabled={theme === 'dark'} onChange={(enabled) => setTheme(enabled ? 'dark' : 'light')} />
+                    <div className="flex items-center justify-between">
+                        <span className="text-text-primary font-medium">Habilitar Notificações</span>
+                        <ToggleSwitch enabled={settings.notifications} onChange={(enabled) => setSettings({...settings, notifications: enabled})} />
                     </div>
-                    <div className="flex justify-between items-center">
-                        <span className="text-text-primary">Ativar Notificações</span>
-                         <ToggleSwitch enabled={settings.notifications} onChange={(enabled) => setSettings({ ...settings, notifications: enabled })} />
-                    </div>
-                     <div className="flex justify-between items-center">
-                        <span className="text-text-primary">Lembretes de Vencimento</span>
-                         <ToggleSwitch enabled={settings.reminders} onChange={(enabled) => setSettings({ ...settings, reminders: enabled })} />
+                     <div className="flex items-center justify-between">
+                        <span className="text-text-primary font-medium">Lembretes de Vencimento</span>
+                        <ToggleSwitch enabled={settings.reminders} onChange={(enabled) => setSettings({...settings, reminders: enabled})} />
                     </div>
                 </div>
             </Card>
 
             <Card title="Conta">
-                <div className="space-y-3">
-                     <button className="w-full text-left flex justify-between items-center p-3 hover:bg-secondary rounded-lg transition-colors">
-                        <div className="flex items-center">
-                            <UserCircleIcon className="w-5 h-5 mr-3 text-text-secondary"/>
-                            <span className="text-text-primary">Minha Conta</span>
-                        </div>
-                        <ChevronRightIcon className="w-5 h-5 text-text-secondary"/>
-                     </button>
-                      <button onClick={onLogout} className="w-full text-left flex items-center p-3 text-status-reproved hover:bg-secondary rounded-lg transition-colors">
-                        <LogoutIcon className="w-5 h-5 mr-3"/>
-                        <span>Sair</span>
-                     </button>
-                </div>
+                 <Button variant="secondary" onClick={onLogout} className="w-full justify-center !text-status-reproved">
+                    <LogoutIcon className="w-5 h-5 mr-2" />
+                    <span>Sair da Conta</span>
+                </Button>
             </Card>
         </div>
     );

@@ -25,6 +25,7 @@ const isSpeechSupported = !!SpeechRecognition;
 const ORB_SIZE = 56;
 const EDGE_MARGIN = 16;
 const LONG_PRESS_DURATION = 700; // ms
+const BOTTOM_NAV_ESTIMATED_HEIGHT = 96; // Corresponds to pb-24 on main content
 
 const AssistantModal: React.FC<{
     isOpen: boolean;
@@ -109,13 +110,12 @@ const AssistantModal: React.FC<{
 };
 
 export const VirtualAssistantButton: React.FC<VirtualAssistantProps> = ({ userName, onCommand, showToast }) => {
-  const [position, setPosition] = useState({ x: window.innerWidth - ORB_SIZE - EDGE_MARGIN, y: window.innerHeight - 140 });
+  const [position, setPosition] = useState({ x: window.innerWidth - ORB_SIZE - EDGE_MARGIN, y: window.innerHeight - ORB_SIZE - BOTTOM_NAV_ESTIMATED_HEIGHT - EDGE_MARGIN });
   const [isDragging, setIsDragging] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isSnapped, setIsSnapped] = useState(true);
 
   const recognitionRef = useRef<any>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -139,7 +139,17 @@ export const VirtualAssistantButton: React.FC<VirtualAssistantProps> = ({ userNa
         showToast(`Processando: "${transcript}"`);
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    // Fix: Use process.env.API_KEY and initialize GoogleGenAI as per coding guidelines.
+    // This also resolves the TypeScript error for `import.meta.env`.
+    if (!process.env.API_KEY) {
+        const errorMsg = 'Chave da API não configurada. Verifique suas variáveis de ambiente.';
+        showToast(errorMsg, 'error');
+        if (isFromModal) setMessages(prev => [...prev, { sender: 'ai', text: errorMsg }]);
+        setIsProcessing(false);
+        return;
+    }
+    
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const systemInstruction = `Você é o assistente de IA do InspecPro. Seu tom é estritamente profissional, claro e conciso. Sua principal função é interpretar o comando do usuário e executar a função apropriada com os argumentos corretos. O nome do usuário é ${userName}. Para datas, converta termos como "hoje", "amanhã" ou "próxima sexta-feira" para o formato AAAA-MM-DD, considerando que a data atual é ${new Date().toISOString().split('T')[0]}.`;
     const tools: FunctionDeclaration[] = [ /* ... tools declarations ... */ ];
 
@@ -228,10 +238,10 @@ export const VirtualAssistantButton: React.FC<VirtualAssistantProps> = ({ userNa
   useEffect(() => {
     const handleResize = () => {
       setPosition(currentPosition => {
-        const newX = currentPosition.x + ORB_SIZE / 2 > window.innerWidth / 2
-            ? window.innerWidth - ORB_SIZE - EDGE_MARGIN
-            : EDGE_MARGIN;
-        
+        const newX = Math.max(
+            EDGE_MARGIN,
+            Math.min(currentPosition.x, window.innerWidth - ORB_SIZE - EDGE_MARGIN)
+        );
         const newY = Math.max(
             EDGE_MARGIN,
             Math.min(currentPosition.y, window.innerHeight - ORB_SIZE - EDGE_MARGIN)
@@ -288,15 +298,9 @@ export const VirtualAssistantButton: React.FC<VirtualAssistantProps> = ({ userNa
         } else {
             setIsModalOpen(true);
         }
-    } else if (dragInfo.current.hasMoved) {
-      const finalX = position.x + ORB_SIZE / 2 > window.innerWidth / 2
-        ? window.innerWidth - ORB_SIZE - EDGE_MARGIN
-        : EDGE_MARGIN;
-      setPosition(prevPos => ({ x: finalX, y: prevPos.y }));
     }
 
     setIsDragging(false);
-    setIsSnapped(true);
     window.removeEventListener('pointermove', handlePointerMove);
     window.removeEventListener('pointerup', handlePointerUp);
   };
@@ -305,7 +309,6 @@ export const VirtualAssistantButton: React.FC<VirtualAssistantProps> = ({ userNa
     dragInfo.current.hasMoved = false;
     didLongPress.current = false;
     setIsDragging(true);
-    setIsSnapped(false);
 
     if (!isListening) {
         longPressTimer.current = window.setTimeout(() => {
@@ -328,7 +331,7 @@ export const VirtualAssistantButton: React.FC<VirtualAssistantProps> = ({ userNa
   const buttonStyle: React.CSSProperties = {
     position: 'fixed', left: position.x, top: position.y,
     touchAction: 'none', cursor: isDragging ? 'grabbing' : 'grab',
-    transition: isSnapped ? 'left 0.3s ease-out, top 0.3s ease-out, transform 0.2s, opacity 0.2s' : 'none',
+    transition: isDragging ? 'none' : 'transform 0.2s, opacity 0.2s',
     transform: `scale(${isDragging && dragInfo.current.hasMoved ? 0.95 : 1})`,
     opacity: isDragging && dragInfo.current.hasMoved ? 0.8 : 1,
   };

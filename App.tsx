@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, ReactNode, useEffect } from 'react';
 import { View, Client, Equipment, Inspection, FinancialRecord, Certificate, ToastMessage, DetailView } from './types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES } from './data';
@@ -99,7 +100,7 @@ const Header: React.FC<{
 
 
 const BottomNavLink: React.FC<{ icon: ReactNode, label: string, isActive: boolean, onClick: () => void }> = ({ icon, label, isActive, onClick }) => (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center w-full pt-2 pb-1 text-xs font-medium transition-colors ${isActive ? 'text-accent' : 'text-text-secondary hover:text-text-primary'}`}>
+    <button onClick={onClick} className={`flex flex-col items-center justify-center w-full pt-2 pb-1 text-xs font-medium transition-all duration-200 ease-in-out active:scale-90 ${isActive ? 'text-accent' : 'text-text-secondary hover:text-text-primary'}`}>
         <div className="relative">
             {icon}
             {isActive && <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-accent rounded-full"></span>}

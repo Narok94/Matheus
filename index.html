@@ -28,6 +28,15 @@
       }
     </script>
     <style>
+    @keyframes subtle-gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    body {
+        background-size: 200% 200%;
+        animation: subtle-gradient 30s ease infinite;
+    }
     :root {
         --color-primary: #f7f8fc;
         --color-secondary: #ffffff;
@@ -35,14 +44,16 @@
         --color-text-primary: #212529;
         --color-text-secondary: #6c757d;
         --color-border: #e2e8f0;
+        background-image: linear-gradient(-45deg, #f7f8fc, #eff2f8, #f7f8fc);
     }
     .dark {
-        --color-primary: #1a202c;
-        --color-secondary: #2d3748;
-        --color-accent: #4299e1;
-        --color-text-primary: #edf2f7;
-        --color-text-secondary: #a0aec0;
-        --color-border: #4a5568;
+        --color-primary: #0f172a; /* Deeper navy */
+        --color-secondary: #1e293b; /* Slightly lighter navy */
+        --color-accent: #38bdf8; /* Sky blue */
+        --color-text-primary: #f1f5f9; /* Lighter text */
+        --color-text-secondary: #94a3b8; /* Muted text */
+        --color-border: #334155; /* Softer border */
+        background-image: linear-gradient(-45deg, #0f172a, #131c31, #0f172a);
     }
     </style>
 <script type="importmap">
