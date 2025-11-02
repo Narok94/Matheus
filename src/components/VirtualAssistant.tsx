@@ -225,7 +225,30 @@ export const VirtualAssistantButton: React.FC<VirtualAssistantProps> = ({ userNa
     recognitionRef.current = recognition;
   }, [processCommand, showToast]);
 
-  useEffect(() => { /* ... resize handler ... */ }, []);
+  useEffect(() => {
+    const handleResize = () => {
+      setPosition(currentPosition => {
+        const newX = currentPosition.x + ORB_SIZE / 2 > window.innerWidth / 2
+            ? window.innerWidth - ORB_SIZE - EDGE_MARGIN
+            : EDGE_MARGIN;
+        
+        const newY = Math.max(
+            EDGE_MARGIN,
+            Math.min(currentPosition.y, window.innerHeight - ORB_SIZE - EDGE_MARGIN)
+        );
+        
+        return { x: newX, y: newY };
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    const timer = setTimeout(handleResize, 100);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timer);
+    };
+  }, []);
 
   const handlePointerMove = (e: PointerEvent) => {
     if (!isDragging) return;

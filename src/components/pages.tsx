@@ -1,9 +1,10 @@
 
+
 import React, { useState, useMemo, ReactNode, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { Client, Equipment, Inspection, FinancialRecord, Certificate, InspectionStatus, PaymentStatus, View } from '../../types';
 import { Card, Modal, getStatusBadge, Button, Input, Select, Textarea, FormField, EmptyState, ConfirmationModal, FloatingActionButton, ToggleSwitch } from './common';
-import { ClientsIcon, EquipmentIcon, PlusIcon, CertificateIcon, AgendaIcon, FinancialIcon, UserCircleIcon, ChevronRightIcon, LogoutIcon, DownloadIcon, SparklesIcon, SpinnerIcon, ReportsIcon } from './Icons';
+import { ClientsIcon, EquipmentIcon, PlusIcon, CertificateIcon, AgendaIcon, FinancialIcon, UserCircleIcon, ChevronRightIcon, LogoutIcon, DownloadIcon, SparklesIcon, SpinnerIcon, ReportsIcon, EditIcon, TrashIcon } from './Icons';
 
 // --- UTILITY FUNCTIONS ---
 const capitalizeWords = (str: string): string => {
@@ -329,12 +330,16 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, equipment, i
     return (
         <div className="p-4 space-y-6">
             <Card title="Dados do Cliente" actions={
-                <div className="space-x-2">
-                     <Button onClick={handleExportXLSX} variant="secondary" className="text-xs !px-3 !py-1.5">
-                        Exportar
+                <div className="flex items-center space-x-2">
+                     <Button onClick={handleExportXLSX} variant="secondary" className="!p-2" aria-label="Exportar" title="Exportar">
+                        <DownloadIcon className="w-5 h-5"/>
                      </Button>
-                     <Button onClick={() => setEditModalOpen(true)} variant="secondary" className="text-xs !px-3 !py-1.5">Editar</Button>
-                     <Button onClick={() => setDeleteModalOpen(true)} className="bg-status-reproved/80 hover:bg-status-reproved text-white text-xs !px-3 !py-1.5">Excluir</Button>
+                     <Button onClick={() => setEditModalOpen(true)} variant="secondary" className="!p-2" aria-label="Editar" title="Editar">
+                        <EditIcon className="w-5 h-5"/>
+                     </Button>
+                     <Button onClick={() => setDeleteModalOpen(true)} className="bg-status-reproved/80 hover:bg-status-reproved text-white !p-2" aria-label="Excluir" title="Excluir">
+                         <TrashIcon className="w-5 h-5"/>
+                     </Button>
                 </div>
             }>
                 <div className="space-y-2 text-text-primary text-sm">
