@@ -1,8 +1,7 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useIndexedDB } from './useIndexedDB';
 import { User } from '../../types';
 import { sha256 } from '../utils';
-import { get, set } from '../idb';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
@@ -23,8 +22,6 @@ export const useAuth = () => {
         fullName: 'Administrador' 
     }]);
     const [loginAttempts, setLoginAttempts, isLoginAttemptsLoaded] = useIndexedDB<Record<string, LoginAttempt>>('loginAttempts', {});
-
-    const [appDataRef, setAppDataRef] = useState<any>(null);
 
     const currentUser = useMemo(() => {
         if (sessionToken && sessions[sessionToken]) {

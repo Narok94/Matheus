@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { InspecProLogo, UserIcon, LockIcon } from './Icons';
-import { ToastMessage } from '../../types';
 import { useAuth } from '../context/AuthContext';
 
 type ShowToastFn = (message: string, type?: 'success' | 'error') => void;
@@ -209,7 +208,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ showToast, onSwitchToRegis
 export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchToLogin }) => {
     const { handleRegister } = useAuth();
     const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -218,7 +216,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchT
             showToast("A senha deve ter pelo menos 4 caracteres.", "error");
             return;
         }
-        await handleRegister(username, email, password, '', '', showToast, onSwitchToLogin);
+        await handleRegister(username, '', password, '', '', showToast, onSwitchToLogin);
     };
 
     return (

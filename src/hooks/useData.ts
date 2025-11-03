@@ -1,9 +1,9 @@
-import { useMemo, useState, useEffect, Dispatch } from 'react';
-import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, InspectionStatus, PaymentStatus } from '../../types';
+import { useMemo, Dispatch } from 'react';
+import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData } from '../../types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES } from '../../data';
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';
-import { get, set } from '../idb';
+import { get } from '../idb';
 
 export const useData = () => {
     const { currentUser } = useAuth();

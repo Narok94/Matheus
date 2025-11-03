@@ -9,7 +9,7 @@ import {
     Financial, Settings, ClientDetail, InspectionDetail, CertificateDetail, Reports 
 } from './src/pages';
 import { LoginPage, RegisterPage } from './src/components/LoginPage';
-import { Toast, ConfirmationModal } from './src/components/common';
+import { Toast } from './src/components/common';
 import { GlobalLoader } from './src/components/GlobalLoader';
 import { 
     DashboardIcon, ClientsIcon, EquipmentIcon, AgendaIcon, 
