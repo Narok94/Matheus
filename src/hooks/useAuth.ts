@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useIndexedDB } from './useIndexedDB';
 import { User } from '../../types';
 import { sha256 } from '../utils';
