@@ -39,6 +39,7 @@ export const useData = () => {
         setEquipment(prev => prev.filter(e => e.clientId !== clientId));
         setInspections(prev => prev.filter(i => i.clientId !== clientId));
         setFinancial(prev => prev.filter(f => f.clientId !== clientId));
+        setCertificates(prev => prev.filter(cert => cert.clientId !== clientId));
     };
     
     // Equipment

@@ -82,7 +82,7 @@ export const useAuth = () => {
         }
     };
 
-    const handleRegister = async (username: string, email: string, pass: string, fullName: string, address: string, showToast: ShowToastFn, onSuccess: () => void) => {
+    const handleRegister = async (username: string, email: string, pass: string, fullName: string, showToast: ShowToastFn, onSuccess: () => void) => {
         const existingUser = users.find(u => u.username === username.toLowerCase());
         if (existingUser) {
             showToast('Este nome de usuário já está em uso.', 'error');
@@ -93,7 +93,6 @@ export const useAuth = () => {
         const newUser: User = { username: username.toLowerCase(), passwordHash };
         if (email) newUser.email = email;
         if (fullName) newUser.fullName = fullName;
-        if (address) newUser.address = address;
 
         setUsers(prev => [...prev, newUser]);
         showToast(`Usuário "${username}" registrado com sucesso!`, 'success');

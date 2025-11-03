@@ -41,14 +41,12 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
     const [companyName, setCompanyName] = useState(companyProfile.name);
     const [userProfile, setUserProfile] = useState({
         fullName: currentUserDetails?.fullName || '',
-        address: currentUserDetails?.address || '',
     });
 
     useEffect(() => {
         if (currentUserDetails) {
             setUserProfile({
                 fullName: currentUserDetails.fullName || '',
-                address: currentUserDetails.address || '',
             });
         }
     }, [currentUserDetails]);
@@ -67,7 +65,6 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
             handleUpdateUser({
                 ...currentUserDetails,
                 fullName: userProfile.fullName,
-                address: userProfile.address,
             });
             showToast("Perfil atualizado com sucesso!");
         }
@@ -143,7 +140,6 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                         <Card title="Meu Perfil">
                             <div className="space-y-4">
                                 <FormField label="Nome Completo"><Input value={userProfile.fullName} onChange={(e) => setUserProfile(p => ({ ...p, fullName: e.target.value }))} /></FormField>
-                                <FormField label="Endereço"><Input value={userProfile.address} onChange={(e) => setUserProfile(p => ({ ...p, address: e.target.value }))} /></FormField>
                                 <div className="flex justify-end"><Button onClick={handleUserSave}>Salvar Perfil</Button></div>
                             </div>
                         </Card>

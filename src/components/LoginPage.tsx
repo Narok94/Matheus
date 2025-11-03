@@ -216,7 +216,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchT
             showToast("A senha deve ter pelo menos 4 caracteres.", "error");
             return;
         }
-        await handleRegister(username, '', password, '', '', showToast, onSwitchToLogin);
+        await handleRegister(username, '', password, '', showToast, onSwitchToLogin);
     };
 
     return (

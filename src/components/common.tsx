@@ -183,29 +183,44 @@ type ButtonProps = {
     variant?: 'primary' | 'secondary';
     className?: string;
     disabled?: boolean;
+    loading?: boolean;
     as?: 'button' | 'label';
 };
 
-export const Button: React.FC<ButtonProps> = ({ children, onClick, type = 'button', variant = 'primary', className = '', disabled = false, as = 'button' }) => {
+export const Button: React.FC<ButtonProps> = ({ children, onClick, type = 'button', variant = 'primary', className = '', disabled = false, loading = false, as = 'button' }) => {
     const baseClasses = "px-5 py-3 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary inline-flex items-center justify-center space-x-2 text-sm transform active:scale-95";
     const variantClasses = variant === 'primary' 
         ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 focus:ring-cyan-400 shadow-lg shadow-cyan-500/20"
         : "bg-secondary/50 text-text-primary border border-border hover:bg-secondary/80 focus:ring-accent";
-    const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
+    const disabledClasses = (disabled || loading) ? "opacity-50 cursor-not-allowed" : "";
 
     const combinedClasses = `${baseClasses} ${variantClasses} ${disabledClasses} ${className}`;
+
+    const Spinner = () => (
+        <svg className={`animate-spin h-5 w-5 ${variant === 'primary' ? 'text-white' : 'text-text-primary'}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    );
+
+    const content = (
+        <>
+            {loading && <Spinner />}
+            {children}
+        </>
+    );
 
     if (as === 'label') {
         return (
             <label className={combinedClasses}>
-                {children}
+                {content}
             </label>
         );
     }
   
     return (
-        <button type={type} onClick={onClick} disabled={disabled} className={combinedClasses}>
-            {children}
+        <button type={type} onClick={onClick} disabled={disabled || loading} className={combinedClasses}>
+            {content}
         </button>
     );
 };

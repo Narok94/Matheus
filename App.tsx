@@ -15,6 +15,7 @@ import {
     DashboardIcon, ClientsIcon, EquipmentIcon, AgendaIcon, 
     CertificateIcon, FinancialIcon, SettingsIcon, ReportsIcon, InspecProLogo
 } from './src/components/Icons';
+import { useIdleTimer } from './src/hooks/useIdleTimer';
 
 
 const viewTitles: Record<View, string> = {
@@ -147,7 +148,7 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
 };
 
 const AppContent: React.FC = () => {
-    const { isAuthenticated, isAuthLoading } = useAuth();
+    const { isAuthenticated, isAuthLoading, handleLogout } = useAuth();
     const { isDataLoading } = useData();
     const { theme } = useSettings();
 
@@ -160,6 +161,14 @@ const AppContent: React.FC = () => {
     const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         setToast({ id: Date.now(), message, type });
     }, []);
+    
+    const handleIdle = useCallback(() => {
+        if (isAuthenticated) {
+            handleLogout('inactivity', showToast);
+        }
+    }, [handleLogout, showToast, isAuthenticated]);
+    
+    useIdleTimer(handleIdle, 15 * 60 * 1000); // 15 minutes
     
     useEffect(() => {
         const root = document.documentElement;

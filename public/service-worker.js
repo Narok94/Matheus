@@ -1,51 +1,82 @@
-const CACHE_NAME = 'inspecpro-cache-v1';
-const URLS_TO_CACHE = [
+const CACHE_NAME = 'inspecpro-cache-v2'; // Increment version to trigger update
+const APP_SHELL_URLS = [
   '/',
   '/index.html',
+  '/manifest.json',
+  '/icons/icon-72x72.png',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png'
 ];
 
-// Instala o service worker e pré-carrega os recursos essenciais.
+// On install, cache the app shell
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Cache aberto');
-        return cache.addAll(URLS_TO_CACHE);
+        console.log('[Service Worker] Caching App Shell');
+        return cache.addAll(APP_SHELL_URLS);
       })
+      .then(() => self.skipWaiting()) // Activate new SW immediately
   );
 });
 
-// Intercepta as solicitações de rede para servir arquivos do cache primeiro.
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Retorna a resposta do cache se encontrada.
-        if (response) {
-          return response;
-        }
-        // Caso contrário, busca na rede.
-        return fetch(event.request);
-      }
-    )
-  );
-});
-
-// Limpa caches antigos quando o service worker é ativado.
+// On activate, clean up old caches
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (cacheName !== CACHE_NAME) {
+            console.log('[Service Worker] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => self.clients.claim()) // Take control of open pages
+  );
+});
+
+// On fetch, use Stale-While-Revalidate strategy
+self.addEventListener('fetch', event => {
+  // We only want to cache GET requests.
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // For navigation requests (HTML pages), use a network-first strategy
+  // to ensure the user gets the latest version of the app shell.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+  
+  // For other requests (JS, CSS, images), use Stale-While-Revalidate.
+  event.respondWith(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.match(event.request).then(response => {
+        const fetchPromise = fetch(event.request).then(networkResponse => {
+          // If we got a valid response, update the cache.
+          if (networkResponse && networkResponse.status === 200) {
+             cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        }).catch(err => {
+            // Fetch failed, probably offline. We've already served from cache if available.
+            console.warn('[Service Worker] Fetch failed; returning offline page instead.', err);
+        });
+
+        // Return the cached response immediately if available,
+        // and the fetch promise will update the cache in the background.
+        return response || fetchPromise;
+      });
     })
   );
 });
+
+
+// --- Existing Push & Sync Logic ---
 
 // Ouve por eventos de push para exibir notificações.
 self.addEventListener('push', event => {

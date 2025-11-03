@@ -12,6 +12,7 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
     const { clients, handleAddClient } = useData();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddModalOpen, setAddModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [newClient, setNewClient] = useState({ name: '', document: '', address: '', city: '', contact: '', email: '' });
 
     const filteredClients = useMemo(() =>
@@ -44,9 +45,15 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
     
     const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        handleAddClient(newClient);
-        setNewClient({ name: '', document: '', address: '', city: '', contact: '', email: '' });
-        setAddModalOpen(false);
+        setIsSubmitting(true);
+        // Use a small timeout to ensure the user sees the loading state,
+        // as the state update itself is synchronous.
+        setTimeout(() => {
+            handleAddClient(newClient);
+            setNewClient({ name: '', document: '', address: '', city: '', contact: '', email: '' });
+            setAddModalOpen(false);
+            setIsSubmitting(false);
+        }, 300);
     };
 
     return (
@@ -77,7 +84,7 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
                     <FormField label="Cidade"><Input name="city" value={newClient.city} onChange={handleInputChange} required /></FormField>
                     <FormField label="Contato (Telefone)"><Input name="contact" type="tel" value={newClient.contact} onChange={handleInputChange} required /></FormField>
                     <FormField label="Email"><Input name="email" type="email" value={newClient.email} onChange={handleInputChange} /></FormField>
-                    <div className="flex justify-end pt-4"><Button type="submit">Salvar Cliente</Button></div>
+                    <div className="flex justify-end pt-4"><Button type="submit" loading={isSubmitting}>Salvar Cliente</Button></div>
                 </form>
             </Modal>
         </div>

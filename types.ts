@@ -81,7 +81,6 @@ export type User = {
     passwordHash: string;
     email?: string;
     fullName?: string;
-    address?: string;
 };
 
 export type CompanyProfile = { 
