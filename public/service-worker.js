@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inspecpro-cache-v2'; // Increment version to trigger update
+const CACHE_NAME = 'inspecpro-cache-v3'; // Increment version to trigger update
 const APP_SHELL_URLS = [
   '/',
   '/index.html',

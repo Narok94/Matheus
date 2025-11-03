@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 import { useIndexedDB } from './useIndexedDB';
 import { User } from '../../types';
 import { sha256 } from '../utils';
@@ -29,6 +29,36 @@ export const useAuth = () => {
         }
     ]);
     const [loginAttempts, setLoginAttempts, isLoginAttemptsLoaded] = useIndexedDB<Record<string, LoginAttempt>>('loginAttempts', {});
+
+    // This effect ensures that default users exist, even if the user has old data in IndexedDB
+    useEffect(() => {
+        if (isUsersLoaded) {
+            const defaultUsersToAdd: User[] = [
+                { 
+                    username: 'admin', 
+                    passwordHash: '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918',
+                    fullName: 'Administrador' 
+                },
+                { 
+                    username: 'matheus', 
+                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
+                    fullName: 'Matheus' 
+                }
+            ];
+
+            setUsers(currentUsers => {
+                const existingUsernames = new Set(currentUsers.map(u => u.username));
+                const usersToAppend = defaultUsersToAdd.filter(u => !existingUsernames.has(u.username));
+                
+                if (usersToAppend.length > 0) {
+                    console.log("Adding missing default users to IndexedDB.");
+                    return [...currentUsers, ...usersToAppend];
+                }
+                
+                return currentUsers; // No changes needed
+            });
+        }
+    }, [isUsersLoaded, setUsers]);
 
     const currentUser = useMemo(() => {
         if (sessionToken && sessions[sessionToken]) {
