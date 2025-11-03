@@ -1,9 +1,9 @@
-import React, { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { View, InspectionStatus } from '../../types';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { Card } from '../components/common';
-import { ClientsIcon, AgendaIcon, ReportsIcon, FinancialIcon, PlusIcon, EquipmentIcon } from '../components/Icons';
+import { ClientsIcon, ReportsIcon, PlusIcon, EquipmentIcon } from '../components/Icons';
 
 export const Dashboard = ({ setView }: { setView: (view: View) => void }) => {
   const { currentUserDetails } = useAuth();

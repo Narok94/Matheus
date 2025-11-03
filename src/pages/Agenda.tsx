@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { InspectionStatus, PrefilledInspectionData, Equipment } from '../../types';
+import { InspectionStatus, PrefilledInspectionData } from '../../types';
 import { Card, Modal, getStatusBadge, Button, Input, Select, Textarea, FormField, EmptyState, FloatingActionButton } from '../components/common';
 import { AgendaIcon, PlusIcon } from '../components/Icons';
 
@@ -94,7 +94,7 @@ export const Agenda: React.FC<{
             {sortedAndFilteredInspections.length > 0 ? sortedAndFilteredInspections.map(insp => {
                 const client = clients.find(c => c.id === insp.clientId);
                 return (
-                    <Card key={insp.id} className="p-0 cursor-pointer hover:border-accent transition-colors" onClick={() => onViewInspection(insp.id)}>
+                    <Card key={insp.id} className="p-0" onClick={() => onViewInspection(insp.id)}>
                         <div className="p-4">
                             <div className="flex justify-between items-start">
                                 <div>

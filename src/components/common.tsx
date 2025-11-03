@@ -7,9 +7,10 @@ interface CardProps {
   className?: string;
   actions?: ReactNode;
   collapsible?: boolean;
+  onClick?: () => void;
 }
 
-export const Card: React.FC<CardProps> = ({ title, children, className, actions, collapsible = false }) => {
+export const Card: React.FC<CardProps> = ({ title, children, className, actions, collapsible = false, onClick }) => {
     const [isCollapsed, setIsCollapsed] = useState(collapsible); // Collapse by default if collapsible
 
     const ChevronIcon = ({ isUp }: { isUp: boolean }) => (
@@ -19,11 +20,11 @@ export const Card: React.FC<CardProps> = ({ title, children, className, actions,
     );
 
     return (
-        <div className={`bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md rounded-xl shadow-lg dark:shadow-cyan-900/10 border border-border ${className}`}>
+        <div onClick={onClick} className={`bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md rounded-xl shadow-lg dark:shadow-cyan-900/10 border border-border ${className}`}>
             {(title || actions) && (
                 <div 
                     className={`flex justify-between items-center p-4 ${!isCollapsed || !collapsible ? 'border-b border-border' : ''} ${collapsible ? 'cursor-pointer' : ''}`}
-                    onClick={collapsible ? () => setIsCollapsed(!isCollapsed) : undefined}
+                    onClick={collapsible ? (e) => { e.stopPropagation(); setIsCollapsed(!isCollapsed); } : undefined}
                 >
                     {title && <h3 className="text-lg font-semibold text-text-primary">{title}</h3>}
                     <div className="flex items-center space-x-2">
@@ -177,7 +178,7 @@ export const ToggleSwitch: React.FC<{
 // Form Components
 type ButtonProps = {
     children: ReactNode;
-    onClick?: () => void;
+    onClick?: (e: React.MouseEvent<HTMLElement>) => void;
     type?: 'button' | 'submit' | 'reset';
     variant?: 'primary' | 'secondary';
     className?: string;

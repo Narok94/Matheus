@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 import { AppSettings, BackupData, CompanyProfile } from '../../types';
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';

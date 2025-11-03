@@ -19,7 +19,9 @@ export const useData = () => {
     const [certificates, setCertificates, certificatesLoaded] = useIndexedDB<Certificate[]>(`${dataKeyPrefix}-certificates`, isInitialAdminLoad ? MOCK_CERTIFICATES : []);
     
     // Auto-backup timestamp state
-    const [lastBackupTimestamp, setLastBackupTimestamp, lastBackupTimestampLoaded] = useIndexedDB<string | null>(`${dataKeyPrefix}-lastBackupTimestamp`, null);
+    const iDBLastBackup = useIndexedDB<string | null>(`${dataKeyPrefix}-lastBackupTimestamp`, null);
+    const lastBackupTimestamp = iDBLastBackup[0];
+    const lastBackupTimestampLoaded = iDBLastBackup[2];
     
     const isDataLoading = !clientsLoaded || !equipmentLoaded || !inspectionsLoaded || !financialLoaded || !certificatesLoaded || !lastBackupTimestampLoaded;
 
@@ -92,8 +94,8 @@ export const useData = () => {
     };
     
     const confirmAutoRestore = async () => {
-        const dataSetKeys: (keyof BackupData)[] = ['clients', 'equipment', 'inspections', 'financial', 'certificates'];
-        const setters: Record<keyof Omit<BackupData, 'companyProfile' | 'appSettings'>, Dispatch<any>> = {
+        const dataSetKeys: ('clients' | 'equipment' | 'inspections' | 'financial' | 'certificates')[] = ['clients', 'equipment', 'inspections', 'financial', 'certificates'];
+        const setters: Record<typeof dataSetKeys[number], Dispatch<any>> = {
             clients: setClients,
             equipment: setEquipment,
             inspections: setInspections,
