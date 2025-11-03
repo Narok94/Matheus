@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { Card, EmptyState, FloatingActionButton, Modal, FormField, Input, Select, Button, ConfirmationModal, FinancialStatusBadge, getFinancialStatus } from '../components/common';
+import { Card, EmptyState, FloatingActionButton, Modal, FormField, Input, Select, Button, ConfirmationModal, FinancialStatusBadge } from '../components/common';
 import { ArrowUpCircleIcon, PlusIcon, EditIcon, TrashIcon } from '../components/Icons';
 import { Expense, PaymentStatus } from '../../types';
 

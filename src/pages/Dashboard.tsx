@@ -1,5 +1,5 @@
-import React, { ReactNode, useMemo } from 'react';
-import { View, DeliveryStatus, LicenseStatus, Equipment, License } from '../../types';
+import React, { useMemo } from 'react';
+import { View, DeliveryStatus, LicenseStatus, License } from '../../types';
 import { useData } from '../context/DataContext';
 import { Card, Button } from '../components/common';
 import { PlusIcon, ClientsIcon, EquipmentIcon, AgendaIcon, ReportsIcon, SettingsIcon, CertificateIcon, ArrowUpCircleIcon, ArrowDownCircleIcon, FireExtinguisherIcon } from '../components/Icons';

@@ -1,5 +1,5 @@
 import { useMemo, Dispatch } from 'react';
-import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, LicenseStatus, PaymentStatus } from '../../types';
+import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, PaymentStatus } from '../../types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES, MOCK_LICENSES, MOCK_DELIVERIES, MOCK_EXPENSES } from '../../data';
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';

@@ -32,7 +32,7 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
     const { currentUserDetails, handleUpdateUser, handleLogout } = useAuth();
     // FIX: Destructure licenses, deliveries, and expenses from useData to include them in the backup.
     const { clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses, handleImportData, lastBackupTimestamp, confirmAutoRestore: confirmDataAutoRestore } = useData();
-    const { theme, setTheme, companyProfile, setCompanyProfile, appSettings, setAppSettings, handleImportSettings, confirmAutoRestoreSettings } = useSettings();
+    const { theme, setTheme, companyProfile, setCompanyProfile, appSettings, handleImportSettings, confirmAutoRestoreSettings } = useSettings();
 
     const [activeTab, setActiveTab] = useState<Tab>('system');
     const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
