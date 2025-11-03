@@ -39,7 +39,9 @@ const Header: React.FC<{
         return (
              <header className="p-4 flex items-center justify-between sticky top-0 z-10 bg-secondary/80 backdrop-blur-sm border-b border-border">
                  <div className="flex items-center">
-                    <InspecProLogo className="h-8 w-8 text-slate-800 dark:text-slate-200" />
+                    <div className="h-8 w-8">
+                        <InspecProLogo className="text-slate-800 dark:text-slate-200" />
+                    </div>
                     <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
                 </div>
                  <button onClick={() => setView('settings')} className="text-text-secondary hover:text-accent p-2 rounded-full mr-8">
@@ -118,7 +120,9 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
     return (
         <aside className="hidden md:flex w-64 bg-primary text-white flex-shrink-0 p-4 border-r border-border flex-col">
             <div className="flex items-center mb-8">
-                <InspecProLogo className="h-8 w-8 text-slate-800 dark:text-slate-200" />
+                <div className="h-8 w-8">
+                    <InspecProLogo className="text-slate-800 dark:text-slate-200" />
+                </div>
                 <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
             </div>
             <nav className="flex-grow space-y-2">

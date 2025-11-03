@@ -89,7 +89,9 @@ export const CertificateDetail: React.FC<{ certificateId: string }> = ({ certifi
                     </div>
                     <div className="text-right">
                         <p className="font-bold text-text-primary">{companyProfile.name}</p>
-                        <InspecProLogo className="w-12 h-12 text-accent mx-auto mt-2" />
+                        <div className="w-12 h-12 mx-auto mt-2">
+                            <InspecProLogo className="text-accent" />
+                        </div>
                     </div>
                 </div>
 

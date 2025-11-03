@@ -55,7 +55,7 @@ const DynamicBackground = () => {
                     </circle>
                 ))}
 
-                <g transform="translate(50%, 50%) scale(1.5)" className="absolute top-1/2 left-1/2">
+                <g transform="translate(50%, 50%) scale(1.5)">
                     <g filter="url(#glow)" stroke="#0ea5e9" strokeWidth="1" fill="none" opacity="0.6">
                         <circle cx="0" cy="0" r="100">
                              <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="30s" repeatCount="indefinite" />
@@ -107,8 +107,8 @@ const AuthFormCard: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const AuthHeader = () => (
     <div className="text-center mb-8">
-        <div className="flex justify-center items-center mb-4">
-            <InspecProLogo className="w-16 h-16 text-cyan-400 filter drop-shadow-[0_0_8px_rgba(56,189,248,0.7)]" />
+        <div className="w-16 h-16 mx-auto mb-4">
+            <InspecProLogo className="text-cyan-400 filter drop-shadow-[0_0_8px_rgba(56,189,248,0.7)]" />
         </div>
         <h1 className="text-3xl font-bold text-white tracking-wider">InspecPro</h1>
         <p className="text-sm text-slate-400">Gestão de Inspeções</p>
@@ -118,7 +118,7 @@ const AuthHeader = () => (
 const InputWithIcon: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { icon: React.ReactNode }> = ({ icon, ...props }) => (
     <div className="relative group">
         <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-            {icon}
+            <div className="w-5 h-5">{icon}</div>
         </span>
         <input 
             {...props}
