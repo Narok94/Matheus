@@ -1,6 +1,6 @@
 
 
-import React, { useState, ReactNode, useEffect } from 'react';
+import React, { useState, ReactNode, useEffect, useMemo } from 'react';
 import { View, Client, Equipment, Inspection, FinancialRecord, Certificate, ToastMessage, DetailView } from './types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES } from './data';
 import { Dashboard, Clients, Equipments, Agenda, Certificates, Financial, Settings, ClientDetail, Reports } from './src/components/pages';
@@ -24,24 +24,48 @@ type PrefilledInspectionData = {
     clientId?: string;
 } | null;
 
+export type User = {
+    username: string; // stored as lowercase
+    passwordHash: string; // plain text for this mock app
+    email?: string;
+    fullName?: string;
+    address?: string;
+};
 
-// Custom hook for localStorage persistence
+
+// Custom hook for localStorage persistence, now user-aware by changing the key
 const usePersistentState = <T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
     const [state, setState] = useState<T>(() => {
         try {
             const storedValue = window.localStorage.getItem(key);
             return storedValue ? JSON.parse(storedValue) : initialValue;
         } catch (error) {
-            console.error(error);
+            console.error(`Error reading localStorage key “${key}”:`, error);
             return initialValue;
         }
     });
 
+    // Re-read from localStorage when the key changes (e.g., user logs in/out)
     useEffect(() => {
         try {
+            const storedValue = window.localStorage.getItem(key);
+            setState(storedValue ? JSON.parse(storedValue) : initialValue);
+        } catch (error) {
+            console.error(`Error reading localStorage key “${key}”:`, error);
+            setState(initialValue);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [key]);
+
+    useEffect(() => {
+        try {
+            // Do not store data for the 'guest' user (when logged out)
+            if (key.startsWith('guest-')) {
+                return;
+            }
             window.localStorage.setItem(key, JSON.stringify(state));
         } catch (error) {
-            console.error(error);
+            console.error(`Error setting localStorage key “${key}”:`, error);
         }
     }, [key, state]);
 
@@ -179,26 +203,32 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
 };
 
 const App: React.FC = () => {
-    const [isAuthenticated, setIsAuthenticated] = usePersistentState('isAuthenticated', false);
+    const [currentUser, setCurrentUser] = usePersistentState<string | null>('currentUser', null);
+    const isAuthenticated = !!currentUser;
     const [authView, setAuthView] = useState<'login' | 'register'>('login');
     const [currentView, setCurrentView] = useState<View>('dashboard');
     const [detailView, setDetailView] = useState<DetailView>(null);
     const [toast, setToast] = useState<ToastMessage>(null);
     const [prefilledInspectionData, setPrefilledInspectionData] = useState<PrefilledInspectionData>(null);
 
+    const dataKeyPrefix = useMemo(() => currentUser || 'guest', [currentUser]);
 
-    // App-wide persistent state
-    const [theme, setTheme] = usePersistentState<'light' | 'dark'>('theme', 'dark');
-    const [companyProfile, setCompanyProfile] = usePersistentState<CompanyProfile>('companyProfile', { name: 'Empresa ABC' });
-    const [appSettings, setAppSettings] = usePersistentState<AppSettings>('appSettings', { notifications: true, reminders: true });
+    // Global state (not user-specific)
+    const [users, setUsers] = usePersistentState<User[]>('users', [{ username: 'admin', passwordHash: 'admin', fullName: 'Administrador' }]);
+
+    // User-specific states
+    const [theme, setTheme] = usePersistentState<'light' | 'dark'>(`${dataKeyPrefix}-theme`, 'dark');
+    const [companyProfile, setCompanyProfile] = usePersistentState<CompanyProfile>(`${dataKeyPrefix}-companyProfile`, { name: 'Empresa ABC' });
+    const [appSettings, setAppSettings] = usePersistentState<AppSettings>(`${dataKeyPrefix}-appSettings`, { notifications: true, reminders: true });
     
-    // Data states
-    const [clients, setClients] = usePersistentState<Client[]>('clients', MOCK_CLIENTS);
-    const [equipment, setEquipment] = usePersistentState<Equipment[]>('equipment', MOCK_EQUIPMENT);
-    const [inspections, setInspections] = usePersistentState<Inspection[]>('inspections', MOCK_INSPECTIONS);
-    const [financial, setFinancial] = usePersistentState<FinancialRecord[]>('financial', MOCK_FINANCIAL);
-    const [certificates] = usePersistentState<Certificate[]>('certificates', MOCK_CERTIFICATES);
-    
+    // User-specific data - new users start with empty arrays, 'admin' gets mock data as a seed.
+    const [clients, setClients] = usePersistentState<Client[]>(`${dataKeyPrefix}-clients`, currentUser === 'admin' ? MOCK_CLIENTS : []);
+    const [equipment, setEquipment] = usePersistentState<Equipment[]>(`${dataKeyPrefix}-equipment`, currentUser === 'admin' ? MOCK_EQUIPMENT : []);
+    const [inspections, setInspections] = usePersistentState<Inspection[]>(`${dataKeyPrefix}-inspections`, currentUser === 'admin' ? MOCK_INSPECTIONS : []);
+    const [financial, setFinancial] = usePersistentState<FinancialRecord[]>(`${dataKeyPrefix}-financial`, currentUser === 'admin' ? MOCK_FINANCIAL : []);
+    const [certificates] = usePersistentState<Certificate[]>(`${dataKeyPrefix}-certificates`, currentUser === 'admin' ? MOCK_CERTIFICATES : []);
+
+
     useEffect(() => {
         // Always set dark theme on login page
         if (!isAuthenticated) {
@@ -222,23 +252,44 @@ const App: React.FC = () => {
 
     // --- Auth Handlers ---
     const handleLogin = (username: string, pass: string) => {
-        // Mock authentication
-        if (username === 'admin' && pass === 'admin') {
-            setIsAuthenticated(true);
+        const user = users.find(u => u.username === username.toLowerCase());
+        
+        if (user && user.passwordHash === pass) { // Password must match exactly
+            setCurrentUser(user.username);
             showToast('Login realizado com sucesso!');
         } else {
             showToast('Credenciais inválidas.', 'error');
         }
     };
 
-    const handleRegister = (username: string, _email: string, _pass: string) => {
-        // Mock registration
+    const handleRegister = (username: string, email: string, pass: string, fullName: string, address: string) => {
+        const existingUser = users.find(u => u.username === username.toLowerCase());
+        if (existingUser) {
+            showToast('Este nome de usuário já está em uso.', 'error');
+            return;
+        }
+
+        const newUser: User = {
+            username: username.toLowerCase(),
+            passwordHash: pass,
+        };
+        if (email) newUser.email = email;
+        if (fullName) newUser.fullName = fullName;
+        if (address) newUser.address = address;
+
+
+        setUsers(prev => [...prev, newUser]);
         showToast(`Usuário "${username}" registrado com sucesso!`, 'success');
         setAuthView('login');
     };
+    
+    const handleUpdateUser = (updatedUser: User) => {
+        setUsers(prevUsers => prevUsers.map(u => u.username === updatedUser.username ? updatedUser : u));
+        showToast("Perfil atualizado com sucesso!");
+    };
 
     const handleLogout = () => {
-        setIsAuthenticated(false);
+        setCurrentUser(null);
         setAuthView('login');
         showToast('Você saiu da sua conta.');
     };
@@ -311,6 +362,8 @@ const App: React.FC = () => {
     };
 
     const renderView = () => {
+        const currentUserDetails = users.find(u => u.username === currentUser);
+
         if (detailView?.type === 'client') {
             const client = clients.find(c => c.id === detailView.id);
             if (!client) return <p>Cliente não encontrado</p>;
@@ -318,24 +371,28 @@ const App: React.FC = () => {
         }
 
         switch (currentView) {
-            case 'dashboard': return <Dashboard clients={clients} equipment={equipment} inspections={inspections} setView={handleSetView} />;
+            case 'dashboard': return <Dashboard user={currentUserDetails} clients={clients} equipment={equipment} inspections={inspections} setView={handleSetView} />;
             case 'clients': return <Clients clients={clients} onViewClient={handleViewClient} onAddClient={handleAddClient} />;
             case 'equipment': return <Equipments equipment={equipment} clients={clients} onAddEquipment={handleAddEquipment} />;
             case 'agenda': return <Agenda inspections={inspections} clients={clients} onAddInspection={handleAddInspection} prefilledData={prefilledInspectionData} onPrefillHandled={() => setPrefilledInspectionData(null)} showToast={showToast} />;
             case 'certificates': return <Certificates certificates={certificates} clients={clients}/>;
             case 'reports': return <Reports equipment={equipment} clients={clients} />;
             case 'financial': return <Financial financial={financial} clients={clients} onAddFinancial={handleAddFinancial} />;
-            case 'settings': return <Settings 
-                theme={theme} 
-                setTheme={setTheme}
-                profile={companyProfile}
-                setProfile={setCompanyProfile}
-                settings={appSettings}
-                setSettings={setAppSettings}
-                showToast={showToast}
-                onLogout={handleLogout}
-            />;
-            default: return <Dashboard clients={clients} equipment={equipment} inspections={inspections} setView={handleSetView} />;
+            case 'settings': 
+                if (!currentUserDetails) return <p>Erro: usuário não encontrado.</p>;
+                return <Settings 
+                    user={currentUserDetails}
+                    onUpdateUser={handleUpdateUser}
+                    theme={theme} 
+                    setTheme={setTheme}
+                    profile={companyProfile}
+                    setProfile={setCompanyProfile}
+                    settings={appSettings}
+                    setSettings={setAppSettings}
+                    showToast={showToast}
+                    onLogout={handleLogout}
+                />;
+            default: return <Dashboard user={currentUserDetails} clients={clients} equipment={equipment} inspections={inspections} setView={handleSetView} />;
         }
     };
 

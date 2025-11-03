@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, ReactNode, useEffect } from 'react';
 import { Client, Equipment, Inspection, FinancialRecord, Certificate, InspectionStatus, PaymentStatus, View } from '../../types';
+import { User } from '../../App';
 import { Card, Modal, getStatusBadge, Button, Input, Select, Textarea, FormField, EmptyState, ConfirmationModal, FloatingActionButton, ToggleSwitch } from './common';
 import { ClientsIcon, EquipmentIcon, PlusIcon, CertificateIcon, AgendaIcon, FinancialIcon, LogoutIcon, DownloadIcon, ReportsIcon, EditIcon, TrashIcon } from './Icons';
 
@@ -88,9 +89,17 @@ const setWorksheetColumns = (worksheet: any, data: any[]) => {
 
 
 // --- DASHBOARD ---
-export const Dashboard = ({ clients, equipment, inspections, setView }: { clients: Client[], equipment: Equipment[], inspections: Inspection[], setView: (view: View) => void }) => {
+export const Dashboard = ({ user, clients, equipment, inspections, setView }: { user?: User, clients: Client[], equipment: Equipment[], inspections: Inspection[], setView: (view: View) => void }) => {
   const upcomingInspections = inspections.filter(i => new Date(i.date) > new Date() && i.status === InspectionStatus.Agendada).slice(0, 3);
   const expiringEquipment = equipment.filter(e => new Date(e.expiryDate) < new Date(new Date().setMonth(new Date().getMonth() + 3))).slice(0, 3);
+
+  const getFirstName = (fullName?: string) => {
+    if (!fullName || fullName.trim() === '') return '';
+    return fullName.split(' ')[0];
+  };
+
+  const firstName = getFirstName(user?.fullName);
+  const greeting = firstName ? `Olá, ${firstName}!` : 'Olá!';
 
   const QuickActionButton = ({ label, icon, onClick }: { label: string, icon: ReactNode, onClick: () => void }) => (
       <button onClick={onClick} className="bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md p-4 rounded-xl text-text-primary flex flex-col items-center justify-center text-center hover:border-accent transition-colors shadow-lg dark:shadow-cyan-900/10 border border-border space-y-2 transform active:scale-95">
@@ -102,7 +111,7 @@ export const Dashboard = ({ clients, equipment, inspections, setView }: { client
   return (
     <div className="p-4 space-y-6">
         <div className="px-4">
-            <h1 className="text-3xl font-bold text-text-primary">Olá!</h1>
+            <h1 className="text-3xl font-bold text-text-primary">{greeting}</h1>
             <p className="text-text-secondary">Foco nas suas prioridades de hoje.</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -710,28 +719,73 @@ export const Financial: React.FC<{ financial: FinancialRecord[], clients: Client
 
 // --- SETTINGS ---
 export const Settings: React.FC<{ 
-    theme: 'light' | 'dark', setTheme: (theme: 'light' | 'dark') => void,
-    profile: { name: string }, setProfile: (profile: { name: string }) => void,
-    settings: { notifications: boolean, reminders: boolean }, setSettings: (s: { notifications: boolean, reminders: boolean }) => void,
-    showToast: (msg: string) => void,
-    onLogout: () => void,
-}> = ({ theme, setTheme, profile, setProfile, settings, setSettings, showToast, onLogout }) => {
+    user: User;
+    onUpdateUser: (user: User) => void;
+    theme: 'light' | 'dark';
+    setTheme: (theme: 'light' | 'dark') => void;
+    profile: { name: string };
+    setProfile: (profile: { name: string }) => void;
+    settings: { notifications: boolean, reminders: boolean };
+    setSettings: (s: { notifications: boolean, reminders: boolean }) => void;
+    showToast: (msg: string) => void;
+    onLogout: () => void;
+}> = ({ user, onUpdateUser, theme, setTheme, profile, setProfile, settings, setSettings, showToast, onLogout }) => {
     
     const [companyName, setCompanyName] = useState(profile.name);
+    const [userProfile, setUserProfile] = useState({
+        fullName: user.fullName || '',
+        address: user.address || '',
+    });
 
-    const handleProfileSave = () => {
+    useEffect(() => {
+        // Sync local state if the user prop changes
+        setUserProfile({
+            fullName: user.fullName || '',
+            address: user.address || '',
+        });
+    }, [user]);
+    
+    const handleCompanyProfileSave = () => {
         setProfile({ name: companyName });
         showToast("Perfil da empresa atualizado!");
     };
 
+    const handleUserSave = () => {
+        onUpdateUser({
+            ...user,
+            fullName: userProfile.fullName,
+            address: userProfile.address,
+        });
+    };
+
     return (
         <div className="p-4 space-y-8">
+            <Card title="Meu Perfil">
+                <div className="space-y-4">
+                    <FormField label="Nome Completo">
+                        <Input 
+                            value={userProfile.fullName} 
+                            onChange={(e) => setUserProfile(p => ({ ...p, fullName: e.target.value }))} 
+                            placeholder="Seu nome completo"
+                        />
+                    </FormField>
+                    <FormField label="Endereço">
+                        <Input 
+                            value={userProfile.address} 
+                            onChange={(e) => setUserProfile(p => ({ ...p, address: e.target.value }))} 
+                            placeholder="Seu endereço"
+                        />
+                    </FormField>
+                    <Button onClick={handleUserSave}>Salvar Perfil</Button>
+                </div>
+            </Card>
+
             <Card title="Perfil da Empresa">
                 <div className="space-y-4">
                     <FormField label="Nome da Empresa">
                         <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
                     </FormField>
-                    <Button onClick={handleProfileSave}>Salvar Alterações</Button>
+                    <Button onClick={handleCompanyProfileSave}>Salvar Alterações</Button>
                 </div>
             </Card>
 

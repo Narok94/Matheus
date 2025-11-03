@@ -13,7 +13,7 @@ interface LoginPageProps extends AuthPageProps {
 }
 
 interface RegisterPageProps extends AuthPageProps {
-    onRegister: (username: string, email: string, pass: string) => void;
+    onRegister: (username: string, email: string, pass: string, fullName: string, address: string) => void;
     onSwitchToLogin: () => void;
 }
 
@@ -229,7 +229,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, showToas
             showToast("A senha deve ter pelo menos 4 caracteres.", "error");
             return;
         }
-        onRegister(username, email, password);
+        onRegister(username, email, password, fullName, address);
     };
 
     return (
@@ -251,8 +251,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, showToas
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Email"
-                        required
+                        placeholder="Email (Opcional)"
                     />
                     <FormInput
                         icon={<LockIcon />}
