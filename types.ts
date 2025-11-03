@@ -10,13 +10,30 @@ export enum PaymentStatus {
   Pendente = 'Pendente',
 }
 
+export enum DeliveryStatus {
+  Pendente = 'Pendente',
+  Entregue = 'Entregue',
+}
+
+export enum LicenseStatus {
+  Pendente = 'Pendente',
+  Renovada = 'Renovada',
+}
+
+export enum InspectionItemStatus {
+  Conforme = 'Conforme',
+  NaoConforme = 'Não Conforme',
+}
+
+
 export interface Client {
   id: string;
   name: string;
   document: string; // CNPJ/CPF
   address: string;
   city: string;
-  contact: string;
+  contactName: string;
+  contact: string; // Phone
   email: string;
 }
 
@@ -26,17 +43,28 @@ export interface Equipment {
   name: string;
   serialNumber: string;
   expiryDate: string;
-  type: string;
+  category: string; // Ex: 'Extintor', 'Hidrante'
+  unitOfMeasure: string; // Ex: 'Unidade', 'Metro'
+  costPrice?: number;
+  salePrice?: number;
+  observations?: string;
   capacity: string;
   manufacturer: string;
   lastInspectionDate?: string;
   status: InspectionStatus;
 }
 
+export interface InspectedItem {
+  equipmentId: string;
+  location: string;
+  situation: InspectionItemStatus;
+  suggestedAction: string;
+}
+
 export interface Inspection {
   id: string;
   clientId: string;
-  equipmentIds: string[];
+  inspectedItems: InspectedItem[];
   date: string;
   inspector: string;
   observations: string;
@@ -60,6 +88,34 @@ export interface FinancialRecord {
   value: number;
   issueDate: string;
   dueDate: string;
+  paymentDate?: string;
+  status: PaymentStatus;
+}
+
+export interface License {
+  id: string;
+  clientId: string;
+  type: string;
+  issueDate: string;
+  expiryDate: string;
+  status: LicenseStatus;
+}
+
+export interface Delivery {
+  id: string;
+  clientId: string;
+  description: string;
+  deliveryDate: string;
+  status: DeliveryStatus;
+}
+
+export interface Expense { // For "Contas a Pagar"
+  id: string;
+  description: string;
+  supplier?: string;
+  value: number;
+  dueDate: string;
+  paymentDate?: string;
   status: PaymentStatus;
 }
 
@@ -74,7 +130,7 @@ export type DetailView = {
     id: string;
 } | null;
 
-export type View = 'dashboard' | 'clients' | 'equipment' | 'agenda' | 'certificates' | 'financial' | 'settings' | 'clientDetail' | 'inspectionDetail' | 'certificateDetail' | 'reports';
+export type View = 'dashboard' | 'clients' | 'equipment' | 'agenda' | 'certificates' | 'financial' | 'settings' | 'clientDetail' | 'inspectionDetail' | 'certificateDetail' | 'reports' | 'payables';
 
 export type User = {
     username: string; // stored as lowercase
@@ -101,6 +157,9 @@ export type BackupData = {
     inspections: Inspection[];
     financial: FinancialRecord[];
     certificates: Certificate[];
+    licenses: License[];
+    deliveries: Delivery[];
+    expenses: Expense[];
     companyProfile: CompanyProfile;
     appSettings: AppSettings;
 };

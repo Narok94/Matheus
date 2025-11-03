@@ -33,7 +33,7 @@ export const ClientDetail: React.FC<{
         let formattedValue = value;
         if (name === 'document') formattedValue = formatDocument(value);
         if (name === 'contact') formattedValue = formatPhone(value);
-        if (['name', 'address', 'city'].includes(name)) formattedValue = capitalizeWords(value);
+        if (['name', 'address', 'city', 'contactName'].includes(name)) formattedValue = capitalizeWords(value);
         setEditedClient(prev => prev ? ({ ...prev, [name]: formattedValue }) : prev);
     };
 
@@ -55,7 +55,7 @@ export const ClientDetail: React.FC<{
             [{ v: `Relatório Detalhado: ${client.name}`, s: titleStyle }], [],
             [{ v: "Nome", s: labelStyle }, client.name], [{ v: "Documento", s: labelStyle }, client.document],
             [{ v: "Endereço", s: labelStyle }, client.address], [{ v: "Cidade", s: labelStyle }, client.city],
-            [{ v: "Contato", s: labelStyle }, client.contact], [{ v: "Email", s: labelStyle }, client.email], [],
+            [{ v: "Contato", s: labelStyle }, `${client.contactName} - ${client.contact}`], [{ v: "Email", s: labelStyle }, client.email], [],
             [{ v: "Gerado em:", s: labelStyle }, new Date().toLocaleString()],
         ];
         const clientWorksheet = XLSX.utils.aoa_to_sheet(clientDataSheetData);
@@ -64,7 +64,7 @@ export const ClientDetail: React.FC<{
     
         let equipmentWorksheet;
         if (clientEquipment.length > 0) {
-            const equipmentDataForSheet = clientEquipment.map(eq => ({ "Nome": eq.name, "Nº Série": eq.serialNumber, "Tipo": eq.type, "Capacidade": eq.capacity, "Fabricante": eq.manufacturer, "Status": eq.status, "Vencimento": new Date(eq.expiryDate).toLocaleDateString(), "Últ. Inspeção": eq.lastInspectionDate ? new Date(eq.lastInspectionDate).toLocaleDateString() : 'N/A' }));
+            const equipmentDataForSheet = clientEquipment.map(eq => ({ "Nome": eq.name, "Nº Série": eq.serialNumber, "Categoria": eq.category, "Capacidade": eq.capacity, "Fabricante": eq.manufacturer, "Status": eq.status, "Vencimento": new Date(eq.expiryDate).toLocaleDateString(), "Últ. Inspeção": eq.lastInspectionDate ? new Date(eq.lastInspectionDate).toLocaleDateString() : 'N/A' }));
             equipmentWorksheet = XLSX.utils.json_to_sheet(equipmentDataForSheet);
             setWorksheetColumns(equipmentWorksheet, equipmentDataForSheet);
         } else {
@@ -73,7 +73,7 @@ export const ClientDetail: React.FC<{
     
         let inspectionWorksheet;
         if (clientInspections.length > 0) {
-            const inspectionDataForSheet = clientInspections.map(insp => ({ "Data": new Date(insp.date).toLocaleDateString(), "Inspetor": insp.inspector, "Status": insp.status, "Observações": insp.observations, "Equipamentos (IDs)": insp.equipmentIds.join(', ') }));
+            const inspectionDataForSheet = clientInspections.map(insp => ({ "Data": new Date(insp.date).toLocaleDateString(), "Inspetor": insp.inspector, "Status": insp.status, "Observações": insp.observations, "Nº Itens": insp.inspectedItems.length }));
             inspectionWorksheet = XLSX.utils.json_to_sheet(inspectionDataForSheet);
             setWorksheetColumns(inspectionWorksheet, inspectionDataForSheet);
         } else {
@@ -103,7 +103,7 @@ export const ClientDetail: React.FC<{
                 </div>
                  <div className="mt-4 text-sm text-text-secondary space-y-1">
                     <p>{client.address}, {client.city}</p>
-                    <p>{client.contact} &middot; {client.email}</p>
+                    <p>{client.contactName} &middot; {client.contact} &middot; {client.email}</p>
                 </div>
             </div>
 
@@ -148,7 +148,8 @@ export const ClientDetail: React.FC<{
                     <FormField label="CPF / CNPJ"><Input name="document" value={editedClient.document} onChange={handleInputChange} required /></FormField>
                     <FormField label="Endereço"><Input name="address" value={editedClient.address} onChange={handleInputChange} /></FormField>
                     <FormField label="Cidade"><Input name="city" value={editedClient.city} onChange={handleInputChange} required /></FormField>
-                    <FormField label="Contato (Telefone)"><Input name="contact" type="tel" value={editedClient.contact} onChange={handleInputChange} required /></FormField>
+                    <FormField label="Nome do Contato"><Input name="contactName" value={editedClient.contactName} onChange={handleInputChange} required /></FormField>
+                    <FormField label="Telefone de Contato"><Input name="contact" type="tel" value={editedClient.contact} onChange={handleInputChange} required /></FormField>
                     <FormField label="Email"><Input name="email" type="email" value={editedClient.email} onChange={handleInputChange} /></FormField>
                     <div className="flex justify-end pt-4"><Button type="submit">Salvar Alterações</Button></div>
                 </form>

@@ -47,6 +47,12 @@ export const ReportsIcon = ({ className = 'w-6 h-6' }: { className?: string }) =
     </svg>
 );
 
+export const ChevronLeftIcon = ({ className = 'w-6 h-6' }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+  </svg>
+);
+
 export const PlusIcon = ({ className = 'w-6 h-6' }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -131,5 +137,23 @@ export const BuildingIcon = ({ className = 'w-5 h-5' }: { className?: string }) 
 export const ShareIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8m-4-6l-4-4m0 0L8 8m4-4v12" />
+    </svg>
+);
+
+export const ArrowUpCircleIcon = ({ className = 'w-8 h-8' }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z" />
+    </svg>
+);
+
+export const ArrowDownCircleIcon = ({ className = 'w-8 h-8' }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010-18z" />
+    </svg>
+);
+
+export const FireExtinguisherIcon = ({ className = 'w-6 h-6' }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10 9.5V5.75a2.25 2.25 0 012.25-2.25h0A2.25 2.25 0 0114.5 5.75v3.75m-4.5 0a4.5 4.5 0 109 0m-9 0h9m-9 0v6.75a2.25 2.25 0 002.25 2.25h4.5a2.25 2.25 0 002.25-2.25V9.5m-9 0h-2.25a2.25 2.25 0 00-2.25 2.25V14" />
     </svg>
 );

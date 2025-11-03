@@ -1,14 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
-import { PaymentStatus } from '../../types';
-import { Card, Modal, getStatusBadge, Button, Input, Select, FormField, EmptyState, FloatingActionButton } from '../components/common';
+import { PaymentStatus, FinancialRecord } from '../../types';
+import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus } from '../components/common';
 import { FinancialIcon, PlusIcon } from '../components/Icons';
 
+type FinancialStatusFilter = PaymentStatus | 'Atrasado' | 'all';
+
 const StatusFilter: React.FC<{
-    selectedStatus: PaymentStatus | 'all';
-    onStatusChange: (status: PaymentStatus | 'all') => void;
+    selectedStatus: FinancialStatusFilter;
+    onStatusChange: (status: FinancialStatusFilter) => void;
 }> = ({ selectedStatus, onStatusChange }) => {
-    const statuses: (PaymentStatus | 'all')[] = ['all', ...Object.values(PaymentStatus)];
+    const statuses: FinancialStatusFilter[] = ['all', PaymentStatus.Pendente, PaymentStatus.Pago, 'Atrasado'];
     return (
         <div className="flex space-x-2 overflow-x-auto pb-2 -mx-4 px-4">
             {statuses.map(status => (
@@ -62,8 +64,10 @@ const FinancialChart = ({ received, pending }: { received: number; pending: numb
 export const Financial: React.FC = () => {
     const { financial, clients, handleAddFinancial } = useData();
     const [isAddModalOpen, setAddModalOpen] = useState(false);
-    const [filter, setFilter] = useState<PaymentStatus | 'all'>('all');
-    const [newRecord, setNewRecord] = useState({ clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente });
+    const [filter, setFilter] = useState<FinancialStatusFilter>('all');
+    
+    const initialRecordState: Omit<FinancialRecord, 'id'> = { clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente, paymentDate: '' };
+    const [newRecord, setNewRecord] = useState(initialRecordState);
     
     const financialSummary = financial.reduce((acc, record) => {
         if (record.status === PaymentStatus.Pago) acc.received += record.value;
@@ -73,13 +77,13 @@ export const Financial: React.FC = () => {
 
     const filteredFinancial = useMemo(() => {
         if (filter === 'all') return financial;
-        return financial.filter(rec => rec.status === filter);
+        return financial.filter(rec => getFinancialStatus(rec) === filter);
     }, [financial, filter]);
     
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         handleAddFinancial(newRecord);
-        setNewRecord({ clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente });
+        setNewRecord(initialRecordState);
         setAddModalOpen(false);
     };
 
@@ -104,16 +108,15 @@ export const Financial: React.FC = () => {
                                     <p className="text-sm text-text-secondary">{rec.description}</p>
                                     <p className="text-xs text-text-secondary">{client?.name}</p>
                                 </div>
-                                {getStatusBadge(rec.status)}
+                                <FinancialStatusBadge record={rec} />
                             </div>
                         </Card>
                     );
                 }) : <EmptyState message="Nenhum registro financeiro para este filtro." icon={<FinancialIcon className="w-12 h-12" />} action={<Button onClick={() => setAddModalOpen(true)}>Adicionar Registro</Button>}/>}
             </div>
              <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon />} />
-             <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Adicionar Registro Financeiro">
+             <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Adicionar Contas a Receber">
                  <form onSubmit={handleFormSubmit} className="space-y-4">
-                     {/* Simplified form */}
                     <FormField label="Cliente">
                         <Select name="clientId" value={newRecord.clientId} onChange={e => setNewRecord(p => ({...p, clientId: e.target.value}))} required>
                             <option value="">Selecione um cliente</option>
@@ -122,7 +125,7 @@ export const Financial: React.FC = () => {
                     </FormField>
                     <FormField label="Descrição"><Input value={newRecord.description} onChange={e => setNewRecord(p => ({...p, description: e.target.value}))} required/></FormField>
                     <FormField label="Valor (R$)"><Input type="number" step="0.01" value={newRecord.value} onChange={e => setNewRecord(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <FormField label="Data de Emissão"><Input type="date" value={newRecord.issueDate} onChange={e => setNewRecord(p => ({...p, issueDate: e.target.value}))} required /></FormField>
                         <FormField label="Data de Vencimento"><Input type="date" value={newRecord.dueDate} onChange={e => setNewRecord(p => ({...p, dueDate: e.target.value}))} required /></FormField>
                     </div>
@@ -132,6 +135,9 @@ export const Financial: React.FC = () => {
                             <option value={PaymentStatus.Pago}>Pago</option>
                         </Select>
                     </FormField>
+                     {newRecord.status === PaymentStatus.Pago && (
+                        <FormField label="Data de Recebimento"><Input type="date" value={newRecord.paymentDate} onChange={e => setNewRecord(p => ({...p, paymentDate: e.target.value}))} /></FormField>
+                    )}
                     <div className="flex justify-end pt-4"><Button type="submit">Salvar Registro</Button></div>
                  </form>
              </Modal>

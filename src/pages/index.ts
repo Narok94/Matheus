@@ -9,3 +9,4 @@ export { Reports } from './Reports';
 export { Settings } from './Settings';
 export { InspectionDetail } from './InspectionDetail';
 export { CertificateDetail } from './CertificateDetail';
+export { Payables } from './Payables';

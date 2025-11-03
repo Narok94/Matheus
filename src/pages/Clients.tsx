@@ -13,7 +13,7 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [newClient, setNewClient] = useState({ name: '', document: '', address: '', city: '', contact: '', email: '' });
+    const [newClient, setNewClient] = useState({ name: '', document: '', address: '', city: '', contactName: '', contact: '', email: '' });
 
     const filteredClients = useMemo(() =>
         clients.filter(client =>
@@ -30,6 +30,7 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
             case 'name':
             case 'address':
             case 'city':
+            case 'contactName':
                 formattedValue = capitalizeWords(value);
                 break;
             case 'document':
@@ -50,7 +51,7 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
         // as the state update itself is synchronous.
         setTimeout(() => {
             handleAddClient(newClient);
-            setNewClient({ name: '', document: '', address: '', city: '', contact: '', email: '' });
+            setNewClient({ name: '', document: '', address: '', city: '', contactName: '', contact: '', email: '' });
             setAddModalOpen(false);
             setIsSubmitting(false);
         }, 300);
@@ -82,7 +83,8 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
                     <FormField label="CPF / CNPJ"><Input name="document" value={newClient.document} onChange={handleInputChange} required /></FormField>
                     <FormField label="Endereço"><Input name="address" value={newClient.address} onChange={handleInputChange} /></FormField>
                     <FormField label="Cidade"><Input name="city" value={newClient.city} onChange={handleInputChange} required /></FormField>
-                    <FormField label="Contato (Telefone)"><Input name="contact" type="tel" value={newClient.contact} onChange={handleInputChange} required /></FormField>
+                    <FormField label="Nome do Contato"><Input name="contactName" value={newClient.contactName} onChange={handleInputChange} required /></FormField>
+                    <FormField label="Telefone de Contato"><Input name="contact" type="tel" value={newClient.contact} onChange={handleInputChange} required /></FormField>
                     <FormField label="Email"><Input name="email" type="email" value={newClient.email} onChange={handleInputChange} /></FormField>
                     <div className="flex justify-end pt-4"><Button type="submit" loading={isSubmitting}>Salvar Cliente</Button></div>
                 </form>

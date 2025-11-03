@@ -6,7 +6,7 @@ import { DataProvider, useData } from './src/context/DataContext';
 import { SettingsProvider, useSettings } from './src/context/SettingsContext';
 import { 
     Dashboard, Clients, Equipments, Agenda, Certificates, 
-    Financial, Settings, ClientDetail, InspectionDetail, CertificateDetail, Reports 
+    Financial, Settings, ClientDetail, InspectionDetail, CertificateDetail, Reports, Payables 
 } from './src/pages';
 import { LoginPage, RegisterPage } from './src/components/LoginPage';
 import { Toast } from './src/components/common';
@@ -20,10 +20,10 @@ import { useIdleTimer } from './src/hooks/useIdleTimer';
 
 const viewTitles: Record<View, string> = {
     dashboard: 'Início', clients: 'Clientes', equipment: 'Equipamentos',
-    agenda: 'Agenda', certificates: 'Certificados', financial: 'Financeiro',
+    agenda: 'Agenda', certificates: 'Certificados', financial: 'Contas a Receber',
     settings: 'Configurações', clientDetail: 'Detalhes do Cliente', 
     inspectionDetail: 'Detalhes da Inspeção', reports: 'Relatórios',
-    certificateDetail: 'Certificado'
+    certificateDetail: 'Certificado', payables: 'Contas a Pagar'
 };
 
 const Header: React.FC<{
@@ -40,7 +40,7 @@ const Header: React.FC<{
              <header className="p-4 flex items-center justify-between sticky top-0 z-10 bg-secondary/80 backdrop-blur-sm border-b border-border">
                  <div className="flex items-center">
                     <div className="h-8 w-8">
-                        <InspecProLogo className="text-slate-800 dark:text-slate-200" />
+                        <InspecProLogo />
                     </div>
                     <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
                 </div>
@@ -53,7 +53,7 @@ const Header: React.FC<{
     
     return (
         <header className="bg-secondary/80 backdrop-blur-sm border-b border-border p-4 sticky top-0 z-10 md:hidden flex items-center justify-center">
-            {(isDetailView || view === 'settings') && (
+            {(isDetailView || view === 'settings' || view === 'payables') && (
                 <button onClick={onBack} className="absolute left-4 text-text-primary hover:text-accent transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -121,7 +121,7 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
         <aside className="hidden md:flex w-64 bg-primary text-white flex-shrink-0 p-4 border-r border-border flex-col">
             <div className="flex items-center mb-8">
                 <div className="h-8 w-8">
-                    <InspecProLogo className="text-slate-800 dark:text-slate-200" />
+                    <InspecProLogo />
                 </div>
                 <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
             </div>
@@ -222,14 +222,14 @@ const AppContent: React.FC = () => {
         if (currentView === 'clientDetail') previousView = 'clients';
         else if (currentView === 'inspectionDetail') previousView = 'agenda';
         else if (currentView === 'certificateDetail') previousView = 'certificates';
-        else if (currentView === 'settings' || currentView === 'reports') previousView = 'dashboard';
+        else if (currentView === 'settings' || currentView === 'reports' || currentView === 'payables') previousView = 'dashboard';
         setDetailView(null);
         setCurrentView(previousView);
     };
 
     const renderView = () => {
         switch (currentView) {
-            case 'dashboard': return <Dashboard setView={handleSetView} />;
+            case 'dashboard': return <Dashboard setView={handleSetView} onScheduleForClient={handleScheduleForClient} />;
             case 'clients': return <Clients onViewClient={handleViewClient} />;
             case 'equipment': return <Equipments showToast={showToast} />;
             case 'agenda': return <Agenda prefilledData={prefilledInspectionData} onPrefillHandled={() => setPrefilledInspectionData(null)} showToast={showToast} onViewInspection={handleViewInspection} />;
@@ -237,6 +237,7 @@ const AppContent: React.FC = () => {
             case 'reports': return <Reports />;
             case 'financial': return <Financial />;
             case 'settings': return <Settings showToast={showToast} />;
+            case 'payables': return <Payables />;
             case 'clientDetail': 
                 if (detailView?.type !== 'client') return <p>Erro: Cliente não especificado.</p>;
                 return <ClientDetail clientId={detailView.id} onScheduleInspection={handleScheduleForClient} onViewInspection={handleViewInspection} />;
@@ -246,7 +247,7 @@ const AppContent: React.FC = () => {
             case 'certificateDetail':
                 if (detailView?.type !== 'certificate') return <p>Erro: Certificado não especificado.</p>;
                 return <CertificateDetail certificateId={detailView.id} />;
-            default: return <Dashboard setView={handleSetView} />;
+            default: return <Dashboard setView={handleSetView} onScheduleForClient={handleScheduleForClient} />;
         }
     };
 

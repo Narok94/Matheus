@@ -1,5 +1,5 @@
 import React, { ReactNode, useEffect, useState } from 'react';
-import { InspectionStatus, PaymentStatus, ToastMessage } from '../../types';
+import { InspectionStatus, PaymentStatus, ToastMessage, FinancialRecord, Expense } from '../../types';
 
 interface CardProps {
   title?: string;
@@ -59,9 +59,20 @@ interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [isOpen]);
+
   return (
-    <div className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-end transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-      <div className={`bg-primary/80 backdrop-blur-lg border-t border-border rounded-t-2xl shadow-xl w-full md:max-w-2xl max-h-[90dvh] flex flex-col transform transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}>
+    <div className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-end md:items-center transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <div className={`bg-primary/80 backdrop-blur-lg border border-border rounded-t-2xl md:rounded-2xl shadow-xl w-full md:max-w-2xl max-h-[90dvh] flex flex-col transform transition-all duration-300 ease-out ${isOpen ? 'translate-y-0 md:opacity-100 md:scale-100' : 'translate-y-full md:opacity-0 md:scale-95'}`}>
         <div className="flex justify-between items-center p-4 border-b border-border sticky top-0 bg-primary/80 z-10">
           <h2 className="text-xl font-bold text-text-primary">{title}</h2>
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors">
@@ -147,6 +158,28 @@ export const getStatusBadge = (status: InspectionStatus | PaymentStatus) => {
             colorClasses = 'bg-cyan-100 text-status-scheduled border border-cyan-200 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/30';
             break;
     }
+    return <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${colorClasses}`}>{status}</span>;
+}
+
+type FinancialStatus = PaymentStatus | 'Atrasado';
+
+export const getFinancialStatus = (record: FinancialRecord | Expense): FinancialStatus => {
+    if (record.status === PaymentStatus.Pendente && new Date(record.dueDate) < new Date()) {
+        return 'Atrasado';
+    }
+    return record.status;
+};
+
+export const FinancialStatusBadge: React.FC<{ record: FinancialRecord | Expense }> = ({ record }) => {
+    const status = getFinancialStatus(record);
+
+    if (status === PaymentStatus.Pago || status === PaymentStatus.Pendente) {
+        return getStatusBadge(status);
+    }
+    
+    // Custom style for 'Atrasado'
+    const colorClasses = 'bg-orange-100 text-orange-600 border border-orange-200 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/30';
+
     return <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${colorClasses}`}>{status}</span>;
 }
 

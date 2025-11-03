@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { InspectionStatus, PrefilledInspectionData } from '../../types';
+import { InspectionStatus, PrefilledInspectionData, InspectedItem, InspectionItemStatus, Equipment } from '../../types';
 import { Card, Modal, getStatusBadge, Button, Input, Select, Textarea, FormField, EmptyState, FloatingActionButton } from '../components/common';
 import { AgendaIcon, PlusIcon } from '../components/Icons';
+import { Calendar } from '../components/Calendar';
 
 const StatusFilter: React.FC<{
     selectedStatus: InspectionStatus | 'all';
@@ -28,6 +29,32 @@ const StatusFilter: React.FC<{
     );
 };
 
+const InspectedItemForm: React.FC<{
+    item: InspectedItem;
+    equipment: Equipment;
+    onUpdate: (field: keyof InspectedItem, value: string) => void;
+}> = ({ item, equipment, onUpdate }) => {
+    return (
+        <div className="p-3 bg-secondary rounded-lg border border-border space-y-3">
+            <p className="font-semibold text-text-primary">{equipment.name} <span className="text-xs text-text-secondary">({equipment.serialNumber})</span></p>
+            <FormField label="Localização">
+                <Input value={item.location} onChange={e => onUpdate('location', e.target.value)} placeholder="Ex: Térreo, Corredor B" required />
+            </FormField>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                 <FormField label="Situação">
+                    <Select value={item.situation} onChange={e => onUpdate('situation', e.target.value as InspectionItemStatus)}>
+                        <option value={InspectionItemStatus.Conforme}>Conforme</option>
+                        <option value={InspectionItemStatus.NaoConforme}>Não Conforme</option>
+                    </Select>
+                </FormField>
+                 <FormField label="Ação Sugerida">
+                    <Input value={item.suggestedAction} onChange={e => onUpdate('suggestedAction', e.target.value)} placeholder="Ex: Reparo, Troca" required />
+                </FormField>
+            </div>
+        </div>
+    )
+}
+
 
 export const Agenda: React.FC<{ 
     prefilledData: PrefilledInspectionData, 
@@ -38,21 +65,28 @@ export const Agenda: React.FC<{
     const { inspections, clients, equipment, handleAddInspection } = useData();
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [filter, setFilter] = useState<InspectionStatus | 'all'>('all');
+    const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
     
-    const initialInspectionState = { clientId: '', equipmentIds: [] as string[], date: '', inspector: 'João Silva', observations: '', status: InspectionStatus.Agendada };
+    const initialInspectionState = { clientId: '', inspectedItems: [] as InspectedItem[], date: '', inspector: 'João Silva', observations: '', status: InspectionStatus.Agendada };
     const [newInspection, setNewInspection] = useState(initialInspectionState);
     
     const clientEquipment = useMemo(() => {
         return equipment.filter(e => e.clientId === newInspection.clientId);
     }, [equipment, newInspection.clientId]);
 
+    const inspectionDates = useMemo(() => 
+        inspections.map(i => i.date), 
+    [inspections]);
+
     useEffect(() => {
         if(prefilledData?.clientId) {
+            const inspectionDate = new Date(); // Using today's date for prefill
             setNewInspection(prev => ({
                 ...prev,
                 clientId: prefilledData.clientId || '',
-                date: new Date().toISOString().split('T')[0],
+                date: inspectionDate.toISOString().split('T')[0],
             }));
+            setSelectedDate(inspectionDate);
             setAddModalOpen(true);
             onPrefillHandled();
         }
@@ -60,8 +94,8 @@ export const Agenda: React.FC<{
     
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (newInspection.equipmentIds.length === 0) {
-            showToast("Selecione ao menos um equipamento para a inspeção.", "error");
+        if (newInspection.inspectedItems.length === 0) {
+            showToast("Selecione e detalhe ao menos um equipamento para a inspeção.", "error");
             return;
         }
         handleAddInspection(newInspection);
@@ -72,25 +106,68 @@ export const Agenda: React.FC<{
     
     const handleEquipmentSelection = (equipmentId: string, isSelected: boolean) => {
         setNewInspection(prev => {
-            const currentIds = prev.equipmentIds;
+            const currentItems = prev.inspectedItems;
             if (isSelected) {
-                return { ...prev, equipmentIds: [...currentIds, equipmentId] };
+                const newItem: InspectedItem = { equipmentId, location: '', situation: InspectionItemStatus.Conforme, suggestedAction: 'Nenhuma' };
+                return { ...prev, inspectedItems: [...currentItems, newItem] };
             } else {
-                return { ...prev, equipmentIds: currentIds.filter(id => id !== equipmentId) };
+                return { ...prev, inspectedItems: currentItems.filter(item => item.equipmentId !== equipmentId) };
             }
         });
     };
+    
+    const handleInspectedItemUpdate = (equipmentId: string, field: keyof InspectedItem, value: string) => {
+        setNewInspection(prev => ({
+            ...prev,
+            inspectedItems: prev.inspectedItems.map(item => item.equipmentId === equipmentId ? { ...item, [field]: value } : item)
+        }));
+    };
 
     const sortedAndFilteredInspections = useMemo(() => {
-        const filtered = filter === 'all' 
-            ? inspections 
-            : inspections.filter(i => i.status === filter);
-        return [...filtered].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }, [inspections, filter]);
+        let items = inspections;
+
+        if (selectedDate) {
+            const selectedISO = selectedDate.toISOString().split('T')[0];
+            items = items.filter(i => i.date === selectedISO);
+        }
+        
+        if (filter !== 'all') {
+            items = items.filter(i => i.status === filter);
+        }
+
+        return [...items].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }, [inspections, filter, selectedDate]);
+    
+    const handleOpenAddModal = () => {
+        const dateForNewInspection = selectedDate || new Date();
+        setNewInspection({
+            ...initialInspectionState,
+            date: dateForNewInspection.toISOString().split('T')[0]
+        });
+        setAddModalOpen(true);
+    };
 
     return (
         <div className="p-4 space-y-4">
+            <Calendar 
+                selectedDate={selectedDate} 
+                onDateSelect={setSelectedDate} 
+                highlightedDates={inspectionDates} 
+            />
+            
+            <div className="flex justify-between items-center pt-4">
+                <h2 className="text-xl font-bold text-text-primary">
+                    {selectedDate ? `Agenda para ${selectedDate.toLocaleDateString('pt-BR')}` : 'Todas as Inspeções'}
+                </h2>
+                {selectedDate && (
+                    <Button variant="secondary" className="!py-1 !px-3" onClick={() => setSelectedDate(null)}>
+                        Ver todas
+                    </Button>
+                )}
+            </div>
+
             <StatusFilter selectedStatus={filter} onStatusChange={setFilter} />
+
             {sortedAndFilteredInspections.length > 0 ? sortedAndFilteredInspections.map(insp => {
                 const client = clients.find(c => c.id === insp.clientId);
                 return (
@@ -103,30 +180,31 @@ export const Agenda: React.FC<{
                                 </div>
                                 {getStatusBadge(insp.status)}
                             </div>
-                            <p className="text-xs text-text-secondary mt-2">Inspetor: {insp.inspector}</p>
+                            <p className="text-xs text-text-secondary mt-2">Inspetor: {insp.inspector} &middot; {insp.inspectedItems.length} item(ns)</p>
                         </div>
                     </Card>
                 )
-            }) : <EmptyState message="Nenhuma inspeção encontrada para este filtro." icon={<AgendaIcon className="w-12 h-12" />} action={<Button onClick={() => setAddModalOpen(true)}>Agendar Inspeção</Button>} />}
-             <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon />} />
+            }) : <EmptyState message={selectedDate ? "Nenhuma inspeção agendada para este dia." : "Nenhuma inspeção encontrada para este filtro."} icon={<AgendaIcon className="w-12 h-12" />} action={<Button onClick={handleOpenAddModal}>Agendar Inspeção</Button>} />}
+             <FloatingActionButton onClick={handleOpenAddModal} icon={<PlusIcon />} />
              <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Agendar Nova Inspeção">
                 <form onSubmit={handleFormSubmit} className="space-y-4">
                     <FormField label="Cliente">
-                        <Select name="clientId" value={newInspection.clientId} onChange={(e) => setNewInspection(p => ({...p, clientId: e.target.value, equipmentIds: []}))} required>
+                        <Select name="clientId" value={newInspection.clientId} onChange={(e) => setNewInspection(p => ({...p, clientId: e.target.value, inspectedItems: []}))} required>
                             <option value="">Selecione um cliente</option>
                             {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </Select>
                     </FormField>
 
                     {newInspection.clientId && (
-                        <FormField label="Equipamentos a Inspecionar">
-                            <div className="max-h-40 overflow-y-auto bg-primary/50 p-2 rounded-lg border border-border space-y-2 mt-1">
+                        <>
+                        <FormField label="Selecionar Equipamentos">
+                            <div className="max-h-60 overflow-y-auto bg-primary/50 p-2 rounded-lg border border-border space-y-2 mt-1">
                                 {clientEquipment.length > 0 ? clientEquipment.map(eq => (
                                     <label key={eq.id} className="flex items-center space-x-3 p-2 hover:bg-secondary rounded-md cursor-pointer">
                                         <input 
                                             type="checkbox" 
                                             className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
-                                            checked={newInspection.equipmentIds.includes(eq.id)}
+                                            checked={newInspection.inspectedItems.some(item => item.equipmentId === eq.id)}
                                             onChange={(e) => handleEquipmentSelection(eq.id, e.target.checked)}
                                         />
                                         <span className="text-sm text-text-primary">{eq.name} ({eq.serialNumber})</span>
@@ -134,10 +212,22 @@ export const Agenda: React.FC<{
                                 )) : <p className="text-xs text-text-secondary text-center p-2">Nenhum equipamento para este cliente.</p>}
                             </div>
                         </FormField>
+                         {newInspection.inspectedItems.length > 0 && (
+                            <FormField label="Detalhes dos Itens a Inspecionar">
+                                <div className="space-y-3 mt-1">
+                                    {newInspection.inspectedItems.map(item => {
+                                        const equipmentDetails = clientEquipment.find(eq => eq.id === item.equipmentId);
+                                        if (!equipmentDetails) return null;
+                                        return <InspectedItemForm key={item.equipmentId} item={item} equipment={equipmentDetails} onUpdate={(field, value) => handleInspectedItemUpdate(item.equipmentId, field, value)} />
+                                    })}
+                                </div>
+                            </FormField>
+                        )}
+                        </>
                     )}
                     
                     <FormField label="Data da Inspeção"><Input type="date" name="date" value={newInspection.date} onChange={(e) => setNewInspection(p => ({...p, date: e.target.value}))} required /></FormField>
-                    <FormField label="Observações"><Textarea name="observations" value={newInspection.observations} onChange={(e) => setNewInspection(p => ({...p, observations: e.target.value}))} /></FormField>
+                    <FormField label="Observações Gerais"><Textarea name="observations" value={newInspection.observations} onChange={(e) => setNewInspection(p => ({...p, observations: e.target.value}))} /></FormField>
                     <div className="flex justify-end pt-4"><Button type="submit">Agendar</Button></div>
                 </form>
             </Modal>

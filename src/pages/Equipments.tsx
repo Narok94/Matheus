@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { Equipment, InspectionStatus } from '../../types';
-import { Card, Modal, getStatusBadge, Button, Input, Select, FormField, EmptyState, FloatingActionButton, ConfirmationModal } from '../components/common';
+import { Card, Modal, getStatusBadge, Button, Input, Select, FormField, EmptyState, FloatingActionButton, ConfirmationModal, Textarea } from '../components/common';
 import { EquipmentIcon, PlusIcon, EditIcon, TrashIcon } from '../components/Icons';
 
 export const Equipments: React.FC<{showToast: (msg: string, type?: 'success' | 'error') => void}> = ({ showToast }) => {
@@ -11,17 +11,28 @@ export const Equipments: React.FC<{showToast: (msg: string, type?: 'success' | '
     const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
     
-    const initialFormState = { clientId: '', name: '', serialNumber: '', expiryDate: '', type: '', capacity: '', manufacturer: '', status: InspectionStatus.Agendada, lastInspectionDate: '' };
+    const initialFormState: Omit<Equipment, 'id'> = { clientId: '', name: '', serialNumber: '', expiryDate: '', category: 'Extintor', unitOfMeasure: 'Unidade', capacity: '', manufacturer: '', status: InspectionStatus.Agendada, lastInspectionDate: '', costPrice: 0, salePrice: 0, observations: '' };
     const [formState, setFormState] = useState<Omit<Equipment, 'id'>>(initialFormState);
 
     useEffect(() => {
         if (isModalOpen && editingEquipment) {
-            setFormState(editingEquipment);
+            setFormState({
+                ...editingEquipment,
+                costPrice: editingEquipment.costPrice || 0,
+                salePrice: editingEquipment.salePrice || 0,
+                observations: editingEquipment.observations || '',
+            });
         } else {
             setFormState(initialFormState);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isModalOpen, editingEquipment]);
+    
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        const isNumeric = ['costPrice', 'salePrice'].includes(name);
+        setFormState(p => ({ ...p, [name]: isNumeric ? parseFloat(value) : value }));
+    };
 
     const filteredEquipment = useMemo(() => {
         return equipment.filter(eq => {
@@ -50,7 +61,7 @@ export const Equipments: React.FC<{showToast: (msg: string, type?: 'success' | '
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (editingEquipment) {
-            handleUpdateEquipment({ ...editingEquipment, ...formState });
+            handleUpdateEquipment({ ...formState, id: editingEquipment.id });
             showToast('Equipamento atualizado com sucesso!');
         } else {
             handleAddEquipment(formState);
@@ -103,19 +114,43 @@ export const Equipments: React.FC<{showToast: (msg: string, type?: 'success' | '
               <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title={editingEquipment ? 'Editar Equipamento' : 'Adicionar Equipamento'}>
                 <form onSubmit={handleFormSubmit} className="space-y-4">
                     <FormField label="Cliente">
-                        <Select name="clientId" value={formState.clientId} onChange={(e) => setFormState(p => ({...p, clientId: e.target.value}))} required>
+                        <Select name="clientId" value={formState.clientId} onChange={handleInputChange} required>
                             <option value="">Selecione um cliente</option>
                             {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </Select>
                     </FormField>
-                    <FormField label="Nome do Equipamento"><Input name="name" value={formState.name} onChange={(e) => setFormState(p => ({...p, name: e.target.value}))} required /></FormField>
-                    <FormField label="Número de Série"><Input name="serialNumber" value={formState.serialNumber} onChange={(e) => setFormState(p => ({...p, serialNumber: e.target.value}))} required /></FormField>
-                    <FormField label="Data de Vencimento"><Input type="date" name="expiryDate" value={formState.expiryDate} onChange={(e) => setFormState(p => ({...p, expiryDate: e.target.value}))} required /></FormField>
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField label="Tipo"><Input name="type" value={formState.type} onChange={(e) => setFormState(p => ({...p, type: e.target.value}))} /></FormField>
-                        <FormField label="Capacidade"><Input name="capacity" value={formState.capacity} onChange={(e) => setFormState(p => ({...p, capacity: e.target.value}))} /></FormField>
+                    <FormField label="Nome do Equipamento"><Input name="name" value={formState.name} onChange={handleInputChange} required /></FormField>
+                    <FormField label="Número de Série"><Input name="serialNumber" value={formState.serialNumber} onChange={handleInputChange} required /></FormField>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField label="Categoria">
+                            <Select name="category" value={formState.category} onChange={handleInputChange}>
+                                <option>Extintor</option>
+                                <option>Hidrante</option>
+                                <option>Sinalização</option>
+                                <option>Alarme</option>
+                                <option>Outro</option>
+                            </Select>
+                        </FormField>
+                        <FormField label="Unidade de Medida">
+                            <Select name="unitOfMeasure" value={formState.unitOfMeasure} onChange={handleInputChange}>
+                                <option>Unidade</option>
+                                <option>Metro</option>
+                                <option>Litro</option>
+                                <option>Kit</option>
+                            </Select>
+                        </FormField>
                     </div>
-                    <FormField label="Fabricante"><Input name="manufacturer" value={formState.manufacturer} onChange={(e) => setFormState(p => ({...p, manufacturer: e.target.value}))} /></FormField>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField label="Preço de Custo (R$)"><Input type="number" step="0.01" name="costPrice" value={formState.costPrice} onChange={handleInputChange} /></FormField>
+                        <FormField label="Preço de Venda (R$)"><Input type="number" step="0.01" name="salePrice" value={formState.salePrice} onChange={handleInputChange} /></FormField>
+                    </div>
+                    <FormField label="Data de Vencimento"><Input type="date" name="expiryDate" value={formState.expiryDate} onChange={handleInputChange} required /></FormField>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField label="Capacidade"><Input name="capacity" value={formState.capacity} onChange={handleInputChange} /></FormField>
+                        <FormField label="Fabricante"><Input name="manufacturer" value={formState.manufacturer} onChange={handleInputChange} /></FormField>
+                    </div>
+                    <FormField label="Observações"><Textarea name="observations" value={formState.observations} onChange={handleInputChange} /></FormField>
+
                     <div className="flex justify-end pt-4"><Button type="submit">{editingEquipment ? 'Salvar Alterações' : 'Adicionar'}</Button></div>
                 </form>
             </Modal>

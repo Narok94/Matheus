@@ -60,6 +60,10 @@
     }
     body {
         -webkit-tap-highlight-color: transparent;
+        overscroll-behavior-y: contain;
+    }
+    body.modal-open {
+      overflow: hidden;
     }
     /* Custom scrollbar for a cleaner look on supported browsers */
     ::-webkit-scrollbar {

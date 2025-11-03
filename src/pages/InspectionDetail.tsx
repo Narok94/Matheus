@@ -17,7 +17,6 @@ export const InspectionDetail: React.FC<{
     }
 
     const client = clients.find(c => c.id === inspection.clientId);
-    const inspectedEquipment = equipment.filter(e => inspection.equipmentIds.includes(e.id));
     const hasCertificate = certificates.some(c => c.inspectionId === inspection.id);
 
     const handleStatusChange = (newStatus: InspectionStatus) => {
@@ -66,15 +65,28 @@ export const InspectionDetail: React.FC<{
                 </div>
             </Card>
 
-            <Card title={`Equipamentos Inspecionados (${inspectedEquipment.length})`} actions={<EquipmentIcon />}>
-                {inspectedEquipment.length > 0 ? (
-                     <ul className="space-y-2">
-                        {inspectedEquipment.map(eq => (
-                             <li key={eq.id} className="text-sm p-3 bg-primary rounded-md">
-                                <p className="font-semibold text-text-primary">{eq.name}</p>
-                                <p className="text-text-secondary text-xs">S/N: {eq.serialNumber}</p>
-                            </li>
-                        ))}
+            <Card title={`Equipamentos Inspecionados (${inspection.inspectedItems.length})`} actions={<EquipmentIcon />}>
+                {inspection.inspectedItems.length > 0 ? (
+                     <ul className="space-y-3">
+                        {inspection.inspectedItems.map(item => {
+                            const eq = equipment.find(e => e.id === item.equipmentId);
+                            if (!eq) return null;
+                             return (
+                                 <li key={item.equipmentId} className="text-sm p-3 bg-primary rounded-lg border border-border">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-semibold text-text-primary">{eq.name}</p>
+                                            <p className="text-text-secondary text-xs">S/N: {eq.serialNumber}</p>
+                                        </div>
+                                        <span className={`px-2 py-0.5 text-xs rounded-full ${item.situation === 'Conforme' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{item.situation}</span>
+                                    </div>
+                                    <div className="mt-2 text-xs text-text-secondary border-t border-border pt-2">
+                                        <p><span className="font-medium">Local:</span> {item.location}</p>
+                                        <p><span className="font-medium">Ação Sugerida:</span> {item.suggestedAction}</p>
+                                    </div>
+                                </li>
+                            )
+                        })}
                     </ul>
                 ) : (
                     <p className="text-text-secondary text-sm">Nenhum equipamento vinculado a esta inspeção.</p>
