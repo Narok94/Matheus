@@ -1,0 +1,140 @@
+import React, { useState, useMemo } from 'react';
+import { useData } from '../context/DataContext';
+import { PaymentStatus } from '../../types';
+import { Card, Modal, getStatusBadge, Button, Input, Select, FormField, EmptyState, FloatingActionButton } from '../components/common';
+import { FinancialIcon, PlusIcon } from '../components/Icons';
+
+const StatusFilter: React.FC<{
+    selectedStatus: PaymentStatus | 'all';
+    onStatusChange: (status: PaymentStatus | 'all') => void;
+}> = ({ selectedStatus, onStatusChange }) => {
+    const statuses: (PaymentStatus | 'all')[] = ['all', ...Object.values(PaymentStatus)];
+    return (
+        <div className="flex space-x-2 overflow-x-auto pb-2 -mx-4 px-4">
+            {statuses.map(status => (
+                <button
+                    key={status}
+                    onClick={() => onStatusChange(status)}
+                    className={`px-3 py-1 text-sm font-semibold rounded-full whitespace-nowrap transition-colors ${
+                        selectedStatus === status 
+                        ? 'bg-accent text-white' 
+                        : 'bg-secondary/70 text-text-secondary hover:bg-secondary'
+                    }`}
+                >
+                    {status === 'all' ? 'Todos' : status}
+                </button>
+            ))}
+        </div>
+    );
+};
+
+
+const FinancialChart = ({ received, pending }: { received: number; pending: number; }) => {
+    const total = received + pending;
+    if (total === 0) {
+        return <div className="text-center text-text-secondary p-4">Nenhum dado financeiro para exibir.</div>;
+    }
+    const receivedPercent = (received / total) * 100;
+    
+    return (
+        <div className="space-y-4">
+            <div className="w-full bg-primary rounded-full h-4 flex overflow-hidden border border-border">
+                <div style={{ width: `${receivedPercent}%` }} className="bg-status-approved transition-all duration-500 rounded-full" />
+            </div>
+            <div className="flex justify-between text-sm">
+                 <div className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-status-approved mr-2"></span>
+                    <div>
+                        <p className="text-text-secondary">Recebido</p>
+                        <p className="font-bold text-text-primary">R$ {received.toFixed(2).replace('.', ',')}</p>
+                    </div>
+                 </div>
+                 <div className="text-right">
+                    <p className="text-text-secondary">Pendente</p>
+                    <p className="font-bold text-text-primary">R$ {pending.toFixed(2).replace('.', ',')}</p>
+                 </div>
+            </div>
+        </div>
+    );
+};
+
+
+export const Financial: React.FC = () => {
+    const { financial, clients, handleAddFinancial } = useData();
+    const [isAddModalOpen, setAddModalOpen] = useState(false);
+    const [filter, setFilter] = useState<PaymentStatus | 'all'>('all');
+    const [newRecord, setNewRecord] = useState({ clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente });
+    
+    const financialSummary = financial.reduce((acc, record) => {
+        if (record.status === PaymentStatus.Pago) acc.received += record.value;
+        if (record.status === PaymentStatus.Pendente) acc.pending += record.value;
+        return acc;
+    }, { received: 0, pending: 0 });
+
+    const filteredFinancial = useMemo(() => {
+        if (filter === 'all') return financial;
+        return financial.filter(rec => rec.status === filter);
+    }, [financial, filter]);
+    
+    const handleFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        handleAddFinancial(newRecord);
+        setNewRecord({ clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente });
+        setAddModalOpen(false);
+    };
+
+    return (
+        <div className="p-4 space-y-6">
+            <Card title="💰 Resumo Financeiro" collapsible>
+               <FinancialChart received={financialSummary.received} pending={financialSummary.pending} />
+            </Card>
+
+            <div>
+                <StatusFilter selectedStatus={filter} onStatusChange={setFilter} />
+            </div>
+
+            <div className="space-y-4">
+                {filteredFinancial.length > 0 ? filteredFinancial.map(rec => {
+                    const client = clients.find(c => c.id === rec.clientId);
+                    return (
+                        <Card key={rec.id}>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h4 className="font-semibold text-text-primary">R$ {rec.value.toFixed(2).replace('.', ',')}</h4>
+                                    <p className="text-sm text-text-secondary">{rec.description}</p>
+                                    <p className="text-xs text-text-secondary">{client?.name}</p>
+                                </div>
+                                {getStatusBadge(rec.status)}
+                            </div>
+                        </Card>
+                    );
+                }) : <EmptyState message="Nenhum registro financeiro para este filtro." icon={<FinancialIcon className="w-12 h-12" />} action={<Button onClick={() => setAddModalOpen(true)}>Adicionar Registro</Button>}/>}
+            </div>
+             <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon />} />
+             <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Adicionar Registro Financeiro">
+                 <form onSubmit={handleFormSubmit} className="space-y-4">
+                     {/* Simplified form */}
+                    <FormField label="Cliente">
+                        <Select name="clientId" value={newRecord.clientId} onChange={e => setNewRecord(p => ({...p, clientId: e.target.value}))} required>
+                            <option value="">Selecione um cliente</option>
+                            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </Select>
+                    </FormField>
+                    <FormField label="Descrição"><Input value={newRecord.description} onChange={e => setNewRecord(p => ({...p, description: e.target.value}))} required/></FormField>
+                    <FormField label="Valor (R$)"><Input type="number" step="0.01" value={newRecord.value} onChange={e => setNewRecord(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField label="Data de Emissão"><Input type="date" value={newRecord.issueDate} onChange={e => setNewRecord(p => ({...p, issueDate: e.target.value}))} required /></FormField>
+                        <FormField label="Data de Vencimento"><Input type="date" value={newRecord.dueDate} onChange={e => setNewRecord(p => ({...p, dueDate: e.target.value}))} required /></FormField>
+                    </div>
+                     <FormField label="Status">
+                        <Select value={newRecord.status} onChange={e => setNewRecord(p => ({...p, status: e.target.value as PaymentStatus}))}>
+                            <option value={PaymentStatus.Pendente}>Pendente</option>
+                            <option value={PaymentStatus.Pago}>Pago</option>
+                        </Select>
+                    </FormField>
+                    <div className="flex justify-end pt-4"><Button type="submit">Salvar Registro</Button></div>
+                 </form>
+             </Modal>
+        </div>
+    );
+};

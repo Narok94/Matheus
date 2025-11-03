@@ -21,7 +21,7 @@ export interface Client {
 }
 
 export interface Equipment {
-  id: string;
+  id:string;
   clientId: string;
   name: string;
   serialNumber: string;
@@ -70,9 +70,38 @@ export type ToastMessage = {
 } | null;
 
 export type DetailView = {
-    type: 'client' | 'inspection';
+    type: 'client' | 'inspection' | 'certificate';
     id: string;
 } | null;
 
+export type View = 'dashboard' | 'clients' | 'equipment' | 'agenda' | 'certificates' | 'financial' | 'settings' | 'clientDetail' | 'inspectionDetail' | 'certificateDetail' | 'reports';
 
-export type View = 'dashboard' | 'clients' | 'equipment' | 'agenda' | 'certificates' | 'financial' | 'settings' | 'clientDetail' | 'inspectionDetail' | 'reports';
+export type User = {
+    username: string; // stored as lowercase
+    passwordHash: string;
+    email?: string;
+    fullName?: string;
+    address?: string;
+};
+
+export type CompanyProfile = { 
+    name: string; 
+};
+
+export type AppSettings = { 
+    reminders: boolean; 
+};
+
+export type PrefilledInspectionData = {
+    clientId?: string;
+} | null;
+
+export type BackupData = {
+    clients: Client[];
+    equipment: Equipment[];
+    inspections: Inspection[];
+    financial: FinancialRecord[];
+    certificates: Certificate[];
+    companyProfile: CompanyProfile;
+    appSettings: AppSettings;
+};

@@ -1,5 +1,3 @@
-
-
 import React, { ReactNode, useEffect, useState } from 'react';
 import { InspectionStatus, PaymentStatus, ToastMessage } from '../../types';
 
@@ -12,7 +10,7 @@ interface CardProps {
 }
 
 export const Card: React.FC<CardProps> = ({ title, children, className, actions, collapsible = false }) => {
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(collapsible); // Collapse by default if collapsible
 
     const ChevronIcon = ({ isUp }: { isUp: boolean }) => (
         <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 transition-transform duration-300 ${isUp ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -23,14 +21,16 @@ export const Card: React.FC<CardProps> = ({ title, children, className, actions,
     return (
         <div className={`bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md rounded-xl shadow-lg dark:shadow-cyan-900/10 border border-border ${className}`}>
             {(title || actions) && (
-                <div className="flex justify-between items-center p-4 border-b border-border">
+                <div 
+                    className={`flex justify-between items-center p-4 ${!isCollapsed || !collapsible ? 'border-b border-border' : ''} ${collapsible ? 'cursor-pointer' : ''}`}
+                    onClick={collapsible ? () => setIsCollapsed(!isCollapsed) : undefined}
+                >
                     {title && <h3 className="text-lg font-semibold text-text-primary">{title}</h3>}
                     <div className="flex items-center space-x-2">
                         {actions}
-                        {collapsible && title && (
+                        {collapsible && (
                             <button
-                                onClick={() => setIsCollapsed(!isCollapsed)}
-                                className="p-1 rounded-full text-text-secondary hover:bg-primary"
+                                className="p-1 rounded-full text-text-secondary"
                                 aria-label={isCollapsed ? 'Expandir' : 'Minimizar'}
                                 aria-expanded={!isCollapsed}
                             >
@@ -40,7 +40,7 @@ export const Card: React.FC<CardProps> = ({ title, children, className, actions,
                     </div>
                 </div>
             )}
-            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${collapsible && isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                 <div className="overflow-hidden">
                     <div className="p-4">{children}</div>
                 </div>
@@ -60,7 +60,7 @@ interface ModalProps {
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   return (
     <div className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-end transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-      <div className={`bg-primary/80 backdrop-blur-lg border-t border-border rounded-t-2xl shadow-xl w-full max-w-2xl max-h-[90dvh] flex flex-col transform transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}>
+      <div className={`bg-primary/80 backdrop-blur-lg border-t border-border rounded-t-2xl shadow-xl w-full md:max-w-2xl max-h-[90dvh] flex flex-col transform transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-border sticky top-0 bg-primary/80 z-10">
           <h2 className="text-xl font-bold text-text-primary">{title}</h2>
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors">
@@ -175,35 +175,55 @@ export const ToggleSwitch: React.FC<{
 };
 
 // Form Components
-export const Button: React.FC<{ children: ReactNode, onClick?: () => void, type?: 'button' | 'submit' | 'reset', variant?: 'primary' | 'secondary', className?: string, disabled?: boolean }> = ({ children, onClick, type = 'button', variant = 'primary', className = '', disabled = false }) => {
-  const baseClasses = "px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary inline-flex items-center justify-center space-x-2 text-sm transform active:scale-95";
-  const variantClasses = variant === 'primary' 
-    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 focus:ring-cyan-400 shadow-lg shadow-cyan-500/20"
-    : "bg-secondary/50 text-text-primary border border-border hover:bg-secondary/80 focus:ring-accent";
-  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
+type ButtonProps = {
+    children: ReactNode;
+    onClick?: () => void;
+    type?: 'button' | 'submit' | 'reset';
+    variant?: 'primary' | 'secondary';
+    className?: string;
+    disabled?: boolean;
+    as?: 'button' | 'label';
+};
+
+export const Button: React.FC<ButtonProps> = ({ children, onClick, type = 'button', variant = 'primary', className = '', disabled = false, as = 'button' }) => {
+    const baseClasses = "px-5 py-3 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary inline-flex items-center justify-center space-x-2 text-sm transform active:scale-95";
+    const variantClasses = variant === 'primary' 
+        ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 focus:ring-cyan-400 shadow-lg shadow-cyan-500/20"
+        : "bg-secondary/50 text-text-primary border border-border hover:bg-secondary/80 focus:ring-accent";
+    const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
+
+    const combinedClasses = `${baseClasses} ${variantClasses} ${disabledClasses} ${className}`;
+
+    if (as === 'label') {
+        return (
+            <label className={combinedClasses}>
+                {children}
+            </label>
+        );
+    }
   
-  return (
-    <button type={type} onClick={onClick} disabled={disabled} className={`${baseClasses} ${variantClasses} ${disabledClasses} ${className}`}>
-      {children}
-    </button>
-  );
+    return (
+        <button type={type} onClick={onClick} disabled={disabled} className={combinedClasses}>
+            {children}
+        </button>
+    );
 };
 
 export const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <input {...props} className="w-full mt-1 px-3 py-2 bg-secondary border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent placeholder-text-secondary transition-colors" />
+    <input {...props} className="w-full mt-1 px-4 py-3 bg-secondary border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent placeholder-text-secondary transition-colors" />
 );
 
 export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
-    <select {...props} className="w-full mt-1 px-3 py-2 bg-secondary/30 border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent" />
+    <select {...props} className="w-full mt-1 px-4 py-3 bg-secondary/30 border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent" />
 );
 
 
 export const Textarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-    <textarea {...props} rows={4} className="w-full mt-1 px-3 py-2 bg-secondary/30 border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent placeholder-text-secondary transition-colors" />
+    <textarea {...props} rows={4} className="w-full mt-1 px-4 py-3 bg-secondary/30 border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent placeholder-text-secondary transition-colors" />
 );
 
 export const FormField: React.FC<{ label: string, children: ReactNode }> = ({ label, children }) => (
-    <div>
+    <div className="space-y-1">
         <label className="text-sm font-medium text-text-secondary">{label}</label>
         {children}
     </div>

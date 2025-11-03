@@ -1,0 +1,11 @@
+export { Dashboard } from './Dashboard';
+export { Clients } from './Clients';
+export { ClientDetail } from './ClientDetail';
+export { Equipments } from './Equipments';
+export { Agenda } from './Agenda';
+export { Certificates } from './Certificates';
+export { Financial } from './Financial';
+export { Reports } from './Reports';
+export { Settings } from './Settings';
+export { InspectionDetail } from './InspectionDetail';
+export { CertificateDetail } from './CertificateDetail';

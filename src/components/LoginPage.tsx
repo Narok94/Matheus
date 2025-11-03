@@ -1,298 +1,268 @@
+import React, { useState, useMemo } from 'react';
+import { InspecProLogo, UserIcon, LockIcon } from './Icons';
+import { ToastMessage } from '../../types';
+import { useAuth } from '../context/AuthContext';
 
-
-import React, { useState } from 'react';
-import { InspecProLogo, UserIcon, LockIcon, MailIcon, BuildingIcon } from './Icons';
+type ShowToastFn = (message: string, type?: 'success' | 'error') => void;
 
 interface AuthPageProps {
-    showToast: (message: string, type?: 'success' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 interface LoginPageProps extends AuthPageProps {
-    onLogin: (username: string, pass: string) => void;
     onSwitchToRegister: () => void;
 }
 
 interface RegisterPageProps extends AuthPageProps {
-    onRegister: (username: string, email: string, pass: string, fullName: string, address: string) => void;
     onSwitchToLogin: () => void;
 }
 
-const LoginBackground = () => (
-    <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a0f1f]">
-        <svg width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" className="absolute inset-0">
-            <defs>
-                <filter id="hud-glow">
-                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
-                    <feMerge>
-                        <feMergeNode in="coloredBlur" />
-                        <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                </filter>
-                 <linearGradient id="scanline-gradient" x1="0%" x2="0%" y1="0%" y2="100%">
-                    <stop offset="0%" stopColor="#38bdf8" stopOpacity="0" />
-                    <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
-                </linearGradient>
-            </defs>
+const DynamicBackground = () => {
+    const particles = useMemo(() => Array.from({ length: 50 }).map((_, i) => ({
+        key: i,
+        cx: `${Math.random() * 100}%`,
+        cy: `${Math.random() * 100}%`,
+        r: `${Math.random() * 1 + 0.5}`,
+        begin: `${Math.random() * 5}s`,
+        dur: `${Math.random() * 5 + 5}s`,
+    })), []);
 
-            <g transform="translate(0, 30)">
-                {/* Background static grid */}
-                <g stroke="#1e293b" strokeWidth="0.5">
-                    {[...Array(40)].map((_, i) => (
-                        <path key={`h-${i}`} d={`M 0 ${i * 15} H 800`} />
-                    ))}
-                    {[...Array(54)].map((_, i) => (
-                        <path key={`v-${i}`} d={`M ${i * 15} 0 V 600`} />
-                    ))}
-                </g>
+    return (
+        <div className="login-background" aria-hidden="true">
+            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
+                <defs>
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" strokeWidth="0.5"/>
+                    </pattern>
+                    <linearGradient id="scanline" x1="0" y1="0" x2="0" y2="100%">
+                        <stop stopColor="#0ea5e9" stopOpacity="0" offset="0%"/>
+                        <stop stopColor="#0ea5e9" stopOpacity="0.3" offset="50%"/>
+                        <stop stopColor="#0ea5e9" stopOpacity="0" offset="100%"/>
+                    </linearGradient>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
 
-                {/* Central HUD framing */}
-                <g transform="translate(400, 300)" fill="none" stroke="#38bdf8" filter="url(#hud-glow)">
-                    {/* Corner Brackets */}
-                    <g strokeWidth="2" opacity="0.8">
-                        {/* Top-Left */}
-                        <path d="M -180 -130 L -220 -130 L -220 -90">
-                            <animate attributeName="stroke-dasharray" values="0 80; 80 0; 0 80" dur="5s" repeatCount="indefinite" />
-                        </path>
-                        {/* Top-Right */}
-                        <path d="M 180 -130 L 220 -130 L 220 -90">
-                             <animate attributeName="stroke-dasharray" values="80 0; 0 80; 80 0" dur="5s" repeatCount="indefinite" />
-                        </path>
-                        {/* Bottom-Left */}
-                        <path d="M -180 130 L -220 130 L -220 90">
-                             <animate attributeName="stroke-dasharray" values="0 80; 80 0; 0 80" dur="5s" repeatCount="indefinite" begin="2.5s" />
-                        </path>
-                        {/* Bottom-Right */}
-                        <path d="M 180 130 L 220 130 L 220 90">
-                            <animate attributeName="stroke-dasharray" values="80 0; 0 80; 80 0" dur="5s" repeatCount="indefinite" begin="2.5s" />
-                        </path>
-                    </g>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+                
+                {particles.map(p => (
+                     <circle key={p.key} cx={p.cx} cy={p.cy} r={p.r} fill="#fff" opacity="0">
+                        <animate attributeName="opacity" values="0;0.5;0" begin={p.begin} dur={p.dur} repeatCount="indefinite" />
+                    </circle>
+                ))}
 
-                    {/* Rotating Rings */}
-                    <g strokeWidth="1" opacity="0.6">
-                        {/* Outer ring - dashed */}
-                        <circle cx="0" cy="0" r="180" strokeDasharray="5 15">
-                            <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="30s" repeatCount="indefinite" />
+                <g transform="translate(50%, 50%) scale(1.5)" className="absolute top-1/2 left-1/2">
+                    <g filter="url(#glow)" stroke="#0ea5e9" strokeWidth="1" fill="none" opacity="0.6">
+                        <circle cx="0" cy="0" r="100">
+                             <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="30s" repeatCount="indefinite" />
                         </circle>
-                        {/* Inner ring - partial */}
-                        <path d="M 0 -150 A 150 150 0 0 1 106 106">
-                             <animateTransform attributeName="transform" type="rotate" from="360 0 0" to="0 0 0" dur="20s" repeatCount="indefinite" />
+                        <path d="M -150 0 A 150 150 0 0 1 150 0" strokeDasharray="10 10">
+                            <animateTransform attributeName="transform" type="rotate" from="360 0 0" to="0 0 0" dur="40s" repeatCount="indefinite" />
                         </path>
-                         <path d="M 0 150 A 150 150 0 0 1 -106 -106">
-                             <animateTransform attributeName="transform" type="rotate" from="360 0 0" to="0 0 0" dur="20s" repeatCount="indefinite" />
+                        <path d="M 0 -120 A 120 120 0 0 1 0 120" strokeDasharray="none">
+                           <animateTransform attributeName="transform" type="rotate" from="180 0 0" to="-180 0 0" dur="20s" repeatCount="indefinite" />
                         </path>
+
+                        <g className="corner-brackets">
+                            <path d="M -80 -80 L -110 -80 L -110 -110" strokeDasharray="90" strokeDashoffset="90">
+                                <animate attributeName="stroke-dashoffset" values="90;0;90" dur="4s" repeatCount="indefinite" />
+                            </path>
+                             <path d="M 80 -80 L 110 -80 L 110 -110" strokeDasharray="90" strokeDashoffset="90">
+                                <animate attributeName="stroke-dashoffset" values="90;0;90" dur="4s" begin="1s" repeatCount="indefinite" />
+                            </path>
+                             <path d="M -80 80 L -110 80 L -110 110" strokeDasharray="90" strokeDashoffset="90">
+                                <animate attributeName="stroke-dashoffset" values="90;0;90" dur="4s" begin="2s" repeatCount="indefinite" />
+                            </path>
+                            <path d="M 80 80 L 110 80 L 110 110" strokeDasharray="90" strokeDashoffset="90">
+                                <animate attributeName="stroke-dashoffset" values="90;0;90" dur="4s" begin="3s" repeatCount="indefinite" />
+                            </path>
+                        </g>
                     </g>
                 </g>
-
-                {/* Scanning Line */}
-                <rect x="0" y="-50" width="100%" height="100" fill="url(#scanline-gradient)" opacity="0.4">
-                    <animate attributeName="y" from="-100" to="600" dur="8s" repeatCount="indefinite" begin="0s" />
+                
+                <rect x="0" y="0" width="100%" height="50" fill="url(#scanline)">
+                    <animate attributeName="y" from="-50" to="100%" dur="8s" repeatCount="indefinite" />
                 </rect>
-
-                {/* Twinkling Particles */}
-                 <g fill="#f1f5f9" opacity="0.3">
-                    {[...Array(70)].map((_, i) => {
-                        const x = Math.random() * 800;
-                        const y = Math.random() * 600;
-                        const r = 0.5 + Math.random() * 0.8;
-                        const dur = 3 + Math.random() * 4;
-                        const delay = Math.random() * 2;
-                        return (
-                            <circle key={`p-${i}`} cx={x} cy={y} r={r}>
-                                <animate attributeName="opacity" values="0;1;0" dur={`${dur}s`} begin={`${delay}s`} repeatCount="indefinite" />
-                            </circle>
-                        )
-                    })}
-                </g>
-            </g>
-        </svg>
-    </div>
-);
+            </svg>
+        </div>
+    )
+};
 
 
 const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative font-sans text-white">
-        <LoginBackground />
-        <div className="w-full max-w-sm z-10">
-            {children}
-        </div>
+    <div className="min-h-screen flex items-center justify-center p-4">
+        {children}
     </div>
 );
 
 const AuthFormCard: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-     <div className="w-full p-8 space-y-6 bg-slate-900/40 backdrop-blur-md rounded-2xl border border-cyan-400/30 shadow-2xl shadow-cyan-500/10">
+     <div className="relative z-10 w-full max-w-sm bg-slate-900/40 backdrop-blur-md border border-cyan-400/30 rounded-2xl shadow-2xl shadow-cyan-500/10 p-8 animate-fade-in">
         {children}
     </div>
 );
 
 const AuthHeader = () => (
-    <div className="flex flex-col items-center mb-6 text-center">
-        <InspecProLogo className="w-20 h-20 text-cyan-300 mb-2" />
+    <div className="text-center mb-8">
+        <div className="flex justify-center items-center mb-4">
+            <InspecProLogo className="w-16 h-16 text-cyan-400 filter drop-shadow-[0_0_8px_rgba(56,189,248,0.7)]" />
+        </div>
         <h1 className="text-3xl font-bold text-white tracking-wider">InspecPro</h1>
-        <p className="text-cyan-200/70 text-sm">Gestão de Inspeções</p>
+        <p className="text-sm text-slate-400">Gestão de Inspeções</p>
     </div>
 );
 
-const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { icon: React.ReactNode }> = ({ icon, ...props }) => (
-    <div className="relative flex items-center group">
-        <span className="absolute -left-3 text-cyan-400 font-mono text-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">/</span>
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</div>
+const InputWithIcon: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { icon: React.ReactNode }> = ({ icon, ...props }) => (
+    <div className="relative group">
+        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+            {icon}
+        </span>
         <input 
             {...props}
-            className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all"
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-3 pl-10 pr-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
         />
-        <span className="absolute -right-3 text-cyan-400 font-mono text-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">/</span>
     </div>
 );
 
 const FormButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = (props) => (
     <button 
         {...props}
-        className="w-full py-3 px-4 font-bold text-white rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-cyan-400 transform active:scale-95 transition-all duration-200 shadow-lg shadow-cyan-500/20"
+        className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-cyan-500/20 hover:shadow-cyan-400/40 transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-cyan-300 active:scale-95"
     />
 );
 
-
-export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, showToast, onSwitchToRegister }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ showToast, onSwitchToRegister }) => {
+    const { handleLogin } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onLogin(username, password);
+        await handleLogin(username, password, showToast);
     };
 
     return (
-        <AuthLayout>
-            <AuthHeader />
-            <AuthFormCard>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <FormInput
-                        icon={<UserIcon />}
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Username"
-                        required
-                    />
-                    <FormInput
-                        icon={<LockIcon />}
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Password"
-                        required
-                    />
-                    <FormButton type="submit">LOG IN</FormButton>
-                </form>
+        <>
+            <DynamicBackground />
+            <AuthLayout>
+                <div className="w-full max-w-sm">
+                    <AuthFormCard>
+                        <AuthHeader />
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <InputWithIcon
+                                icon={<UserIcon />}
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder="Username"
+                                required
+                                aria-label="Username"
+                            />
+                            <InputWithIcon
+                                icon={<LockIcon />}
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Password"
+                                required
+                                aria-label="Password"
+                            />
+                            <FormButton type="submit">LOG IN</FormButton>
+                        </form>
 
-                <div className="text-center flex justify-between items-center text-sm pt-4">
-                    <a 
-                        href="#"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            showToast("Função de recuperação em desenvolvimento.", "error");
-                        }}
-                        className="font-medium text-cyan-300 hover:text-cyan-100 transition-colors"
-                    >
-                        Forgot Password?
-                    </a>
-                    <a 
-                        href="#"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            onSwitchToRegister();
-                        }}
-                        className="font-medium text-cyan-300 hover:text-cyan-100 transition-colors"
-                    >
-                        Sign Up
-                    </a>
+                        <div className="text-center text-sm mt-6 flex justify-between text-cyan-400">
+                            <a 
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    showToast("Função de recuperação em desenvolvimento.", "error");
+                                }}
+                                className="hover:underline"
+                            >
+                                Forgot Password?
+                            </a>
+                            <a 
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    onSwitchToRegister();
+                                }}
+                                className="hover:underline"
+                            >
+                                Sign Up
+                            </a>
+                        </div>
+                    </AuthFormCard>
+                     <p className="text-center text-xs text-slate-500 mt-6">
+                        Use <strong className="text-slate-400">admin</strong> e senha <strong className="text-slate-400">admin</strong> para testar.
+                    </p>
                 </div>
-            </AuthFormCard>
-            <div className="text-center mt-6 text-xs text-slate-400">
-                <p>Use <strong className="font-semibold text-cyan-300/90">admin</strong> e senha <strong className="font-semibold text-cyan-300/90">admin</strong> para testar.</p>
-            </div>
-        </AuthLayout>
+            </AuthLayout>
+        </>
     );
 };
 
-export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, showToast, onSwitchToLogin }) => {
+export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchToLogin }) => {
+    const { handleRegister } = useAuth();
     const [username, setUsername] = useState('');
-    const [fullName, setFullName] = useState('');
-    const [address, setAddress] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (password.length < 4) {
             showToast("A senha deve ter pelo menos 4 caracteres.", "error");
             return;
         }
-        onRegister(username, email, password, fullName, address);
+        await handleRegister(username, email, password, '', '', showToast, onSwitchToLogin);
     };
 
     return (
-        <AuthLayout>
-            <AuthHeader />
-            <AuthFormCard>
-                 <h2 className="text-center text-xl text-white font-semibold -mt-2 mb-4">Create Account</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <FormInput
-                        icon={<UserIcon />}
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Usuário"
-                        required
-                    />
-                    <FormInput
-                        icon={<MailIcon />}
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Email (Opcional)"
-                    />
-                    <FormInput
-                        icon={<LockIcon />}
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Senha"
-                        required
-                    />
-                    <FormInput
-                        icon={<UserIcon />}
-                        type="text"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Nome Completo (Opcional)"
-                    />
-                    <FormInput
-                        icon={<BuildingIcon />}
-                        type="text"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        placeholder="Endereço (Opcional)"
-                    />
-                    <div className="pt-2">
-                         <FormButton type="submit">SIGN UP</FormButton>
-                    </div>
-                </form>
-
-                <div className="text-center text-sm pt-4">
-                    <a 
-                        href="#"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            onSwitchToLogin();
-                        }}
-                        className="font-medium text-cyan-300 hover:text-cyan-100 transition-colors"
-                    >
-                        Already have an account? Log In
-                    </a>
+        <>
+            <DynamicBackground />
+            <AuthLayout>
+                <div className="w-full max-w-sm">
+                    <AuthFormCard>
+                        <AuthHeader />
+                        <h2 className="text-center text-lg text-slate-300 -mt-4 mb-6">Create Account</h2>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <InputWithIcon
+                                icon={<UserIcon />}
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder="Username"
+                                required
+                            />
+                            <InputWithIcon
+                                icon={<LockIcon />}
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Password"
+                                required
+                            />
+                            <FormButton type="submit">SIGN UP</FormButton>
+                        </form>
+                        <div className="text-center text-sm mt-6">
+                            <a 
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    onSwitchToLogin();
+                                }}
+                                className="text-cyan-400 hover:underline"
+                            >
+                                Already have an account? Log In
+                            </a>
+                        </div>
+                    </AuthFormCard>
                 </div>
-            </AuthFormCard>
-        </AuthLayout>
+            </AuthLayout>
+        </>
     );
 };

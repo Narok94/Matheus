@@ -1,84 +1,30 @@
-
-
-import React, { useState, ReactNode, useEffect, useMemo } from 'react';
-import { View, Client, Equipment, Inspection, FinancialRecord, Certificate, ToastMessage, DetailView } from './types';
-import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES } from './data';
-import { Dashboard, Clients, Equipments, Agenda, Certificates, Financial, Settings, ClientDetail, Reports } from './src/components/pages';
-import { LoginPage, RegisterPage } from './src/components/LoginPage';
-import { Toast } from './src/components/common';
+import React, { useState, ReactNode, useEffect, useCallback } from 'react';
+// FIX: Import ToastMessage to resolve type error.
+import { View, DetailView, PrefilledInspectionData, ToastMessage } from './types';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { DataProvider, useData } from './src/context/DataContext';
+import { SettingsProvider, useSettings } from './src/context/SettingsContext';
 import { 
-    DashboardIcon, 
-    ClientsIcon, 
-    EquipmentIcon, 
-    AgendaIcon, 
-    CertificateIcon, 
-    FinancialIcon, 
-    SettingsIcon,
-    ReportsIcon,
-    InspecProLogo
+    Dashboard, Clients, Equipments, Agenda, Certificates, 
+    Financial, Settings, ClientDetail, InspectionDetail, CertificateDetail, Reports 
+} from './src/pages';
+import { LoginPage, RegisterPage } from './src/components/LoginPage';
+import { Toast, ConfirmationModal } from './src/components/common';
+import { GlobalLoader } from './src/components/GlobalLoader';
+import { 
+    DashboardIcon, ClientsIcon, EquipmentIcon, AgendaIcon, 
+    CertificateIcon, FinancialIcon, SettingsIcon, ReportsIcon, InspecProLogo, SparklesIcon
 } from './src/components/Icons';
+import { VirtualAssistant } from './src/components/VirtualAssistant';
 
-type CompanyProfile = { name: string; };
-type AppSettings = { notifications: boolean; reminders: boolean; };
-type PrefilledInspectionData = {
-    clientId?: string;
-} | null;
-
-export type User = {
-    username: string; // stored as lowercase
-    passwordHash: string; // plain text for this mock app
-    email?: string;
-    fullName?: string;
-    address?: string;
-};
-
-
-// Custom hook for localStorage persistence, now user-aware by changing the key
-const usePersistentState = <T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
-    const [state, setState] = useState<T>(() => {
-        try {
-            const storedValue = window.localStorage.getItem(key);
-            return storedValue ? JSON.parse(storedValue) : initialValue;
-        } catch (error) {
-            console.error(`Error reading localStorage key “${key}”:`, error);
-            return initialValue;
-        }
-    });
-
-    // Re-read from localStorage when the key changes (e.g., user logs in/out)
-    useEffect(() => {
-        try {
-            const storedValue = window.localStorage.getItem(key);
-            setState(storedValue ? JSON.parse(storedValue) : initialValue);
-        } catch (error) {
-            console.error(`Error reading localStorage key “${key}”:`, error);
-            setState(initialValue);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [key]);
-
-    useEffect(() => {
-        try {
-            // Do not store data for the 'guest' user (when logged out)
-            if (key.startsWith('guest-')) {
-                return;
-            }
-            window.localStorage.setItem(key, JSON.stringify(state));
-        } catch (error) {
-            console.error(`Error setting localStorage key “${key}”:`, error);
-        }
-    }, [key, state]);
-
-    return [state, setState];
-};
 
 const viewTitles: Record<View, string> = {
     dashboard: 'Início', clients: 'Clientes', equipment: 'Equipamentos',
     agenda: 'Agenda', certificates: 'Certificados', financial: 'Financeiro',
     settings: 'Configurações', clientDetail: 'Detalhes do Cliente', 
-    inspectionDetail: 'Detalhes da Inspeção', reports: 'Relatórios'
+    inspectionDetail: 'Detalhes da Inspeção', reports: 'Relatórios',
+    certificateDetail: 'Certificado'
 };
-
 
 const Header: React.FC<{
     view: View;
@@ -93,7 +39,7 @@ const Header: React.FC<{
         return (
              <header className="p-4 flex items-center justify-between sticky top-0 z-10 bg-secondary/80 backdrop-blur-sm border-b border-border">
                  <div className="flex items-center">
-                    <InspecProLogo className="h-8 w-8 text-accent" />
+                    <InspecProLogo className="h-8 w-8 text-slate-800 dark:text-slate-200" />
                     <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
                 </div>
                  <button onClick={() => setView('settings')} className="text-text-secondary hover:text-accent p-2 rounded-full mr-8">
@@ -116,7 +62,6 @@ const Header: React.FC<{
         </header>
     );
 };
-
 
 const BottomNavLink: React.FC<{ icon: ReactNode, label: string, isActive: boolean, onClick: () => void }> = ({ icon, label, isActive, onClick }) => (
     <button onClick={onClick} className={`flex flex-col items-center justify-center w-full pt-2 pb-1 text-xs font-medium transition-all duration-200 ease-in-out active:scale-90 ${isActive ? 'text-accent' : 'text-text-secondary hover:text-text-primary'}`}>
@@ -173,7 +118,7 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
     return (
         <aside className="hidden md:flex w-64 bg-primary text-white flex-shrink-0 p-4 border-r border-border flex-col">
             <div className="flex items-center mb-8">
-                <InspecProLogo className="h-8 w-8 text-accent" />
+                <InspecProLogo className="h-8 w-8 text-slate-800 dark:text-slate-200" />
                 <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
             </div>
             <nav className="flex-grow space-y-2">
@@ -202,212 +147,112 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
     );
 };
 
-const App: React.FC = () => {
-    const [currentUser, setCurrentUser] = usePersistentState<string | null>('currentUser', null);
-    const isAuthenticated = !!currentUser;
+const AppContent: React.FC = () => {
+    const { isAuthenticated, isAuthLoading } = useAuth();
+    const { isDataLoading } = useData();
+    const { theme } = useSettings();
+
     const [authView, setAuthView] = useState<'login' | 'register'>('login');
     const [currentView, setCurrentView] = useState<View>('dashboard');
     const [detailView, setDetailView] = useState<DetailView>(null);
     const [toast, setToast] = useState<ToastMessage>(null);
     const [prefilledInspectionData, setPrefilledInspectionData] = useState<PrefilledInspectionData>(null);
+    const [isAssistantOpen, setAssistantOpen] = useState(false);
 
-    const dataKeyPrefix = useMemo(() => currentUser || 'guest', [currentUser]);
-
-    // Global state (not user-specific)
-    const [users, setUsers] = usePersistentState<User[]>('users', [{ username: 'admin', passwordHash: 'admin', fullName: 'Administrador' }]);
-
-    // User-specific states
-    const [theme, setTheme] = usePersistentState<'light' | 'dark'>(`${dataKeyPrefix}-theme`, 'dark');
-    const [companyProfile, setCompanyProfile] = usePersistentState<CompanyProfile>(`${dataKeyPrefix}-companyProfile`, { name: 'Empresa ABC' });
-    const [appSettings, setAppSettings] = usePersistentState<AppSettings>(`${dataKeyPrefix}-appSettings`, { notifications: true, reminders: true });
+    const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ id: Date.now(), message, type });
+    }, []);
     
-    // User-specific data - new users start with empty arrays, 'admin' gets mock data as a seed.
-    const [clients, setClients] = usePersistentState<Client[]>(`${dataKeyPrefix}-clients`, currentUser === 'admin' ? MOCK_CLIENTS : []);
-    const [equipment, setEquipment] = usePersistentState<Equipment[]>(`${dataKeyPrefix}-equipment`, currentUser === 'admin' ? MOCK_EQUIPMENT : []);
-    const [inspections, setInspections] = usePersistentState<Inspection[]>(`${dataKeyPrefix}-inspections`, currentUser === 'admin' ? MOCK_INSPECTIONS : []);
-    const [financial, setFinancial] = usePersistentState<FinancialRecord[]>(`${dataKeyPrefix}-financial`, currentUser === 'admin' ? MOCK_FINANCIAL : []);
-    const [certificates] = usePersistentState<Certificate[]>(`${dataKeyPrefix}-certificates`, currentUser === 'admin' ? MOCK_CERTIFICATES : []);
-
+    useEffect(() => {
+        const root = document.documentElement;
+        if (theme === 'dark') {
+            root.classList.add('dark');
+        } else {
+            root.classList.remove('dark');
+        }
+    }, [theme]);
 
     useEffect(() => {
-        // Always set dark theme on login page
+        const body = document.body;
         if (!isAuthenticated) {
-            document.documentElement.classList.add('dark');
+            body.classList.add('login-page-active');
+        } else {
+            body.classList.remove('login-page-active');
         }
     }, [isAuthenticated]);
-    
-    useEffect(() => {
-        if(isAuthenticated) {
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        }
-    }, [theme, isAuthenticated]);
-    
-    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-        setToast({ id: Date.now(), message, type });
-    };
 
-    // --- Auth Handlers ---
-    const handleLogin = (username: string, pass: string) => {
-        const user = users.find(u => u.username === username.toLowerCase());
-        
-        if (user && user.passwordHash === pass) { // Password must match exactly
-            setCurrentUser(user.username);
-            showToast('Login realizado com sucesso!');
-        } else {
-            showToast('Credenciais inválidas.', 'error');
-        }
-    };
-
-    const handleRegister = (username: string, email: string, pass: string, fullName: string, address: string) => {
-        const existingUser = users.find(u => u.username === username.toLowerCase());
-        if (existingUser) {
-            showToast('Este nome de usuário já está em uso.', 'error');
-            return;
-        }
-
-        const newUser: User = {
-            username: username.toLowerCase(),
-            passwordHash: pass,
-        };
-        if (email) newUser.email = email;
-        if (fullName) newUser.fullName = fullName;
-        if (address) newUser.address = address;
-
-
-        setUsers(prev => [...prev, newUser]);
-        showToast(`Usuário "${username}" registrado com sucesso!`, 'success');
-        setAuthView('login');
-    };
-    
-    const handleUpdateUser = (updatedUser: User) => {
-        setUsers(prevUsers => prevUsers.map(u => u.username === updatedUser.username ? updatedUser : u));
-        showToast("Perfil atualizado com sucesso!");
-    };
-
-    const handleLogout = () => {
-        setCurrentUser(null);
-        setAuthView('login');
-        showToast('Você saiu da sua conta.');
-    };
-
-
-    // --- CRUD Handlers ---
-    const handleAddClient = (clientData: Omit<Client, 'id'>) => {
-        const newClient: Client = { ...clientData, id: `cli-${crypto.randomUUID()}` };
-        setClients(prev => [...prev, newClient]);
-        showToast("Cliente adicionado com sucesso!");
-    };
-    const handleUpdateClient = (updatedClient: Client) => {
-        setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
-        showToast("Cliente atualizado com sucesso!");
-    };
-    const handleDeleteClient = (clientId: string) => {
-        setClients(prev => prev.filter(c => c.id !== clientId));
-        // Also remove associated equipment, inspections etc.
-        setEquipment(prev => prev.filter(e => e.clientId !== clientId));
-        setInspections(prev => prev.filter(i => i.clientId !== clientId));
-        setFinancial(prev => prev.filter(f => f.clientId !== clientId));
-        setDetailView(null); // Go back to list
-        setCurrentView('clients');
-        showToast("Cliente e dados associados excluídos!", "error");
-    };
-    
-    const handleAddEquipment = (equipmentData: Omit<Equipment, 'id'>) => {
-        const newEquipment: Equipment = { ...equipmentData, id: `eq-${crypto.randomUUID()}` };
-        setEquipment(prev => [...prev, newEquipment]);
-        showToast("Equipamento adicionado com sucesso!");
-    };
-    
-    const handleAddInspection = (inspectionData: Omit<Inspection, 'id'>) => {
-        const newInspection: Inspection = { ...inspectionData, id: `ins-${crypto.randomUUID()}` };
-        setInspections(prev => [...prev, newInspection]);
-        showToast("Inspeção agendada com sucesso!");
-    };
-    
-    const handleAddFinancial = (recordData: Omit<FinancialRecord, 'id'>) => {
-        const newRecord: FinancialRecord = { ...recordData, id: `fin-${crypto.randomUUID()}` };
-        setFinancial(prev => [...prev, newRecord]);
-        showToast("Registro financeiro salvo!");
-    };
-    
-    // --- View Navigation ---
     const handleSetView = (view: View) => {
         setDetailView(null);
         setCurrentView(view);
     };
-    
+
     const handleViewClient = (clientId: string) => {
         setDetailView({ type: 'client', id: clientId });
         setCurrentView('clientDetail');
     };
 
+    const handleViewInspection = (inspectionId: string) => {
+        setDetailView({ type: 'inspection', id: inspectionId });
+        setCurrentView('inspectionDetail');
+    };
+
+    const handleViewCertificate = (certificateId: string) => {
+        setDetailView({ type: 'certificate', id: certificateId });
+        setCurrentView('certificateDetail');
+    }
+
     const handleScheduleForClient = (clientId: string) => {
         setPrefilledInspectionData({ clientId });
         handleSetView('agenda');
     };
-
+    
     const handleBack = () => {
         let previousView: View = 'dashboard';
-        if (currentView === 'clientDetail') {
-            previousView = 'clients';
-        } else if (currentView === 'settings' || currentView === 'reports') {
-            previousView = 'dashboard';
-        }
+        if (currentView === 'clientDetail') previousView = 'clients';
+        else if (currentView === 'inspectionDetail') previousView = 'agenda';
+        else if (currentView === 'certificateDetail') previousView = 'certificates';
+        else if (currentView === 'settings' || currentView === 'reports') previousView = 'dashboard';
         setDetailView(null);
         setCurrentView(previousView);
     };
 
     const renderView = () => {
-        const currentUserDetails = users.find(u => u.username === currentUser);
-
-        if (detailView?.type === 'client') {
-            const client = clients.find(c => c.id === detailView.id);
-            if (!client) return <p>Cliente não encontrado</p>;
-            return <ClientDetail client={client} equipment={equipment} inspections={inspections} onUpdateClient={handleUpdateClient} onDeleteClient={handleDeleteClient} onScheduleInspection={handleScheduleForClient} />;
-        }
-
         switch (currentView) {
-            case 'dashboard': return <Dashboard user={currentUserDetails} clients={clients} equipment={equipment} inspections={inspections} setView={handleSetView} />;
-            case 'clients': return <Clients clients={clients} onViewClient={handleViewClient} onAddClient={handleAddClient} />;
-            case 'equipment': return <Equipments equipment={equipment} clients={clients} onAddEquipment={handleAddEquipment} />;
-            case 'agenda': return <Agenda inspections={inspections} clients={clients} onAddInspection={handleAddInspection} prefilledData={prefilledInspectionData} onPrefillHandled={() => setPrefilledInspectionData(null)} showToast={showToast} />;
-            case 'certificates': return <Certificates certificates={certificates} clients={clients}/>;
-            case 'reports': return <Reports equipment={equipment} clients={clients} />;
-            case 'financial': return <Financial financial={financial} clients={clients} onAddFinancial={handleAddFinancial} />;
-            case 'settings': 
-                if (!currentUserDetails) return <p>Erro: usuário não encontrado.</p>;
-                return <Settings 
-                    user={currentUserDetails}
-                    onUpdateUser={handleUpdateUser}
-                    theme={theme} 
-                    setTheme={setTheme}
-                    profile={companyProfile}
-                    setProfile={setCompanyProfile}
-                    settings={appSettings}
-                    setSettings={setAppSettings}
-                    showToast={showToast}
-                    onLogout={handleLogout}
-                />;
-            default: return <Dashboard user={currentUserDetails} clients={clients} equipment={equipment} inspections={inspections} setView={handleSetView} />;
+            case 'dashboard': return <Dashboard setView={handleSetView} />;
+            case 'clients': return <Clients onViewClient={handleViewClient} />;
+            case 'equipment': return <Equipments showToast={showToast} />;
+            case 'agenda': return <Agenda prefilledData={prefilledInspectionData} onPrefillHandled={() => setPrefilledInspectionData(null)} showToast={showToast} onViewInspection={handleViewInspection} />;
+            case 'certificates': return <Certificates onViewCertificate={handleViewCertificate} />;
+            case 'reports': return <Reports />;
+            case 'financial': return <Financial />;
+            case 'settings': return <Settings showToast={showToast} />;
+            case 'clientDetail': 
+                if (detailView?.type !== 'client') return <p>Erro: Cliente não especificado.</p>;
+                return <ClientDetail clientId={detailView.id} onScheduleInspection={handleScheduleForClient} onViewInspection={handleViewInspection} />;
+            case 'inspectionDetail':
+                if (detailView?.type !== 'inspection') return <p>Erro: Inspeção não especificada.</p>;
+                return <InspectionDetail inspectionId={detailView.id} showToast={showToast} />;
+            case 'certificateDetail':
+                if (detailView?.type !== 'certificate') return <p>Erro: Certificado não especificado.</p>;
+                return <CertificateDetail certificateId={detailView.id} />;
+            default: return <Dashboard setView={handleSetView} />;
         }
     };
 
+    if (isAuthLoading || (isAuthenticated && isDataLoading)) {
+        return <GlobalLoader />;
+    }
+    
     if (!isAuthenticated) {
         return (
             <>
                 {authView === 'login' ? (
                     <LoginPage 
-                        onLogin={handleLogin} 
                         showToast={showToast}
                         onSwitchToRegister={() => setAuthView('register')}
                     />
                 ) : (
                     <RegisterPage 
-                        onRegister={handleRegister}
                         showToast={showToast}
                         onSwitchToLogin={() => setAuthView('login')}
                     />
@@ -427,9 +272,29 @@ const App: React.FC = () => {
                 </main>
                 <BottomNav currentView={currentView} setView={handleSetView} />
                 <Toast toast={toast} onDismiss={() => setToast(null)} />
+                <button 
+                    onClick={() => setAssistantOpen(true)}
+                    className="fixed bottom-24 md:bottom-6 right-6 bg-gradient-to-br from-purple-500 to-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30 hover:brightness-110 transition-transform duration-200 ease-in-out active:scale-95 z-20"
+                    aria-label="Abrir Assistente Virtual"
+                >
+                    <SparklesIcon />
+                </button>
+                <VirtualAssistant isOpen={isAssistantOpen} onClose={() => setAssistantOpen(false)} />
             </div>
         </div>
     );
 };
+
+const App: React.FC = () => {
+    return (
+        <AuthProvider>
+            <SettingsProvider>
+                <DataProvider>
+                    <AppContent />
+                </DataProvider>
+            </SettingsProvider>
+        </AuthProvider>
+    );
+}
 
 export default App;
