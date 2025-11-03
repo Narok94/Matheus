@@ -56,7 +56,7 @@ export const useAuth = () => {
 
         const user = users.find(u => u.username === lowerCaseUsername);
         if (user) {
-            const passHash = await sha256(pass);
+            const passHash = await sha256(pass.trim());
             if (user.passwordHash === passHash) {
                 if (userAttempt) {
                     setLoginAttempts(prev => {
