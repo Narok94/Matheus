@@ -13,9 +13,8 @@ import { Toast } from './src/components/common';
 import { GlobalLoader } from './src/components/GlobalLoader';
 import { 
     DashboardIcon, ClientsIcon, EquipmentIcon, AgendaIcon, 
-    CertificateIcon, FinancialIcon, SettingsIcon, ReportsIcon, InspecProLogo, SparklesIcon
+    CertificateIcon, FinancialIcon, SettingsIcon, ReportsIcon, InspecProLogo
 } from './src/components/Icons';
-import { VirtualAssistant } from './src/components/VirtualAssistant';
 
 
 const viewTitles: Record<View, string> = {
@@ -157,7 +156,6 @@ const AppContent: React.FC = () => {
     const [detailView, setDetailView] = useState<DetailView>(null);
     const [toast, setToast] = useState<ToastMessage>(null);
     const [prefilledInspectionData, setPrefilledInspectionData] = useState<PrefilledInspectionData>(null);
-    const [isAssistantOpen, setAssistantOpen] = useState(false);
 
     const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         setToast({ id: Date.now(), message, type });
@@ -272,14 +270,6 @@ const AppContent: React.FC = () => {
                 </main>
                 <BottomNav currentView={currentView} setView={handleSetView} />
                 <Toast toast={toast} onDismiss={() => setToast(null)} />
-                <button 
-                    onClick={() => setAssistantOpen(true)}
-                    className="fixed bottom-24 md:bottom-6 right-6 bg-gradient-to-br from-purple-500 to-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30 hover:brightness-110 transition-transform duration-200 ease-in-out active:scale-95 z-20"
-                    aria-label="Abrir Assistente Virtual"
-                >
-                    <SparklesIcon />
-                </button>
-                <VirtualAssistant isOpen={isAssistantOpen} onClose={() => setAssistantOpen(false)} />
             </div>
         </div>
     );
