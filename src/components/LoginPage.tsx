@@ -196,10 +196,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ showToast, onSwitchToRegis
                             </a>
                         </div>
                     </AuthFormCard>
-                     <p className="text-center text-xs text-slate-500 mt-6 space-y-1">
-                        <span>Use <strong className="text-slate-400">admin</strong> / <strong className="text-slate-400">admin</strong></span><br/>
-                        <span>ou <strong className="text-slate-400">matheus</strong> / <strong className="text-slate-400">1234</strong> para testar.</span>
-                    </p>
                 </div>
             </AuthLayout>
         </>
