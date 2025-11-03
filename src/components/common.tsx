@@ -60,22 +60,39 @@ interface ModalProps {
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
     if (isOpen) {
       document.body.classList.add('modal-open');
+      window.addEventListener('keydown', handleKeyDown);
     } else {
       document.body.classList.remove('modal-open');
     }
+    
     return () => {
       document.body.classList.remove('modal-open');
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only close if the click is on the backdrop itself, not on the modal content
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
 
   return (
-    <div className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-end md:items-center transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+    <div onClick={handleBackdropClick} className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-end md:items-center transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       <div className={`bg-primary/80 backdrop-blur-lg border border-border rounded-t-2xl md:rounded-2xl shadow-xl w-full md:max-w-2xl max-h-[90dvh] flex flex-col transform transition-all duration-300 ease-out ${isOpen ? 'translate-y-0 md:opacity-100 md:scale-100' : 'translate-y-full md:opacity-0 md:scale-95'}`}>
         <div className="flex justify-between items-center p-4 border-b border-border sticky top-0 bg-primary/80 z-10">
           <h2 className="text-xl font-bold text-text-primary">{title}</h2>
-          <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors">
+          <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors" aria-label="Fechar">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
