@@ -35,9 +35,11 @@ declare module '@google/genai' {
 
 // Fixes "Cannot find name 'process'" build error.
 // process.env.API_KEY is injected by the execution environment.
-// FIX: Replaced `declare var process` with a namespace augmentation to avoid redeclaration errors.
-declare namespace NodeJS {
-  interface ProcessEnv {
-    API_KEY: string;
+// FIX: Changed declaration to augment the global NodeJS.ProcessEnv interface to avoid redeclaring 'process'.
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      API_KEY: string;
+    }
   }
 }
