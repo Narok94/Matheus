@@ -1,5 +1,5 @@
 import { useMemo, Dispatch } from 'react';
-import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, LicenseStatus } from '../../types';
+import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, LicenseStatus, PaymentStatus } from '../../types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES, MOCK_LICENSES, MOCK_DELIVERIES, MOCK_EXPENSES } from '../../data';
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';
@@ -9,17 +9,17 @@ export const useData = () => {
     const { currentUser } = useAuth();
     const dataKeyPrefix = useMemo(() => currentUser || 'guest', [currentUser]);
 
-    const isInitialAdminLoad = currentUser === 'admin';
+    const isInitialMockLoad = useMemo(() => ['admin', 'matheus'].includes(currentUser || ''), [currentUser]);
 
     // User-specific data states
-    const [clients, setClients, clientsLoaded] = useIndexedDB<Client[]>(`${dataKeyPrefix}-clients`, isInitialAdminLoad ? MOCK_CLIENTS : []);
-    const [equipment, setEquipment, equipmentLoaded] = useIndexedDB<Equipment[]>(`${dataKeyPrefix}-equipment`, isInitialAdminLoad ? MOCK_EQUIPMENT : []);
-    const [inspections, setInspections, inspectionsLoaded] = useIndexedDB<Inspection[]>(`${dataKeyPrefix}-inspections`, isInitialAdminLoad ? MOCK_INSPECTIONS : []);
-    const [financial, setFinancial, financialLoaded] = useIndexedDB<FinancialRecord[]>(`${dataKeyPrefix}-financial`, isInitialAdminLoad ? MOCK_FINANCIAL : []);
-    const [certificates, setCertificates, certificatesLoaded] = useIndexedDB<Certificate[]>(`${dataKeyPrefix}-certificates`, isInitialAdminLoad ? MOCK_CERTIFICATES : []);
-    const [licenses, setLicenses, licensesLoaded] = useIndexedDB<License[]>(`${dataKeyPrefix}-licenses`, isInitialAdminLoad ? MOCK_LICENSES : []);
-    const [deliveries, setDeliveries, deliveriesLoaded] = useIndexedDB<Delivery[]>(`${dataKeyPrefix}-deliveries`, isInitialAdminLoad ? MOCK_DELIVERIES : []);
-    const [expenses, setExpenses, expensesLoaded] = useIndexedDB<Expense[]>(`${dataKeyPrefix}-expenses`, isInitialAdminLoad ? MOCK_EXPENSES : []);
+    const [clients, setClients, clientsLoaded] = useIndexedDB<Client[]>(`${dataKeyPrefix}-clients`, isInitialMockLoad ? MOCK_CLIENTS : []);
+    const [equipment, setEquipment, equipmentLoaded] = useIndexedDB<Equipment[]>(`${dataKeyPrefix}-equipment`, isInitialMockLoad ? MOCK_EQUIPMENT : []);
+    const [inspections, setInspections, inspectionsLoaded] = useIndexedDB<Inspection[]>(`${dataKeyPrefix}-inspections`, isInitialMockLoad ? MOCK_INSPECTIONS : []);
+    const [financial, setFinancial, financialLoaded] = useIndexedDB<FinancialRecord[]>(`${dataKeyPrefix}-financial`, isInitialMockLoad ? MOCK_FINANCIAL : []);
+    const [certificates, setCertificates, certificatesLoaded] = useIndexedDB<Certificate[]>(`${dataKeyPrefix}-certificates`, isInitialMockLoad ? MOCK_CERTIFICATES : []);
+    const [licenses, setLicenses, licensesLoaded] = useIndexedDB<License[]>(`${dataKeyPrefix}-licenses`, isInitialMockLoad ? MOCK_LICENSES : []);
+    const [deliveries, setDeliveries, deliveriesLoaded] = useIndexedDB<Delivery[]>(`${dataKeyPrefix}-deliveries`, isInitialMockLoad ? MOCK_DELIVERIES : []);
+    const [expenses, setExpenses, expensesLoaded] = useIndexedDB<Expense[]>(`${dataKeyPrefix}-expenses`, isInitialMockLoad ? MOCK_EXPENSES : []);
     
     // Auto-backup timestamp state
     const iDBLastBackup = useIndexedDB<string | null>(`${dataKeyPrefix}-lastBackupTimestamp`, null);
@@ -104,6 +104,42 @@ export const useData = () => {
     const handleUpdateLicense = (updatedLicense: License) => {
         setLicenses(prev => prev.map(l => l.id === updatedLicense.id ? updatedLicense : l));
     };
+    
+    const handleMarkInstallmentAsPaid = (clientId: string) => {
+        const client = clients.find(c => c.id === clientId);
+        if (!client || !client.isRecurring || !client.recurringAmount || !client.recurringInstallments || client.paidInstallments === undefined || !client.recurringCycleStart) {
+            return;
+        }
+
+        const currentPaidInstallments = client.paidInstallments || 0;
+        if (currentPaidInstallments >= client.recurringInstallments) {
+            return; // All paid
+        }
+
+        const newPaidCount = currentPaidInstallments + 1;
+        
+        // Create financial record
+        const issueDate = new Date();
+        const dueDate = new Date(client.recurringCycleStart);
+        dueDate.setMonth(dueDate.getMonth() + currentPaidInstallments);
+        dueDate.setDate(new Date(client.recurringCycleStart).getDate());
+
+        const newRecord: Omit<FinancialRecord, 'id'> = {
+            clientId: client.id,
+            inspectionId: `recorrente-${client.id}-${newPaidCount}`,
+            description: `Pagamento Recorrente - Parcela ${newPaidCount}/${client.recurringInstallments}`,
+            value: client.recurringAmount,
+            issueDate: issueDate.toISOString().split('T')[0],
+            dueDate: dueDate.toISOString().split('T')[0],
+            paymentDate: issueDate.toISOString().split('T')[0],
+            status: PaymentStatus.Pago,
+        };
+        handleAddFinancial(newRecord);
+
+        // Update client
+        const updatedClient = { ...client, paidInstallments: newPaidCount };
+        handleUpdateClient(updatedClient);
+    };
 
     // --- Data Handlers ---
     const handleImportData = (parsedData: BackupData) => {
@@ -154,6 +190,8 @@ export const useData = () => {
         handleAddCertificate,
         // License
         handleUpdateLicense,
+        // Recurring Payment
+        handleMarkInstallmentAsPaid,
         // Data
         handleImportData,
         lastBackupTimestamp,

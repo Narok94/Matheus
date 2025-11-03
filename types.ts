@@ -35,6 +35,11 @@ export interface Client {
   contactName: string;
   contact: string; // Phone
   email: string;
+  isRecurring?: boolean;
+  recurringAmount?: number;
+  recurringInstallments?: number; // Total de parcelas
+  recurringCycleStart?: string; // Data de início da cobrança
+  paidInstallments?: number; // Parcelas pagas
 }
 
 export interface Equipment {
@@ -141,6 +146,7 @@ export type User = {
 
 export type CompanyProfile = { 
     name: string; 
+    logo?: string; // Base64 encoded image
 };
 
 export type AppSettings = { 

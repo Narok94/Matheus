@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
-import { Modal, Button, Input, FormField, EmptyState, FloatingActionButton } from '../components/common';
+import { Modal, Button, Input, FormField, EmptyState, FloatingActionButton, ToggleSwitch } from '../components/common';
 import { ClientsIcon, PlusIcon } from '../components/Icons';
 import { capitalizeWords, formatDocument, formatPhone } from '../utils';
+import { Client } from '../../types';
 
 interface ClientsProps {
     onViewClient: (clientId: string) => void;
@@ -13,7 +14,12 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [newClient, setNewClient] = useState({ name: '', document: '', address: '', city: '', contactName: '', contact: '', email: '' });
+
+    const initialClientState: Omit<Client, 'id'> = { 
+        name: '', document: '', address: '', city: '', contactName: '', contact: '', email: '',
+        isRecurring: false, recurringAmount: 0, recurringInstallments: 0, recurringCycleStart: new Date().toISOString().split('T')[0], paidInstallments: 0
+    };
+    const [newClient, setNewClient] = useState(initialClientState);
 
     const filteredClients = useMemo(() =>
         clients.filter(client =>
@@ -24,7 +30,7 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
 
      const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        let formattedValue = value;
+        let formattedValue: string | number = value;
 
         switch (name) {
             case 'name':
@@ -39,19 +45,30 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
             case 'contact':
                 formattedValue = formatPhone(value);
                 break;
+            case 'recurringAmount':
+            case 'recurringInstallments':
+                formattedValue = parseInt(value, 10) || 0;
+                break;
         }
-
         setNewClient(prev => ({ ...prev, [name]: formattedValue }));
+    };
+
+    const handleRecurringToggle = (enabled: boolean) => {
+        setNewClient(prev => ({
+            ...prev,
+            isRecurring: enabled,
+            recurringAmount: enabled ? (prev.recurringAmount || 0) : 0,
+            recurringInstallments: enabled ? (prev.recurringInstallments || 0) : 0,
+            paidInstallments: 0,
+        }));
     };
     
     const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsSubmitting(true);
-        // Use a small timeout to ensure the user sees the loading state,
-        // as the state update itself is synchronous.
         setTimeout(() => {
             handleAddClient(newClient);
-            setNewClient({ name: '', document: '', address: '', city: '', contactName: '', contact: '', email: '' });
+            setNewClient(initialClientState);
             setAddModalOpen(false);
             setIsSubmitting(false);
         }, 300);
@@ -86,6 +103,22 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
                     <FormField label="Nome do Contato"><Input name="contactName" value={newClient.contactName} onChange={handleInputChange} required /></FormField>
                     <FormField label="Telefone de Contato"><Input name="contact" type="tel" value={newClient.contact} onChange={handleInputChange} required /></FormField>
                     <FormField label="Email"><Input name="email" type="email" value={newClient.email} onChange={handleInputChange} /></FormField>
+                    
+                    <div className="pt-4 space-y-4">
+                        <div className="flex items-center justify-between p-3 bg-primary/50 rounded-lg">
+                            <label className="text-sm font-medium text-text-secondary">Pagamento Recorrente?</label>
+                            <ToggleSwitch enabled={newClient.isRecurring || false} onChange={handleRecurringToggle} />
+                        </div>
+
+                        {newClient.isRecurring && (
+                            <div className="p-4 border border-border rounded-lg space-y-4 animate-fade-in">
+                                <FormField label="Valor Mensal (R$)"><Input type="number" step="0.01" name="recurringAmount" value={newClient.recurringAmount} onChange={handleInputChange} required /></FormField>
+                                <FormField label="Total de Parcelas"><Input type="number" name="recurringInstallments" value={newClient.recurringInstallments} onChange={handleInputChange} required /></FormField>
+                                <FormField label="Início da Cobrança"><Input type="date" name="recurringCycleStart" value={newClient.recurringCycleStart} onChange={handleInputChange} required /></FormField>
+                            </div>
+                        )}
+                    </div>
+                    
                     <div className="flex justify-end pt-4"><Button type="submit" loading={isSubmitting}>Salvar Cliente</Button></div>
                 </form>
             </Modal>

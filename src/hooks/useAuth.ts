@@ -16,11 +16,18 @@ type ShowToastFn = (message: string, type?: 'success' | 'error') => void;
 export const useAuth = () => {
     const [sessionToken, setSessionToken, isSessionTokenLoaded] = useIndexedDB<string | null>('sessionToken', null);
     const [sessions, setSessions, isSessionsLoaded] = useIndexedDB<Record<string, string>>('sessions', {});
-    const [users, setUsers, isUsersLoaded] = useIndexedDB<User[]>('users', [{ 
-        username: 'admin', 
-        passwordHash: '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', // Hashed "admin"
-        fullName: 'Administrador' 
-    }]);
+    const [users, setUsers, isUsersLoaded] = useIndexedDB<User[]>('users', [
+        { 
+            username: 'admin', 
+            passwordHash: '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', // Hashed "admin"
+            fullName: 'Administrador' 
+        },
+        { 
+            username: 'matheus', 
+            passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // Hashed "1234"
+            fullName: 'Matheus' 
+        }
+    ]);
     const [loginAttempts, setLoginAttempts, isLoginAttemptsLoaded] = useIndexedDB<Record<string, LoginAttempt>>('loginAttempts', {});
 
     const currentUser = useMemo(() => {

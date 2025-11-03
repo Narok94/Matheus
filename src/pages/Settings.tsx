@@ -2,9 +2,9 @@ import React, { useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useSettings } from '../context/SettingsContext';
-import { BackupData } from '../../types';
+import { BackupData, CompanyProfile } from '../../types';
 import { Card, Button, Input, FormField, ToggleSwitch, ConfirmationModal } from '../components/common';
-import { LogoutIcon, DownloadIcon, UploadIcon, RestoreIcon } from '../components/Icons';
+import { LogoutIcon, DownloadIcon, UploadIcon, RestoreIcon, BuildingIcon } from '../components/Icons';
 
 type Tab = 'profile' | 'system' | 'account';
 
@@ -39,7 +39,7 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
     const [dataToImport, setDataToImport] = useState<BackupData | null>(null);
     const [isAutoRestoreConfirmOpen, setAutoRestoreConfirmOpen] = useState(false);
     
-    const [companyName, setCompanyName] = useState(companyProfile.name);
+    const [localProfile, setLocalProfile] = useState<CompanyProfile>(companyProfile);
     const [userProfile, setUserProfile] = useState({
         fullName: currentUserDetails?.fullName || '',
     });
@@ -53,11 +53,11 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
     }, [currentUserDetails]);
 
     useEffect(() => {
-        setCompanyName(companyProfile.name);
+        setLocalProfile(companyProfile);
     }, [companyProfile]);
     
     const handleCompanyProfileSave = () => {
-        setCompanyProfile({ name: companyName });
+        setCompanyProfile(localProfile);
         showToast("Perfil da empresa atualizado!");
     };
 
@@ -68,6 +68,27 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                 fullName: userProfile.fullName,
             });
             showToast("Perfil atualizado com sucesso!");
+        }
+    };
+    
+    const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setLocalProfile(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 1024 * 512) { // 512KB limit
+                showToast("O logotipo deve ser menor que 512KB.", "error");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setLocalProfile(prev => ({...prev, logo: reader.result as string}));
+                showToast("Logotipo carregado. Clique em 'Salvar' para aplicar.", "success");
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -145,12 +166,6 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                 <div className="flex justify-end"><Button onClick={handleUserSave}>Salvar Perfil</Button></div>
                             </div>
                         </Card>
-                        <Card title="Perfil da Empresa">
-                            <div className="space-y-4">
-                                <FormField label="Nome da Empresa"><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></FormField>
-                                <div className="flex justify-end"><Button onClick={handleCompanyProfileSave}>Salvar Alterações</Button></div>
-                            </div>
-                        </Card>
                     </div>
                 </TabContent>
                 
@@ -162,10 +177,26 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                 <ToggleSwitch enabled={theme === 'dark'} onChange={(enabled) => setTheme(enabled ? 'dark' : 'light')} />
                             </div>
                         </Card>
-                         <Card title="Lembretes">
-                            <div className="flex items-center justify-between p-2">
-                                <span className="text-text-primary font-medium">Lembretes de Vencimento</span>
-                                <ToggleSwitch enabled={appSettings.reminders} onChange={(enabled) => setAppSettings({reminders: enabled})} />
+                        <Card title="Perfil da Empresa">
+                            <div className="space-y-4">
+                                <FormField label="Nome da Empresa"><Input name="name" value={localProfile.name} onChange={handleProfileInputChange} /></FormField>
+                                <FormField label="Logotipo da Empresa">
+                                    <div className="flex items-center space-x-4 mt-2">
+                                        <div className="w-16 h-16 bg-primary rounded-md flex items-center justify-center border border-border">
+                                            {localProfile.logo ? (
+                                                <img src={localProfile.logo} alt="Logotipo" className="w-full h-full object-contain" />
+                                            ) : (
+                                                <BuildingIcon className="w-8 h-8 text-text-secondary" />
+                                            )}
+                                        </div>
+                                        <Button as="label" variant="secondary" className="cursor-pointer">
+                                            <UploadIcon className="w-5 h-5 mr-2" />
+                                            Alterar Logotipo
+                                            <input type="file" accept="image/png, image/jpeg, image/svg+xml" className="hidden" onChange={handleLogoChange} />
+                                        </Button>
+                                    </div>
+                                </FormField>
+                                <div className="flex justify-end"><Button onClick={handleCompanyProfileSave}>Salvar Alterações</Button></div>
                             </div>
                         </Card>
                         <Card title="Backup e Restauração">

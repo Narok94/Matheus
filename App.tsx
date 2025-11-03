@@ -1,6 +1,6 @@
 import React, { useState, ReactNode, useEffect, useCallback } from 'react';
 // FIX: Import ToastMessage to resolve type error.
-import { View, DetailView, PrefilledInspectionData, ToastMessage } from './types';
+import { View, DetailView, PrefilledInspectionData, ToastMessage, CompanyProfile } from './types';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { DataProvider, useData } from './src/context/DataContext';
 import { SettingsProvider, useSettings } from './src/context/SettingsContext';
@@ -28,23 +28,25 @@ const viewTitles: Record<View, string> = {
 
 const Header: React.FC<{
     view: View;
-    detailView: DetailView;
     onBack: () => void;
     setView: (view: View) => void;
-}> = ({ view, detailView, onBack, setView }) => {
-    const isDetailView = detailView !== null;
-    const isDashboard = view === 'dashboard';
+    companyProfile: CompanyProfile;
+}> = ({ view, onBack, setView, companyProfile }) => {
 
-    if (isDashboard) {
+    if (view === 'dashboard') {
         return (
              <header className="p-4 flex items-center justify-between sticky top-0 z-10 bg-secondary/80 backdrop-blur-sm border-b border-border">
                  <div className="flex items-center">
-                    <div className="h-8 w-8">
-                        <InspecProLogo />
+                    <div className="h-12 w-12 bg-primary/50 rounded-md flex items-center justify-center p-1">
+                        {companyProfile.logo ? (
+                            <img src={companyProfile.logo} alt={`${companyProfile.name} logo`} className="h-full w-full object-contain" />
+                        ) : (
+                            <InspecProLogo />
+                        )}
                     </div>
-                    <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
+                    <h1 className="text-xl font-bold ml-4 text-text-primary">{companyProfile.name}</h1>
                 </div>
-                 <button onClick={() => setView('settings')} className="text-text-secondary hover:text-accent p-2 rounded-full mr-8">
+                 <button onClick={() => setView('settings')} className="text-text-secondary hover:text-accent p-2 rounded-full md:hidden">
                     <SettingsIcon />
                  </button>
             </header>
@@ -52,54 +54,18 @@ const Header: React.FC<{
     }
     
     return (
-        <header className="bg-secondary/80 backdrop-blur-sm border-b border-border p-4 sticky top-0 z-10 md:hidden flex items-center justify-center">
-            {(isDetailView || view === 'settings' || view === 'payables') && (
-                <button onClick={onBack} className="absolute left-4 text-text-primary hover:text-accent transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-            )}
+        <header className="bg-secondary/80 backdrop-blur-sm border-b border-border p-4 sticky top-0 z-10 md:hidden flex items-center justify-center relative">
+            <button onClick={onBack} className="absolute left-4 text-text-primary hover:text-accent transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
             <h1 className="text-lg font-bold text-text-primary">{viewTitles[view]}</h1>
         </header>
     );
 };
 
-const BottomNavLink: React.FC<{ icon: ReactNode, label: string, isActive: boolean, onClick: () => void }> = ({ icon, label, isActive, onClick }) => (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center w-full pt-2 pb-1 text-xs font-medium transition-all duration-200 ease-in-out active:scale-90 ${isActive ? 'text-accent' : 'text-text-secondary hover:text-text-primary'}`}>
-        <div className="relative">
-            {icon}
-            {isActive && <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-accent rounded-full"></span>}
-        </div>
-        <span className={`mt-1.5 ${isActive ? 'text-text-primary font-semibold' : ''}`}>{label}</span>
-    </button>
-);
-
-const BottomNav = ({ currentView, setView }: { currentView: View, setView: (view: View) => void }) => {
-    const navItems: { view: View, label: string, icon: ReactNode }[] = [
-        { view: 'dashboard', label: 'Início', icon: <DashboardIcon /> },
-        { view: 'clients', label: 'Clientes', icon: <ClientsIcon /> },
-        { view: 'agenda', label: 'Agenda', icon: <AgendaIcon /> },
-        { view: 'reports', label: 'Relatórios', icon: <ReportsIcon /> },
-        { view: 'financial', label: 'Finanças', icon: <FinancialIcon /> },
-    ];
-    
-    return (
-        <nav className="fixed bottom-0 left-0 right-0 bg-secondary/80 backdrop-blur-sm border-t border-border flex justify-around md:hidden z-10">
-            {navItems.map(item => (
-                <BottomNavLink
-                    key={item.view}
-                    icon={item.icon}
-                    label={item.label}
-                    isActive={currentView === item.view}
-                    onClick={() => setView(item.view)}
-                />
-            ))}
-        </nav>
-    );
-};
-
-const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: View) => void }) => {
+const Sidebar = ({ currentView, setView, companyProfile }: { currentView: View, setView: (view: View) => void, companyProfile: CompanyProfile }) => {
     const navItems: { view: View, label: string, icon: ReactNode }[] = [
         { view: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
         { view: 'clients', label: 'Clientes', icon: <ClientsIcon /> },
@@ -120,10 +86,14 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
     return (
         <aside className="hidden md:flex w-64 bg-primary text-white flex-shrink-0 p-4 border-r border-border flex-col">
             <div className="flex items-center mb-8">
-                <div className="h-8 w-8">
-                    <InspecProLogo />
+                <div className="h-12 w-12 bg-primary/50 rounded-md flex items-center justify-center p-1">
+                    {companyProfile.logo ? (
+                            <img src={companyProfile.logo} alt={`${companyProfile.name} logo`} className="h-full w-full object-contain" />
+                        ) : (
+                            <InspecProLogo />
+                        )}
                 </div>
-                <h1 className="text-xl font-bold ml-2 text-text-primary">InspecPro</h1>
+                <h1 className="text-xl font-bold ml-4 text-text-primary">{companyProfile.name}</h1>
             </div>
             <nav className="flex-grow space-y-2">
                 {navItems.map(item => (
@@ -154,7 +124,7 @@ const Sidebar = ({ currentView, setView }: { currentView: View, setView: (view: 
 const AppContent: React.FC = () => {
     const { isAuthenticated, isAuthLoading, handleLogout } = useAuth();
     const { isDataLoading } = useData();
-    const { theme } = useSettings();
+    const { theme, companyProfile } = useSettings();
 
     const [authView, setAuthView] = useState<'login' | 'register'>('login');
     const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -218,11 +188,14 @@ const AppContent: React.FC = () => {
     };
     
     const handleBack = () => {
-        let previousView: View = 'dashboard';
-        if (currentView === 'clientDetail') previousView = 'clients';
-        else if (currentView === 'inspectionDetail') previousView = 'agenda';
-        else if (currentView === 'certificateDetail') previousView = 'certificates';
-        else if (currentView === 'settings' || currentView === 'reports' || currentView === 'payables') previousView = 'dashboard';
+        let previousView: View = 'dashboard'; // Default to dashboard
+        if (currentView === 'clientDetail') {
+            previousView = 'clients';
+        } else if (currentView === 'inspectionDetail') {
+            previousView = 'agenda';
+        } else if (currentView === 'certificateDetail') {
+            previousView = 'certificates';
+        }
         setDetailView(null);
         setCurrentView(previousView);
     };
@@ -276,13 +249,12 @@ const AppContent: React.FC = () => {
 
     return (
         <div className="flex h-screen bg-primary">
-            <Sidebar currentView={currentView} setView={handleSetView} />
+            <Sidebar currentView={currentView} setView={handleSetView} companyProfile={companyProfile} />
             <div className="flex-1 flex flex-col h-screen">
-                <Header view={currentView} detailView={detailView} onBack={handleBack} setView={handleSetView} />
-                <main className="flex-1 overflow-y-auto pb-24 md:pb-4">
+                <Header view={currentView} onBack={handleBack} setView={handleSetView} companyProfile={companyProfile} />
+                <main className="flex-1 overflow-y-auto pb-24">
                     {renderView()}
                 </main>
-                <BottomNav currentView={currentView} setView={handleSetView} />
                 <Toast toast={toast} onDismiss={() => setToast(null)} />
             </div>
         </div>

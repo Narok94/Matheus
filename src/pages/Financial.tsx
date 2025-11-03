@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
-import { PaymentStatus, FinancialRecord } from '../../types';
+import { PaymentStatus, FinancialRecord, Client } from '../../types';
 import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus } from '../components/common';
 import { FinancialIcon, PlusIcon } from '../components/Icons';
 
@@ -60,9 +60,58 @@ const FinancialChart = ({ received, pending }: { received: number; pending: numb
     );
 };
 
+const RecurringPayments: React.FC<{
+    clients: Client[];
+    onMarkAsPaid: (clientId: string) => void;
+}> = ({ clients, onMarkAsPaid }) => {
+    const recurringClients = clients.filter(c =>
+        c.isRecurring &&
+        c.recurringInstallments !== undefined &&
+        c.paidInstallments !== undefined &&
+        c.paidInstallments < c.recurringInstallments
+    );
+
+    if (recurringClients.length === 0) {
+        return <p className="text-text-secondary text-sm">Nenhum pagamento recorrente pendente.</p>;
+    }
+
+    return (
+        <div className="space-y-3">
+            {recurringClients.map(client => {
+                const currentInstallment = (client.paidInstallments || 0) + 1;
+                const totalInstallments = client.recurringInstallments || 0;
+                
+                const dueDate = new Date(client.recurringCycleStart || new Date());
+                dueDate.setMonth(dueDate.getMonth() + (client.paidInstallments || 0));
+                dueDate.setDate(new Date(client.recurringCycleStart || new Date()).getDate());
+
+                return (
+                    <div key={client.id} className="p-3 bg-primary rounded-lg border border-border">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="font-semibold text-text-primary">{client.name}</p>
+                                <p className="text-sm text-text-secondary">R$ {client.recurringAmount?.toFixed(2).replace('.', ',')}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-bold text-text-primary">Parcela {currentInstallment}/{totalInstallments}</p>
+                                <p className="text-xs text-text-secondary">Venc.: {dueDate.toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                        <div className="flex justify-end mt-2">
+                            <Button onClick={() => onMarkAsPaid(client.id)} variant="secondary" className="!py-1.5 !px-4 !text-xs">
+                                Marcar como Pago
+                            </Button>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
 
 export const Financial: React.FC = () => {
-    const { financial, clients, handleAddFinancial } = useData();
+    const { financial, clients, handleAddFinancial, handleMarkInstallmentAsPaid } = useData();
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [filter, setFilter] = useState<FinancialStatusFilter>('all');
     
@@ -89,6 +138,10 @@ export const Financial: React.FC = () => {
 
     return (
         <div className="p-4 space-y-6">
+            <Card title="Pagamentos Recorrentes" collapsible>
+                <RecurringPayments clients={clients} onMarkAsPaid={handleMarkInstallmentAsPaid} />
+            </Card>
+
             <Card title="💰 Resumo Financeiro" collapsible>
                <FinancialChart received={financialSummary.received} pending={financialSummary.pending} />
             </Card>
