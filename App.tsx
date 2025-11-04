@@ -14,7 +14,7 @@ import { Toast } from './src/components/common';
 import { GlobalLoader } from './src/components/GlobalLoader';
 import { 
     DashboardIcon, ClientsIcon, EquipmentIcon, AgendaIcon, 
-    CertificateIcon, FinancialIcon, SettingsIcon, ReportsIcon, InspecProLogo
+    CertificateIcon, FinancialIcon, SettingsIcon, ReportsIcon
 } from './src/components/Icons';
 import { useIdleTimer } from './src/hooks/useIdleTimer';
 
@@ -38,11 +38,14 @@ const Header: React.FC<{
         return (
              <header className="p-4 flex items-center justify-between sticky top-0 z-10 bg-secondary/80 backdrop-blur-sm border-b border-border">
                  <div className="flex items-center">
-                    <div className="h-12 w-12 bg-primary/50 rounded-md flex items-center justify-center p-1">
+                    <div 
+                        className="h-12 w-12 bg-primary/50 rounded-md flex items-center justify-center p-1 text-center cursor-pointer hover:bg-secondary/50 transition-colors"
+                        onClick={() => setView('settings')}
+                    >
                         {companyProfile.logo ? (
                             <img src={companyProfile.logo} alt={`${companyProfile.name} logo`} className="h-full w-full object-contain" />
                         ) : (
-                            <InspecProLogo />
+                            <div className="text-[9px] leading-tight text-text-secondary">Coloque o Logotipo em configuração</div>
                         )}
                     </div>
                     <h1 className="text-xl font-bold ml-4 text-text-primary">{companyProfile.name}</h1>
@@ -87,11 +90,14 @@ const Sidebar = ({ currentView, setView, companyProfile }: { currentView: View, 
     return (
         <aside className="hidden md:flex w-64 bg-primary text-white flex-shrink-0 p-4 border-r border-border flex-col">
             <div className="flex items-center mb-8">
-                <div className="h-12 w-12 bg-primary/50 rounded-md flex items-center justify-center p-1">
+                <div 
+                    className="h-12 w-12 bg-primary/50 rounded-md flex items-center justify-center p-1 text-center cursor-pointer hover:bg-secondary/50 transition-colors"
+                    onClick={() => setView('settings')}
+                >
                     {companyProfile.logo ? (
                             <img src={companyProfile.logo} alt={`${companyProfile.name} logo`} className="h-full w-full object-contain" />
                         ) : (
-                            <InspecProLogo />
+                            <div className="text-[9px] leading-tight text-text-secondary">Coloque o Logotipo em configuração</div>
                         )}
                 </div>
                 <h1 className="text-xl font-bold ml-4 text-text-primary">{companyProfile.name}</h1>

@@ -109,11 +109,11 @@ const AuthFormCard: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const AuthHeader = ({ logoUrl }: { logoUrl?: string | null }) => (
     <div className="text-center mb-8">
-        <div className="w-24 h-24 mx-auto mb-4">
+        <div className="w-24 h-24 mx-auto mb-4 bg-slate-800/50 rounded-lg flex items-center justify-center p-2 text-center border border-slate-700">
             {logoUrl ? (
                 <img src={logoUrl} alt="Company Logo" className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
             ) : (
-                <InspecProLogo className="filter drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                <div className="text-xs leading-tight text-slate-400">Coloque o Logotipo em configuração</div>
             )}
         </div>
         <h1 className="text-3xl font-bold text-white tracking-wider">MDS</h1>

@@ -27,6 +27,7 @@ export enum InspectionItemStatus {
 
 
 export interface Client {
+  _version?: number; // Internal field for data migration
   id: string;
   name: string;
   document: string; // CNPJ/CPF
