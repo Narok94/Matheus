@@ -147,6 +147,13 @@ export const Agenda: React.FC<{
         setAddModalOpen(true);
     };
 
+    const statusColors: Record<InspectionStatus, string> = {
+        [InspectionStatus.Aprovado]: 'bg-status-approved',
+        [InspectionStatus.Reprovado]: 'bg-status-reproved',
+        [InspectionStatus.Pendente]: 'bg-status-pending',
+        [InspectionStatus.Agendada]: 'bg-status-scheduled',
+    };
+
     return (
         <div className="p-4 space-y-4">
             <Calendar 
@@ -157,34 +164,40 @@ export const Agenda: React.FC<{
             
             <div className="flex justify-between items-center pt-4">
                 <h2 className="text-xl font-bold text-text-primary">
-                    {selectedDate ? `Agenda para ${selectedDate.toLocaleDateString('pt-BR')}` : 'Todas as Inspeções'}
+                    {selectedDate ? `Inspeções do Dia` : 'Todas as Inspeções'}
                 </h2>
                 {selectedDate && (
-                    <Button variant="secondary" className="!py-1 !px-3" onClick={() => setSelectedDate(null)}>
+                    <Button variant="secondary" className="!py-1 !px-3 !text-xs" onClick={() => setSelectedDate(null)}>
                         Ver todas
                     </Button>
                 )}
             </div>
 
             <StatusFilter selectedStatus={filter} onStatusChange={setFilter} />
-
-            {sortedAndFilteredInspections.length > 0 ? sortedAndFilteredInspections.map(insp => {
-                const client = clients.find(c => c.id === insp.clientId);
-                return (
-                    <Card key={insp.id} className="p-0" onClick={() => onViewInspection(insp.id)}>
-                        <div className="p-4">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h4 className="font-bold text-text-primary">{client?.name}</h4>
-                                    <p className="text-sm text-text-secondary">{new Date(insp.date).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            
+            <div className="space-y-3">
+                {sortedAndFilteredInspections.length > 0 ? sortedAndFilteredInspections.map(insp => {
+                    const client = clients.find(c => c.id === insp.clientId);
+                    return (
+                        <div key={insp.id} onClick={() => onViewInspection(insp.id)} className="bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md rounded-lg flex items-stretch cursor-pointer hover:border-accent border border-transparent transition-all duration-300 hover:-translate-y-px active:scale-[0.99] shadow-lg dark:shadow-cyan-900/10">
+                            <div className={`w-2 flex-shrink-0 rounded-l-lg ${statusColors[insp.status]}`}></div>
+                            <div className="p-3 flex-grow flex flex-col justify-between">
+                                <div className="flex justify-between items-start">
+                                    <h4 className="font-bold text-text-primary pr-2">{client?.name || 'Cliente não encontrado'}</h4>
+                                    <div className="flex-shrink-0">
+                                        {getStatusBadge(insp.status)}
+                                    </div>
                                 </div>
-                                {getStatusBadge(insp.status)}
+                                <div className="text-xs text-text-secondary mt-2 flex justify-between items-end">
+                                    <span>Inspetor: {insp.inspector}</span>
+                                    <span>{insp.inspectedItems.length} item(ns)</span>
+                                </div>
                             </div>
-                            <p className="text-xs text-text-secondary mt-2">Inspetor: {insp.inspector} &middot; {insp.inspectedItems.length} item(ns)</p>
                         </div>
-                    </Card>
-                )
-            }) : <EmptyState message={selectedDate ? "Nenhuma inspeção agendada para este dia." : "Nenhuma inspeção encontrada para este filtro."} icon={<AgendaIcon className="w-12 h-12" />} action={<Button onClick={handleOpenAddModal}>Agendar Inspeção</Button>} />}
+                    )
+                }) : <EmptyState message={selectedDate ? "Nenhuma inspeção agendada para este dia." : "Nenhuma inspeção encontrada para este filtro."} icon={<AgendaIcon className="w-12 h-12" />} action={<Button onClick={handleOpenAddModal}>Agendar Inspeção</Button>} />}
+            </div>
+
              <FloatingActionButton onClick={handleOpenAddModal} icon={<PlusIcon />} />
              <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Agendar Nova Inspeção">
                 <form onSubmit={handleFormSubmit} className="space-y-4">
@@ -228,7 +241,14 @@ export const Agenda: React.FC<{
                     
                     <FormField label="Data da Inspeção"><Input type="date" name="date" value={newInspection.date} onChange={(e) => setNewInspection(p => ({...p, date: e.target.value}))} required /></FormField>
                     <FormField label="Observações Gerais"><Textarea name="observations" value={newInspection.observations} onChange={(e) => setNewInspection(p => ({...p, observations: e.target.value}))} /></FormField>
-                    <div className="flex justify-end pt-4"><Button type="submit">Agendar</Button></div>
+                    <div className="flex justify-end pt-4">
+                        <Button 
+                            type="submit" 
+                            disabled={!newInspection.clientId || newInspection.inspectedItems.length === 0}
+                        >
+                            Agendar
+                        </Button>
+                    </div>
                 </form>
             </Modal>
         </div>

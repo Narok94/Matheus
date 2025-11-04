@@ -280,12 +280,12 @@ export const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
 );
 
 export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
-    <select {...props} className="w-full mt-1 px-4 py-3 bg-secondary/30 border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent" />
+    <select {...props} className="w-full mt-1 px-4 py-3 bg-secondary border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent" />
 );
 
 
 export const Textarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-    <textarea {...props} rows={4} className="w-full mt-1 px-4 py-3 bg-secondary/30 border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent placeholder-text-secondary transition-colors" />
+    <textarea {...props} rows={4} className="w-full mt-1 px-4 py-3 bg-secondary border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-accent placeholder-text-secondary transition-colors" />
 );
 
 export const FormField: React.FC<{ label: string, children: ReactNode }> = ({ label, children }) => (
