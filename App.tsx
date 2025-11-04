@@ -1,4 +1,5 @@
 import React, { useState, ReactNode, useEffect, useCallback } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
 // FIX: Import ToastMessage to resolve type error.
 import { View, DetailView, PrefilledInspectionData, ToastMessage, CompanyProfile } from './types';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -187,7 +188,7 @@ const AppContent: React.FC = () => {
         handleSetView('agenda');
     };
     
-    const handleBack = () => {
+    const handleBack = useCallback(() => {
         let previousView: View = 'dashboard'; // Default to dashboard
         if (currentView === 'clientDetail') {
             previousView = 'clients';
@@ -198,7 +199,21 @@ const AppContent: React.FC = () => {
         }
         setDetailView(null);
         setCurrentView(previousView);
-    };
+    }, [currentView]);
+
+    useEffect(() => {
+        const listener = CapacitorApp.addListener('backButton', () => {
+            if (currentView !== 'dashboard') {
+                handleBack();
+            }
+            // If on the dashboard, do nothing to prevent the app from closing,
+            // as requested by the user.
+        });
+
+        return () => {
+            listener.remove();
+        };
+    }, [currentView, handleBack]);
 
     const renderView = () => {
         switch (currentView) {
