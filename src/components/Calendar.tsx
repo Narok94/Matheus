@@ -100,7 +100,7 @@ export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect, 
     }, [displayDate, view]);
 
     return (
-        <div className="bg-secondary/70 backdrop-blur-md rounded-xl shadow-lg dark:shadow-cyan-900/10 border border-border p-4 animate-fade-in">
+        <>
             <div className="flex justify-between items-center mb-4">
                 <button onClick={() => changePeriod(-1)} className="p-2 rounded-full hover:bg-primary/50 text-text-secondary"><ChevronLeftIcon className="w-5 h-5" /></button>
                 <div className="text-center">
@@ -144,6 +144,6 @@ export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect, 
                     );
                 })}
             </div>
-        </div>
+        </>
     );
 };

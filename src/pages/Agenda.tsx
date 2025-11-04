@@ -156,11 +156,13 @@ export const Agenda: React.FC<{
 
     return (
         <div className="p-4 space-y-4">
-            <Calendar 
-                selectedDate={selectedDate} 
-                onDateSelect={setSelectedDate} 
-                highlightedDates={inspectionDates} 
-            />
+            <Card className="animate-fade-in">
+                <Calendar 
+                    selectedDate={selectedDate} 
+                    onDateSelect={setSelectedDate} 
+                    highlightedDates={inspectionDates} 
+                />
+            </Card>
             
             <div className="flex justify-between items-center pt-4">
                 <h2 className="text-xl font-bold text-text-primary">
