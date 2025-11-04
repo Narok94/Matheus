@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, DeliveryStatus, LicenseStatus, License } from '../../types';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/common';
 import { PlusIcon, ClientsIcon, EquipmentIcon, AgendaIcon, ReportsIcon, SettingsIcon, CertificateIcon, ArrowUpCircleIcon, ArrowDownCircleIcon, FireExtinguisherIcon } from '../components/Icons';
 
@@ -16,7 +17,10 @@ const daysUntil = (date: Date) => Math.ceil((date.getTime() - new Date().getTime
 
 export const Dashboard = ({ setView, onScheduleForClient }: { setView: (view: View) => void; onScheduleForClient: (clientId: string) => void; }) => {
   const { clients, licenses, deliveries, equipment, handleUpdateLicense } = useData();
+  const { currentUserDetails } = useAuth();
   
+  const firstName = currentUserDetails?.fullName?.split(' ')[0] || 'Usuário';
+
   const pendingDeliveries = deliveries.filter(d => d.status === DeliveryStatus.Pendente).slice(0, 3);
   
   const expiringItems = useMemo(() => {
@@ -55,6 +59,12 @@ export const Dashboard = ({ setView, onScheduleForClient }: { setView: (view: Vi
   
   return (
     <div className="p-4 space-y-6">
+      {/* Greeting */}
+      <div className="text-left">
+          <h1 className="text-2xl font-bold text-text-primary">Olá, {firstName}!</h1>
+          <p className="text-text-secondary">Aqui está um resumo da sua operação hoje.</p>
+      </div>
+
       {/* Alert Lists */}
       <div className="space-y-6">
           <Card title={`🚨 Alerta de Vencimentos (${expiringItems.length})`} collapsible>

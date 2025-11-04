@@ -9,9 +9,12 @@ interface ClientsProps {
     onViewClient: (clientId: string) => void;
 }
 
+type RecurrenceFilter = 'all' | 'recurring' | 'non-recurring';
+
 export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
     const { clients, handleAddClient } = useData();
     const [searchTerm, setSearchTerm] = useState('');
+    const [recurrenceFilter, setRecurrenceFilter] = useState<RecurrenceFilter>('all');
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -22,11 +25,17 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
     const [newClient, setNewClient] = useState(initialClientState);
 
     const filteredClients = useMemo(() =>
-        clients.filter(client =>
-            client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            client.document.includes(searchTerm) ||
-            client.city.toLowerCase().includes(searchTerm.toLowerCase())
-        ), [searchTerm, clients]);
+        clients
+            .filter(client => {
+                if (recurrenceFilter === 'recurring') return client.isRecurring;
+                if (recurrenceFilter === 'non-recurring') return !client.isRecurring;
+                return true; // 'all'
+            })
+            .filter(client =>
+                client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                client.document.includes(searchTerm) ||
+                client.city.toLowerCase().includes(searchTerm.toLowerCase())
+            ), [searchTerm, clients, recurrenceFilter]);
 
      const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -78,6 +87,22 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
         <div className="p-4 space-y-4">
             <Input type="text" placeholder="🔍 Buscar por nome, CNPJ ou cidade..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             
+            <div className="flex space-x-2 overflow-x-auto pb-2 -mx-4 px-4">
+                {(['all', 'recurring', 'non-recurring'] as const).map(filter => (
+                    <button
+                        key={filter}
+                        onClick={() => setRecurrenceFilter(filter)}
+                        className={`px-3 py-1 text-sm font-semibold rounded-full whitespace-nowrap transition-colors ${
+                            recurrenceFilter === filter
+                            ? 'bg-accent text-white'
+                            : 'bg-secondary/70 text-text-secondary hover:bg-secondary'
+                        }`}
+                    >
+                        {filter === 'all' ? 'Todos' : filter === 'recurring' ? 'Recorrentes' : 'Não Recorrentes'}
+                    </button>
+                ))}
+            </div>
+
             <div className="space-y-3">
                 {filteredClients.length > 0 ? filteredClients.map(client => (
                     <div key={client.id} className="bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md p-4 rounded-xl shadow-lg dark:shadow-cyan-900/10 border border-border cursor-pointer hover:border-accent transition-all duration-300 hover:-translate-y-px active:scale-[0.99]" onClick={() => onViewClient(client.id)}>

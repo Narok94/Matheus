@@ -15,7 +15,7 @@ export const useData = () => {
         return currentUser;
     }, [currentUser]);
 
-    const isInitialMockLoad = useMemo(() => ['admin', 'matheus'].includes(currentUser || ''), [currentUser]);
+    const isInitialMockLoad = useMemo(() => currentUser === 'admin', [currentUser]);
 
     // User-specific data states
     const [clients, setClients, clientsLoaded] = useIndexedDB<Client[]>(`${dataKeyPrefix}-clients`, isInitialMockLoad ? MOCK_CLIENTS : []);

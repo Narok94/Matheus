@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import { PaymentStatus, FinancialRecord, Client } from '../../types';
 import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus } from '../components/common';
-import { FinancialIcon, PlusIcon } from '../components/Icons';
+import { FinancialIcon, PlusIcon, AgendaIcon } from '../components/Icons';
 
 type FinancialStatusFilter = PaymentStatus | 'Atrasado' | 'all';
 
@@ -161,7 +161,13 @@ export const Financial: React.FC = () => {
                                     <p className="text-sm text-text-secondary">{rec.description}</p>
                                     <p className="text-xs text-text-secondary">{client?.name}</p>
                                 </div>
-                                <FinancialStatusBadge record={rec} />
+                                <div className="text-right flex-shrink-0 ml-4">
+                                    <div className="flex items-center justify-end text-xs text-text-secondary mb-1">
+                                        <AgendaIcon className="w-3 h-3 mr-1.5" />
+                                        <span>Venc.: {new Date(rec.dueDate).toLocaleDateString()}</span>
+                                    </div>
+                                    <FinancialStatusBadge record={rec} />
+                                </div>
                             </div>
                         </Card>
                     );
