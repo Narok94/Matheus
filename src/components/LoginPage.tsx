@@ -10,13 +10,7 @@ interface AuthPageProps {
     showToast: ShowToastFn;
 }
 
-interface LoginPageProps extends AuthPageProps {
-    onSwitchToRegister: () => void;
-}
-
-interface RegisterPageProps extends AuthPageProps {
-    onSwitchToLogin: () => void;
-}
+interface LoginPageProps extends AuthPageProps {}
 
 const DynamicBackground = () => {
     const particles = useMemo(() => Array.from({ length: 50 }).map((_, i) => ({
@@ -140,7 +134,7 @@ const FormButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = (pro
     />
 );
 
-export const LoginPage: React.FC<LoginPageProps> = ({ showToast, onSwitchToRegister }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ showToast }) => {
     const { handleLogin } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -194,104 +188,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ showToast, onSwitchToRegis
                             />
                             <FormButton type="submit">LOG IN</FormButton>
                         </form>
-
-                        <div className="text-center text-sm mt-6 flex justify-between text-orange-400">
-                            <a 
-                                href="#"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    showToast("Função de recuperação em desenvolvimento.", "error");
-                                }}
-                                className="hover:underline"
-                            >
-                                Forgot Password?
-                            </a>
-                            <a 
-                                href="#"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    onSwitchToRegister();
-                                }}
-                                className="hover:underline"
-                            >
-                                Sign Up
-                            </a>
-                        </div>
-                    </AuthFormCard>
-                </div>
-            </AuthLayout>
-        </>
-    );
-};
-
-export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchToLogin }) => {
-    const { handleRegister } = useAuth();
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [logoUrl, setLogoUrl] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchLogo = async () => {
-            try {
-                const adminProfile = await get<CompanyProfile>('admin-companyProfile');
-                if (adminProfile?.logo) {
-                    setLogoUrl(adminProfile.logo);
-                }
-            } catch (error) {
-                console.error("Failed to load company logo for registration screen:", error);
-            }
-        };
-        fetchLogo();
-    }, []);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (password.length < 4) {
-            showToast("A senha deve ter pelo menos 4 caracteres.", "error");
-            return;
-        }
-        await handleRegister(username, '', password, '', showToast, onSwitchToLogin);
-    };
-
-    return (
-        <>
-            <DynamicBackground />
-            <AuthLayout>
-                <div className="w-full max-w-sm">
-                    <AuthFormCard>
-                        <AuthHeader logoUrl={logoUrl} />
-                        <h2 className="text-center text-lg text-slate-300 -mt-4 mb-6">Create Account</h2>
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <InputWithIcon
-                                icon={<UserIcon />}
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Username"
-                                required
-                            />
-                            <InputWithIcon
-                                icon={<LockIcon />}
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Password"
-                                required
-                            />
-                            <FormButton type="submit">SIGN UP</FormButton>
-                        </form>
-                        <div className="text-center text-sm mt-6">
-                            <a 
-                                href="#"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    onSwitchToLogin();
-                                }}
-                                className="text-orange-400 hover:underline"
-                            >
-                                Already have an account? Log In
-                            </a>
-                        </div>
                     </AuthFormCard>
                 </div>
             </AuthLayout>

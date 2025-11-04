@@ -9,7 +9,7 @@ import {
     Dashboard, Clients, Equipments, Agenda, Certificates, 
     Financial, Settings, ClientDetail, InspectionDetail, CertificateDetail, Reports, Payables 
 } from './src/pages';
-import { LoginPage, RegisterPage } from './src/components/LoginPage';
+import { LoginPage } from './src/components/LoginPage';
 import { Toast } from './src/components/common';
 import { GlobalLoader } from './src/components/GlobalLoader';
 import { 
@@ -139,7 +139,6 @@ const AppContent: React.FC = () => {
     const { isDataLoading } = useData();
     const { theme, companyProfile } = useSettings();
 
-    const [authView, setAuthView] = useState<'login' | 'register'>('login');
     const [currentView, setCurrentView] = useState<View>('dashboard');
     const [detailView, setDetailView] = useState<DetailView>(null);
     const [toast, setToast] = useState<ToastMessage>(null);
@@ -258,17 +257,9 @@ const AppContent: React.FC = () => {
     if (!isAuthenticated) {
         return (
             <>
-                {authView === 'login' ? (
-                    <LoginPage 
-                        showToast={showToast}
-                        onSwitchToRegister={() => setAuthView('register')}
-                    />
-                ) : (
-                    <RegisterPage 
-                        showToast={showToast}
-                        onSwitchToLogin={() => setAuthView('login')}
-                    />
-                )}
+                <LoginPage 
+                    showToast={showToast}
+                />
                 <Toast toast={toast} onDismiss={() => setToast(null)} />
             </>
         );
