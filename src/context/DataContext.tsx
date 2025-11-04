@@ -11,7 +11,7 @@ const handleAutoBackup = async (user: string) => {
     if (!user || user === 'guest') return;
 
     try {
-        const dataKeys = ['clients', 'equipment', 'inspections', 'financial', 'certificates', 'licenses', 'deliveries', 'expenses'];
+        const dataKeys = ['clients', 'equipment', 'clientEquipment', 'inspections', 'financial', 'certificates', 'licenses', 'deliveries', 'expenses'];
         
         for (const key of dataKeys) {
             const data = await get(`${user}-${key}`);

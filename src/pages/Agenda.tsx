@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { InspectionStatus, PrefilledInspectionData, InspectedItem, InspectionItemStatus, Equipment } from '../../types';
+import { InspectionStatus, PrefilledInspectionData, InspectedItem, InspectionItemStatus, ClientEquipment } from '../../types';
 import { Card, Modal, getStatusBadge, Button, Input, Select, Textarea, FormField, EmptyState, FloatingActionButton } from '../components/common';
 import { AgendaIcon, PlusIcon } from '../components/Icons';
 import { Calendar } from '../components/Calendar';
@@ -31,12 +31,13 @@ const StatusFilter: React.FC<{
 
 const InspectedItemForm: React.FC<{
     item: InspectedItem;
-    equipment: Equipment;
+    clientEquipment: ClientEquipment;
+    productName: string;
     onUpdate: (field: keyof InspectedItem, value: string) => void;
-}> = ({ item, equipment, onUpdate }) => {
+}> = ({ item, clientEquipment, productName, onUpdate }) => {
     return (
         <div className="p-3 bg-secondary rounded-lg border border-border space-y-3">
-            <p className="font-semibold text-text-primary">{equipment.name} <span className="text-xs text-text-secondary">({equipment.serialNumber})</span></p>
+            <p className="font-semibold text-text-primary">{productName} <span className="text-xs text-text-secondary">({clientEquipment.serialNumber})</span></p>
             <FormField label="Localização">
                 <Input value={item.location} onChange={e => onUpdate('location', e.target.value)} placeholder="Ex: Térreo, Corredor B" required />
             </FormField>
@@ -62,7 +63,7 @@ export const Agenda: React.FC<{
     showToast: (msg: string, type?: 'success' | 'error') => void,
     onViewInspection: (inspectionId: string) => void 
 }> = ({ prefilledData, onPrefillHandled, showToast, onViewInspection }) => {
-    const { inspections, clients, equipment, handleAddInspection } = useData();
+    const { inspections, clients, equipment, clientEquipment, handleAddInspection } = useData();
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [filter, setFilter] = useState<InspectionStatus | 'all'>('all');
     const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
@@ -70,9 +71,9 @@ export const Agenda: React.FC<{
     const initialInspectionState = { clientId: '', inspectedItems: [] as InspectedItem[], date: '', inspector: 'João Silva', observations: '', status: InspectionStatus.Agendada };
     const [newInspection, setNewInspection] = useState(initialInspectionState);
     
-    const clientEquipment = useMemo(() => {
-        return equipment.filter(e => e.clientId === newInspection.clientId);
-    }, [equipment, newInspection.clientId]);
+    const selectedClientEquipment = useMemo(() => {
+        return clientEquipment.filter(e => e.clientId === newInspection.clientId);
+    }, [clientEquipment, newInspection.clientId]);
 
     const inspectionDates = useMemo(() => 
         inspections.map(i => i.date), 
@@ -104,22 +105,23 @@ export const Agenda: React.FC<{
         showToast("Inspeção agendada com sucesso!");
     };
     
-    const handleEquipmentSelection = (equipmentId: string, isSelected: boolean) => {
+    const handleEquipmentSelection = (clientEquipmentId: string, isSelected: boolean) => {
         setNewInspection(prev => {
             const currentItems = prev.inspectedItems;
             if (isSelected) {
-                const newItem: InspectedItem = { equipmentId, location: '', situation: InspectionItemStatus.Conforme, suggestedAction: 'Nenhuma' };
+                const asset = selectedClientEquipment.find(ce => ce.id === clientEquipmentId);
+                const newItem: InspectedItem = { clientEquipmentId, location: asset?.location || '', situation: InspectionItemStatus.Conforme, suggestedAction: 'Nenhuma' };
                 return { ...prev, inspectedItems: [...currentItems, newItem] };
             } else {
-                return { ...prev, inspectedItems: currentItems.filter(item => item.equipmentId !== equipmentId) };
+                return { ...prev, inspectedItems: currentItems.filter(item => item.clientEquipmentId !== clientEquipmentId) };
             }
         });
     };
     
-    const handleInspectedItemUpdate = (equipmentId: string, field: keyof InspectedItem, value: string) => {
+    const handleInspectedItemUpdate = (clientEquipmentId: string, field: keyof InspectedItem, value: string) => {
         setNewInspection(prev => ({
             ...prev,
-            inspectedItems: prev.inspectedItems.map(item => item.equipmentId === equipmentId ? { ...item, [field]: value } : item)
+            inspectedItems: prev.inspectedItems.map(item => item.clientEquipmentId === clientEquipmentId ? { ...item, [field]: value } : item)
         }));
     };
 
@@ -212,28 +214,32 @@ export const Agenda: React.FC<{
 
                     {newInspection.clientId && (
                         <>
-                        <FormField label="Selecionar Equipamentos">
+                        <FormField label="Selecionar Equipamentos do Cliente">
                             <div className="max-h-60 overflow-y-auto bg-primary/50 p-2 rounded-lg border border-border space-y-2 mt-1">
-                                {clientEquipment.length > 0 ? clientEquipment.map(eq => (
-                                    <label key={eq.id} className="flex items-center space-x-3 p-2 hover:bg-secondary rounded-md cursor-pointer">
-                                        <input 
-                                            type="checkbox" 
-                                            className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
-                                            checked={newInspection.inspectedItems.some(item => item.equipmentId === eq.id)}
-                                            onChange={(e) => handleEquipmentSelection(eq.id, e.target.checked)}
-                                        />
-                                        <span className="text-sm text-text-primary">{eq.name} ({eq.serialNumber})</span>
-                                    </label>
-                                )) : <p className="text-xs text-text-secondary text-center p-2">Nenhum equipamento para este cliente.</p>}
+                                {selectedClientEquipment.length > 0 ? selectedClientEquipment.map(asset => {
+                                    const product = equipment.find(p => p.id === asset.equipmentId);
+                                    return (
+                                        <label key={asset.id} className="flex items-center space-x-3 p-2 hover:bg-secondary rounded-md cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
+                                                checked={newInspection.inspectedItems.some(item => item.clientEquipmentId === asset.id)}
+                                                onChange={(e) => handleEquipmentSelection(asset.id, e.target.checked)}
+                                            />
+                                            <span className="text-sm text-text-primary">{product?.name} ({asset.serialNumber})</span>
+                                        </label>
+                                    )
+                                }) : <p className="text-xs text-text-secondary text-center p-2">Nenhum equipamento cadastrado para este cliente.</p>}
                             </div>
                         </FormField>
                          {newInspection.inspectedItems.length > 0 && (
                             <FormField label="Detalhes dos Itens a Inspecionar">
                                 <div className="space-y-3 mt-1">
                                     {newInspection.inspectedItems.map(item => {
-                                        const equipmentDetails = clientEquipment.find(eq => eq.id === item.equipmentId);
-                                        if (!equipmentDetails) return null;
-                                        return <InspectedItemForm key={item.equipmentId} item={item} equipment={equipmentDetails} onUpdate={(field, value) => handleInspectedItemUpdate(item.equipmentId, field, value)} />
+                                        const asset = selectedClientEquipment.find(eq => eq.id === item.clientEquipmentId);
+                                        const product = asset ? equipment.find(p => p.id === asset.equipmentId) : null;
+                                        if (!asset || !product) return null;
+                                        return <InspectedItemForm key={item.clientEquipmentId} item={item} clientEquipment={asset} productName={product.name} onUpdate={(field, value) => handleInspectedItemUpdate(item.clientEquipmentId, field, value)} />
                                     })}
                                 </div>
                             </FormField>

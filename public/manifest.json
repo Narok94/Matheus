@@ -1,7 +1,7 @@
 {
-  "name": "InspecPro",
-  "short_name": "InspecPro",
-  "description": "Gestão de Inspeções e Equipamentos.",
+  "name": "MDS",
+  "short_name": "MDS",
+  "description": "Inspeções e Vistorias.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0f1f",

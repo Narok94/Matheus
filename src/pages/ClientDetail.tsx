@@ -1,34 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch } from '../components/common';
-import { AgendaIcon, DownloadIcon, EditIcon, TrashIcon } from '../components/Icons';
+import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch, Select, Textarea } from '../components/common';
+import { AgendaIcon, DownloadIcon, EditIcon, TrashIcon, PlusIcon } from '../components/Icons';
 import { capitalizeWords, formatDocument, formatPhone, setWorksheetColumns, parseLocalDate } from '../utils';
-import { Client } from '../../types';
+import { Client, ClientEquipment, InspectionStatus } from '../../types';
 
 export const ClientDetail: React.FC<{ 
     clientId: string; 
     onScheduleInspection: (clientId: string) => void; 
     onViewInspection: (inspectionId: string) => void;
 }> = ({ clientId, onScheduleInspection, onViewInspection }) => {
-    const { clients, equipment, inspections, handleUpdateClient, handleDeleteClient } = useData();
+    const { 
+        clients, equipment, clientEquipment, inspections, handleUpdateClient, handleDeleteClient, 
+        handleAddClientEquipment, handleUpdateClientEquipment, handleDeleteClientEquipment 
+    } = useData();
 
     const client = clients.find(c => c.id === clientId);
 
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
     const [editedClient, setEditedClient] = useState<Client | undefined>(client);
+    
+    const [isAssetModalOpen, setAssetModalOpen] = useState(false);
+    const [editingAsset, setEditingAsset] = useState<ClientEquipment | null>(null);
+    const [assetToDelete, setAssetToDelete] = useState<ClientEquipment | null>(null);
+
+    const initialAssetState: Omit<ClientEquipment, 'id' | 'clientId'> = { equipmentId: '', serialNumber: '', expiryDate: '', location: '', status: InspectionStatus.Agendada };
+    const [assetFormState, setAssetFormState] = useState(initialAssetState);
 
     useEffect(() => {
         setEditedClient(clients.find(c => c.id === clientId));
     }, [clientId, clients]);
+    
+    useEffect(() => {
+        if (isAssetModalOpen) {
+            if (editingAsset) {
+                setAssetFormState(editingAsset);
+            } else {
+                setAssetFormState(initialAssetState);
+            }
+        }
+    }, [isAssetModalOpen, editingAsset]);
 
     if (!client || !editedClient) {
         return <div className="p-4 text-text-secondary">Cliente não encontrado ou carregando...</div>;
     }
 
-    const clientEquipment = equipment.filter(e => e.clientId === client.id);
+    const clientAssets = clientEquipment.filter(e => e.clientId === client.id);
     const clientInspections = inspections.filter(i => i.clientId === client.id);
 
+    // Client Edit Handlers
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         let formattedValue: string | number = value;
@@ -57,6 +78,34 @@ export const ClientDetail: React.FC<{
         setEditModalOpen(false);
     };
     
+    // Asset Handlers
+    const handleAssetFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setAssetFormState(prev => ({...prev, [name]: value}));
+    };
+    
+    const handleAssetFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (editingAsset) {
+            handleUpdateClientEquipment(assetFormState as ClientEquipment);
+        } else {
+            handleAddClientEquipment({ ...assetFormState, clientId: client.id });
+        }
+        setAssetModalOpen(false);
+        setEditingAsset(null);
+    };
+    
+    const openDeleteAssetModal = (asset: ClientEquipment) => {
+        setAssetToDelete(asset);
+    };
+    
+    const confirmDeleteAsset = () => {
+        if (assetToDelete) {
+            handleDeleteClientEquipment(assetToDelete.id);
+            setAssetToDelete(null);
+        }
+    };
+    
     const handleExportReport = () => {
         const XLSX = (window as any).XLSX;
     
@@ -75,12 +124,15 @@ export const ClientDetail: React.FC<{
         clientWorksheet['!cols'] = [{ wch: 15 }, { wch: 40 }];
     
         let equipmentWorksheet;
-        if (clientEquipment.length > 0) {
-            const equipmentDataForSheet = clientEquipment.map(eq => ({ "Nome": eq.name, "Nº Série": eq.serialNumber, "Categoria": eq.category, "Capacidade": eq.capacity, "Fabricante": eq.manufacturer, "Status": eq.status, "Vencimento": parseLocalDate(eq.expiryDate).toLocaleDateString(), "Últ. Inspeção": eq.lastInspectionDate ? parseLocalDate(eq.lastInspectionDate).toLocaleDateString() : 'N/A' }));
+        if (clientAssets.length > 0) {
+            const equipmentDataForSheet = clientAssets.map(asset => {
+                const product = equipment.find(p => p.id === asset.equipmentId);
+                return { "Nome": product?.name, "Nº Série": asset.serialNumber, "Localização": asset.location, "Status": asset.status, "Vencimento": parseLocalDate(asset.expiryDate).toLocaleDateString(), "Últ. Inspeção": asset.lastInspectionDate ? parseLocalDate(asset.lastInspectionDate).toLocaleDateString() : 'N/A' }
+            });
             equipmentWorksheet = XLSX.utils.json_to_sheet(equipmentDataForSheet);
             setWorksheetColumns(equipmentWorksheet, equipmentDataForSheet);
         } else {
-            equipmentWorksheet = XLSX.utils.aoa_to_sheet([["Nenhum equipamento cadastrado."]]);
+            equipmentWorksheet = XLSX.utils.aoa_to_sheet([["Nenhum equipamento cadastrado para este cliente."]]);
         }
     
         let inspectionWorksheet;
@@ -149,16 +201,24 @@ export const ClientDetail: React.FC<{
                 </Card>
             )}
 
-            <Card title={`Equipamentos (${clientEquipment.length})`} collapsible>
-                {clientEquipment.length > 0 ? clientEquipment.map(eq => (
-                    <div key={eq.id} className="flex justify-between items-center py-2 border-b border-border last:border-b-0">
-                        <div>
-                            <p className="font-semibold text-text-primary">{eq.name} <span className="text-text-secondary text-xs">({eq.serialNumber})</span></p>
-                            <p className="text-sm text-text-secondary">Vencimento: {parseLocalDate(eq.expiryDate).toLocaleDateString()}</p>
+            <Card title={`Equipamentos do Cliente (${clientAssets.length})`} collapsible actions={<Button variant="secondary" className="!py-1 !px-3 !text-xs" onClick={() => setAssetModalOpen(true)}><PlusIcon className="w-4 h-4 mr-1" /> Adicionar</Button>}>
+                {clientAssets.length > 0 ? clientAssets.map(asset => {
+                    const product = equipment.find(p => p.id === asset.equipmentId);
+                    return (
+                    <div key={asset.id} className="py-2 border-b border-border last:border-b-0">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <p className="font-semibold text-text-primary">{product?.name} <span className="text-text-secondary text-xs">({asset.serialNumber})</span></p>
+                                <p className="text-sm text-text-secondary">Vencimento: {parseLocalDate(asset.expiryDate).toLocaleDateString()}</p>
+                            </div>
+                            {getStatusBadge(asset.status)}
                         </div>
-                        {getStatusBadge(eq.status)}
+                        <div className="flex justify-end space-x-2 mt-1">
+                            <button onClick={() => { setEditingAsset(asset); setAssetModalOpen(true); }} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
+                            <button onClick={() => openDeleteAssetModal(asset)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
+                        </div>
                     </div>
-                )) : <p className="text-text-secondary text-sm">Nenhum equipamento cadastrado.</p>}
+                )}) : <p className="text-text-secondary text-sm">Nenhum equipamento cadastrado.</p>}
             </Card>
 
             <Card title={`Histórico de Inspeções (${clientInspections.length})`} collapsible>
@@ -209,6 +269,34 @@ export const ClientDetail: React.FC<{
                 onConfirm={() => handleDeleteClient(client.id)}
                 title="Confirmar Exclusão"
                 message={`Tem certeza que deseja excluir ${client.name}? Todos os equipamentos e inspeções associados também serão removidos. Esta ação não pode ser desfeita.`}
+            />
+            
+            {/* Asset Modals */}
+             <Modal isOpen={isAssetModalOpen} onClose={() => setAssetModalOpen(false)} title={editingAsset ? "Editar Equipamento do Cliente" : "Adicionar Equipamento ao Cliente"}>
+                <form onSubmit={handleAssetFormSubmit} className="space-y-4">
+                    <FormField label="Tipo de Equipamento (do Catálogo)">
+                        <Select name="equipmentId" value={assetFormState.equipmentId} onChange={handleAssetFormChange} required>
+                            <option value="">Selecione um produto</option>
+                            {equipment.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </Select>
+                    </FormField>
+                    <FormField label="Número de Série"><Input name="serialNumber" value={assetFormState.serialNumber} onChange={handleAssetFormChange} required /></FormField>
+                    <FormField label="Localização"><Input name="location" value={assetFormState.location} onChange={handleAssetFormChange} required /></FormField>
+                    <FormField label="Data de Vencimento"><Input type="date" name="expiryDate" value={assetFormState.expiryDate} onChange={handleAssetFormChange} required /></FormField>
+                    <FormField label="Status">
+                        <Select name="status" value={assetFormState.status} onChange={handleAssetFormChange} required>
+                            {Object.values(InspectionStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                        </Select>
+                    </FormField>
+                    <div className="flex justify-end pt-4"><Button type="submit">{editingAsset ? "Salvar Alterações" : "Adicionar Equipamento"}</Button></div>
+                </form>
+            </Modal>
+            <ConfirmationModal 
+                isOpen={!!assetToDelete}
+                onClose={() => setAssetToDelete(null)}
+                onConfirm={confirmDeleteAsset}
+                title="Confirmar Exclusão"
+                message={`Tem certeza que deseja excluir o equipamento "${equipment.find(p => p.id === assetToDelete?.equipmentId)?.name}"? Esta ação não pode ser desfeita.`}
             />
         </div>
     );

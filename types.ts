@@ -42,12 +42,10 @@ export interface Client {
   paidInstallments?: number; // Parcelas pagas
 }
 
+// Represents a product in the catalog.
 export interface Equipment {
   id:string;
-  clientId: string;
   name: string;
-  serialNumber: string;
-  expiryDate: string;
   category: string; // Ex: 'Extintor', 'Hidrante'
   unitOfMeasure: string; // Ex: 'Unidade', 'Metro'
   costPrice?: number;
@@ -55,12 +53,23 @@ export interface Equipment {
   observations?: string;
   capacity: string;
   manufacturer: string;
+}
+
+// Represents an instance of an Equipment owned by a client.
+export interface ClientEquipment {
+  id: string;
+  clientId: string;
+  equipmentId: string; // Foreign key to Equipment
+  serialNumber: string;
+  expiryDate: string;
+  location: string;
   lastInspectionDate?: string;
   status: InspectionStatus;
 }
 
+
 export interface InspectedItem {
-  equipmentId: string;
+  clientEquipmentId: string; // Changed from equipmentId
   location: string;
   situation: InspectionItemStatus;
   suggestedAction: string;
@@ -160,6 +169,7 @@ export type PrefilledInspectionData = {
 export type BackupData = {
     clients: Client[];
     equipment: Equipment[];
+    clientEquipment: ClientEquipment[];
     inspections: Inspection[];
     financial: FinancialRecord[];
     certificates: Certificate[];

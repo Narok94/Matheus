@@ -1,6 +1,6 @@
-import { useMemo, Dispatch } from 'react';
-import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, PaymentStatus } from '../../types';
-import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES, MOCK_LICENSES, MOCK_DELIVERIES, MOCK_EXPENSES } from '../../data';
+import { useMemo, Dispatch, useEffect } from 'react';
+import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, PaymentStatus, ClientEquipment } from '../../types';
+import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES, MOCK_LICENSES, MOCK_DELIVERIES, MOCK_EXPENSES, MOCK_CLIENT_EQUIPMENT } from '../../data';
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';
 import { get } from '../idb';
@@ -9,29 +9,49 @@ export const useData = () => {
     const { currentUser } = useAuth();
     const dataKeyPrefix = useMemo(() => {
         if (!currentUser) return 'guest';
-        // The data key prefix should be stable to avoid data loss on updates.
-        // Reverted prefix to restore access to old data.
         return currentUser;
     }, [currentUser]);
 
-    const isInitialMockLoad = useMemo(() => currentUser === 'admin', [currentUser]);
+    const isMockUser = useMemo(() => currentUser === 'admin', [currentUser]);
+
+    // Initialization flag to prevent data loss on updates for mock users
+    const [initialized, setInitialized, initializedLoaded] = useIndexedDB<boolean>(`${dataKeyPrefix}-initialized`, false);
 
     // User-specific data states
-    const [clients, setClients, clientsLoaded] = useIndexedDB<Client[]>(`${dataKeyPrefix}-clients`, isInitialMockLoad ? MOCK_CLIENTS : []);
-    const [equipment, setEquipment, equipmentLoaded] = useIndexedDB<Equipment[]>(`${dataKeyPrefix}-equipment`, isInitialMockLoad ? MOCK_EQUIPMENT : []);
-    const [inspections, setInspections, inspectionsLoaded] = useIndexedDB<Inspection[]>(`${dataKeyPrefix}-inspections`, isInitialMockLoad ? MOCK_INSPECTIONS : []);
-    const [financial, setFinancial, financialLoaded] = useIndexedDB<FinancialRecord[]>(`${dataKeyPrefix}-financial`, isInitialMockLoad ? MOCK_FINANCIAL : []);
-    const [certificates, setCertificates, certificatesLoaded] = useIndexedDB<Certificate[]>(`${dataKeyPrefix}-certificates`, isInitialMockLoad ? MOCK_CERTIFICATES : []);
-    const [licenses, setLicenses, licensesLoaded] = useIndexedDB<License[]>(`${dataKeyPrefix}-licenses`, isInitialMockLoad ? MOCK_LICENSES : []);
-    const [deliveries, setDeliveries, deliveriesLoaded] = useIndexedDB<Delivery[]>(`${dataKeyPrefix}-deliveries`, isInitialMockLoad ? MOCK_DELIVERIES : []);
-    const [expenses, setExpenses, expensesLoaded] = useIndexedDB<Expense[]>(`${dataKeyPrefix}-expenses`, isInitialMockLoad ? MOCK_EXPENSES : []);
+    const [clients, setClients, clientsLoaded] = useIndexedDB<Client[]>(`${dataKeyPrefix}-clients`, []);
+    const [equipment, setEquipment, equipmentLoaded] = useIndexedDB<Equipment[]>(`${dataKeyPrefix}-equipment`, []);
+    const [clientEquipment, setClientEquipment, clientEquipmentLoaded] = useIndexedDB<ClientEquipment[]>(`${dataKeyPrefix}-clientEquipment`, []);
+    const [inspections, setInspections, inspectionsLoaded] = useIndexedDB<Inspection[]>(`${dataKeyPrefix}-inspections`, []);
+    const [financial, setFinancial, financialLoaded] = useIndexedDB<FinancialRecord[]>(`${dataKeyPrefix}-financial`, []);
+    const [certificates, setCertificates, certificatesLoaded] = useIndexedDB<Certificate[]>(`${dataKeyPrefix}-certificates`, []);
+    const [licenses, setLicenses, licensesLoaded] = useIndexedDB<License[]>(`${dataKeyPrefix}-licenses`, []);
+    const [deliveries, setDeliveries, deliveriesLoaded] = useIndexedDB<Delivery[]>(`${dataKeyPrefix}-deliveries`, []);
+    const [expenses, setExpenses, expensesLoaded] = useIndexedDB<Expense[]>(`${dataKeyPrefix}-expenses`, []);
     
     // Auto-backup timestamp state
     const iDBLastBackup = useIndexedDB<string | null>(`${dataKeyPrefix}-lastBackupTimestamp`, null);
     const lastBackupTimestamp = iDBLastBackup[0];
     const lastBackupTimestampLoaded = iDBLastBackup[2];
     
-    const isDataLoading = !clientsLoaded || !equipmentLoaded || !inspectionsLoaded || !financialLoaded || !certificatesLoaded || !lastBackupTimestampLoaded || !licensesLoaded || !deliveriesLoaded || !expensesLoaded;
+    const isDataLoading = !clientsLoaded || !equipmentLoaded || !clientEquipmentLoaded || !inspectionsLoaded || !financialLoaded || !certificatesLoaded || !lastBackupTimestampLoaded || !licensesLoaded || !deliveriesLoaded || !expensesLoaded || !initializedLoaded;
+
+    // Effect to seed mock data for the 'admin' user only once.
+    useEffect(() => {
+        if (initializedLoaded && !initialized && isMockUser) {
+            console.log("Seeding mock data for admin user...");
+            setClients(MOCK_CLIENTS);
+            setEquipment(MOCK_EQUIPMENT);
+            setClientEquipment(MOCK_CLIENT_EQUIPMENT);
+            setInspections(MOCK_INSPECTIONS);
+            setFinancial(MOCK_FINANCIAL);
+            setCertificates(MOCK_CERTIFICATES);
+            setLicenses(MOCK_LICENSES);
+            setDeliveries(MOCK_DELIVERIES);
+            setExpenses(MOCK_EXPENSES);
+            setInitialized(true);
+        }
+    }, [initialized, initializedLoaded, isMockUser, setClients, setEquipment, setClientEquipment, setInspections, setFinancial, setCertificates, setLicenses, setDeliveries, setExpenses, setInitialized]);
+
 
     // --- CRUD Handlers ---
     // Client
@@ -44,13 +64,13 @@ export const useData = () => {
     };
     const handleDeleteClient = (clientId: string) => {
         setClients(prev => prev.filter(c => c.id !== clientId));
-        setEquipment(prev => prev.filter(e => e.clientId !== clientId));
+        setClientEquipment(prev => prev.filter(e => e.clientId !== clientId));
         setInspections(prev => prev.filter(i => i.clientId !== clientId));
         setFinancial(prev => prev.filter(f => f.clientId !== clientId));
         setCertificates(prev => prev.filter(cert => cert.clientId !== clientId));
     };
     
-    // Equipment
+    // Equipment (Product Catalog)
     const handleAddEquipment = (equipmentData: Omit<Equipment, 'id'>) => {
         const newEquipment: Equipment = { ...equipmentData, id: `eq-${crypto.randomUUID()}` };
         setEquipment(prev => [...prev, newEquipment]);
@@ -60,8 +80,21 @@ export const useData = () => {
     };
     const handleDeleteEquipment = (equipmentId: string) => {
         setEquipment(prev => prev.filter(eq => eq.id !== equipmentId));
+        setClientEquipment(prev => prev.filter(ceq => ceq.equipmentId !== equipmentId));
     };
     
+    // Client Equipment (Asset)
+    const handleAddClientEquipment = (clientEquipmentData: Omit<ClientEquipment, 'id'>) => {
+        const newClientEquipment: ClientEquipment = { ...clientEquipmentData, id: `ceq-${crypto.randomUUID()}` };
+        setClientEquipment(prev => [...prev, newClientEquipment]);
+    };
+    const handleUpdateClientEquipment = (updatedClientEquipment: ClientEquipment) => {
+        setClientEquipment(prev => prev.map(ceq => ceq.id === updatedClientEquipment.id ? updatedClientEquipment : ceq));
+    };
+    const handleDeleteClientEquipment = (clientEquipmentId: string) => {
+        setClientEquipment(prev => prev.filter(ceq => ceq.id !== clientEquipmentId));
+    };
+
     // Inspection
     const handleAddInspection = (inspectionData: Omit<Inspection, 'id'>) => {
         const newInspection: Inspection = { ...inspectionData, id: `ins-${crypto.randomUUID()}` };
@@ -156,6 +189,7 @@ export const useData = () => {
     const handleImportData = (parsedData: BackupData) => {
         setClients(parsedData.clients || []);
         setEquipment(parsedData.equipment || []);
+        setClientEquipment(parsedData.clientEquipment || []);
         setInspections(parsedData.inspections || []);
         setFinancial(parsedData.financial || []);
         setCertificates(parsedData.certificates || []);
@@ -165,10 +199,11 @@ export const useData = () => {
     };
     
     const confirmAutoRestore = async () => {
-        const dataSetKeys: ('clients' | 'equipment' | 'inspections' | 'financial' | 'certificates' | 'licenses' | 'deliveries' | 'expenses')[] = ['clients', 'equipment', 'inspections', 'financial', 'certificates', 'licenses', 'deliveries', 'expenses'];
+        const dataSetKeys: (keyof Omit<BackupData, 'companyProfile' | 'appSettings'>)[] = ['clients', 'equipment', 'clientEquipment', 'inspections', 'financial', 'certificates', 'licenses', 'deliveries', 'expenses'];
         const setters: Record<typeof dataSetKeys[number], Dispatch<any>> = {
             clients: setClients,
             equipment: setEquipment,
+            clientEquipment: setClientEquipment,
             inspections: setInspections,
             financial: setFinancial,
             certificates: setCertificates,
@@ -185,12 +220,14 @@ export const useData = () => {
     };
 
     return {
-        clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses,
+        clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses,
         isDataLoading,
         // Client
         handleAddClient, handleUpdateClient, handleDeleteClient,
-        // Equipment
+        // Equipment (Product)
         handleAddEquipment, handleUpdateEquipment, handleDeleteEquipment,
+        // Client Equipment (Asset)
+        handleAddClientEquipment, handleUpdateClientEquipment, handleDeleteClientEquipment,
         // Inspection
         handleAddInspection, handleUpdateInspection,
         // Financial

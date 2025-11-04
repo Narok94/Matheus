@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { InspecProLogo, UserIcon, LockIcon } from './Icons';
 import { useAuth } from '../context/AuthContext';
+import { get } from '../idb';
+import { CompanyProfile } from '../../types';
 
 type ShowToastFn = (message: string, type?: 'success' | 'error') => void;
 
@@ -105,13 +107,17 @@ const AuthFormCard: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     </div>
 );
 
-const AuthHeader = () => (
+const AuthHeader = ({ logoUrl }: { logoUrl?: string | null }) => (
     <div className="text-center mb-8">
-        <div className="w-16 h-16 mx-auto mb-4">
-            <InspecProLogo className="text-orange-400 filter drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+        <div className="w-24 h-24 mx-auto mb-4">
+            {logoUrl ? (
+                <img src={logoUrl} alt="Company Logo" className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+            ) : (
+                <InspecProLogo className="filter drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+            )}
         </div>
-        <h1 className="text-3xl font-bold text-white tracking-wider">InspecPro</h1>
-        <p className="text-sm text-slate-400">Gestão de Inspeções</p>
+        <h1 className="text-3xl font-bold text-white tracking-wider">MDS</h1>
+        <p className="text-sm text-slate-400">Inspeções e Vistorias</p>
     </div>
 );
 
@@ -138,6 +144,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({ showToast, onSwitchToRegis
     const { handleLogin } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchLogo = async () => {
+            try {
+                // By convention, the 'admin' user holds the primary company profile.
+                const adminProfile = await get<CompanyProfile>('admin-companyProfile');
+                if (adminProfile?.logo) {
+                    setLogoUrl(adminProfile.logo);
+                }
+            } catch (error) {
+                console.error("Failed to load company logo for login screen:", error);
+            }
+        };
+        fetchLogo();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -150,7 +172,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ showToast, onSwitchToRegis
             <AuthLayout>
                 <div className="w-full max-w-sm">
                     <AuthFormCard>
-                        <AuthHeader />
+                        <AuthHeader logoUrl={logoUrl} />
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <InputWithIcon
                                 icon={<UserIcon />}
@@ -206,6 +228,21 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchT
     const { handleRegister } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchLogo = async () => {
+            try {
+                const adminProfile = await get<CompanyProfile>('admin-companyProfile');
+                if (adminProfile?.logo) {
+                    setLogoUrl(adminProfile.logo);
+                }
+            } catch (error) {
+                console.error("Failed to load company logo for registration screen:", error);
+            }
+        };
+        fetchLogo();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -222,7 +259,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchT
             <AuthLayout>
                 <div className="w-full max-w-sm">
                     <AuthFormCard>
-                        <AuthHeader />
+                        <AuthHeader logoUrl={logoUrl} />
                         <h2 className="text-center text-lg text-slate-300 -mt-4 mb-6">Create Account</h2>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <InputWithIcon

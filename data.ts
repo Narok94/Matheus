@@ -1,4 +1,4 @@
-import { Client, Equipment, Inspection, FinancialRecord, Certificate, License, Delivery, Expense, InspectionStatus, PaymentStatus, DeliveryStatus, LicenseStatus, InspectedItem, InspectionItemStatus } from './types';
+import { Client, Equipment, Inspection, FinancialRecord, Certificate, License, Delivery, Expense, InspectionStatus, PaymentStatus, DeliveryStatus, LicenseStatus, InspectedItem, InspectionItemStatus, ClientEquipment } from './types';
 
 // --- MOCK DATA FOR 'admin' USER ---
 const today = new Date();
@@ -35,32 +35,43 @@ export const MOCK_CLIENTS: Client[] = [
     }
 ];
 
-// --- EQUIPMENT ---
+// --- EQUIPMENT (PRODUCT CATALOG) ---
 export const MOCK_EQUIPMENT: Equipment[] = [
-    // Lili Coutinho Bolos
-    { id: 'eq-001', clientId: 'cli-001', name: 'Extintor CO2 6kg', serialNumber: 'CO2-A1B2C3', expiryDate: formatDate(addDays(today, 180)), category: 'Extintor', unitOfMeasure: 'Unidade', capacity: '6kg', manufacturer: 'Extinpel', status: InspectionStatus.Aprovado, lastInspectionDate: formatDate(addDays(today, -185)) },
-    { id: 'eq-002', clientId: 'cli-001', name: 'Extintor AP 10L', serialNumber: 'AP-D4E5F6', expiryDate: formatDate(addDays(today, 25)), category: 'Extintor', unitOfMeasure: 'Unidade', capacity: '10L', manufacturer: 'Bucka', status: InspectionStatus.Pendente, lastInspectionDate: formatDate(addDays(today, -340)) },
-    // IT De Moraes Me
-    { id: 'eq-003', clientId: 'cli-002', name: 'Hidrante de Parede', serialNumber: 'HID-G7H8I9', expiryDate: formatDate(addDays(today, 365)), category: 'Hidrante', unitOfMeasure: 'Unidade', capacity: '2.5"', manufacturer: 'Metalcasty', status: InspectionStatus.Aprovado, lastInspectionDate: formatDate(addDays(today, -10)) },
-    // Oficina Mecânica Veloz
-    { id: 'eq-004', clientId: 'cli-003', name: 'Extintor PQS 4kg', serialNumber: 'PQS-J1K2L3', expiryDate: formatDate(addDays(today, -15)), category: 'Extintor', unitOfMeasure: 'Unidade', capacity: '4kg', manufacturer: 'Resil', status: InspectionStatus.Reprovado, lastInspectionDate: formatDate(addDays(today, -380)) },
-    { id: 'eq-005', clientId: 'cli-003', name: 'Sinalização de Rota de Fuga', serialNumber: 'N/A', expiryDate: formatDate(addDays(today, 730)), category: 'Sinalização', unitOfMeasure: 'Kit', capacity: '15 placas', manufacturer: 'Sinalize', status: InspectionStatus.Agendada },
-    // Condomínio Edifício Central
-    { id: 'eq-006', clientId: 'cli-005', name: 'Extintor PQS 6kg', serialNumber: 'PQS-M4N5P6', expiryDate: formatDate(addDays(today, 88)), category: 'Extintor', unitOfMeasure: 'Unidade', capacity: '6kg', manufacturer: 'Resil', status: InspectionStatus.Agendada },
-    { id: 'eq-007', clientId: 'cli-005', name: 'Extintor PQS 6kg', serialNumber: 'PQS-Q7R8S9', expiryDate: formatDate(addDays(today, 88)), category: 'Extintor', unitOfMeasure: 'Unidade', capacity: '6kg', manufacturer: 'Resil', status: InspectionStatus.Agendada },
+    { id: 'prod-001', name: 'Extintor CO2 6kg', category: 'Extintor', unitOfMeasure: 'Unidade', capacity: '6kg', manufacturer: 'Extinpel' },
+    { id: 'prod-002', name: 'Extintor AP 10L', category: 'Extintor', unitOfMeasure: 'Unidade', capacity: '10L', manufacturer: 'Bucka' },
+    { id: 'prod-003', name: 'Hidrante de Parede', category: 'Hidrante', unitOfMeasure: 'Unidade', capacity: '2.5"', manufacturer: 'Metalcasty' },
+    { id: 'prod-004', name: 'Extintor PQS 4kg', category: 'Extintor', unitOfMeasure: 'Unidade', capacity: '4kg', manufacturer: 'Resil' },
+    { id: 'prod-005', name: 'Sinalização de Rota de Fuga', category: 'Sinalização', unitOfMeasure: 'Kit', capacity: '15 placas', manufacturer: 'Sinalize' },
+    { id: 'prod-006', name: 'Extintor PQS 6kg', category: 'Extintor', unitOfMeasure: 'Unidade', capacity: '6kg', manufacturer: 'Resil' },
 ];
+
+// --- CLIENT EQUIPMENT (ASSETS) ---
+export const MOCK_CLIENT_EQUIPMENT: ClientEquipment[] = [
+    // Lili Coutinho Bolos
+    { id: 'asset-001', clientId: 'cli-001', equipmentId: 'prod-001', serialNumber: 'CO2-A1B2C3', expiryDate: formatDate(addDays(today, 180)), location: "Cozinha", status: InspectionStatus.Aprovado, lastInspectionDate: formatDate(addDays(today, -185)) },
+    { id: 'asset-002', clientId: 'cli-001', equipmentId: 'prod-002', serialNumber: 'AP-D4E5F6', expiryDate: formatDate(addDays(today, 25)), location: "Estoque", status: InspectionStatus.Pendente, lastInspectionDate: formatDate(addDays(today, -340)) },
+    // IT De Moraes Me
+    { id: 'asset-003', clientId: 'cli-002', equipmentId: 'prod-003', serialNumber: 'HID-G7H8I9', expiryDate: formatDate(addDays(today, 365)), location: "Corredor Térreo", status: InspectionStatus.Aprovado, lastInspectionDate: formatDate(addDays(today, -10)) },
+    // Oficina Mecânica Veloz
+    { id: 'asset-004', clientId: 'cli-003', equipmentId: 'prod-004', serialNumber: 'PQS-J1K2L3', expiryDate: formatDate(addDays(today, -15)), location: "Pátio", status: InspectionStatus.Reprovado, lastInspectionDate: formatDate(addDays(today, -380)) },
+    { id: 'asset-005', clientId: 'cli-003', equipmentId: 'prod-005', serialNumber: 'N/A', expiryDate: formatDate(addDays(today, 730)), location: "Saídas de Emergência", status: InspectionStatus.Agendada },
+    // Condomínio Edifício Central
+    { id: 'asset-006', clientId: 'cli-005', equipmentId: 'prod-006', serialNumber: 'PQS-M4N5P6', expiryDate: formatDate(addDays(today, 88)), location: "Hall de Entrada", status: InspectionStatus.Agendada },
+    { id: 'asset-007', clientId: 'cli-005', equipmentId: 'prod-006', serialNumber: 'PQS-Q7R8S9', expiryDate: formatDate(addDays(today, 88)), location: "Garagem G1", status: InspectionStatus.Agendada },
+];
+
 
 // --- INSPECTIONS & Inspected Items ---
 const MOCK_INSPECTED_ITEMS: Record<string, InspectedItem[]> = {
     'ins-001': [
-        { equipmentId: 'eq-001', location: 'Cozinha Principal', situation: InspectionItemStatus.Conforme, suggestedAction: 'Nenhuma' },
-        { equipmentId: 'eq-002', location: 'Área de Estoque', situation: InspectionItemStatus.NaoConforme, suggestedAction: 'Recarga Imediata' },
+        { clientEquipmentId: 'asset-001', location: 'Cozinha Principal', situation: InspectionItemStatus.Conforme, suggestedAction: 'Nenhuma' },
+        { clientEquipmentId: 'asset-002', location: 'Área de Estoque', situation: InspectionItemStatus.NaoConforme, suggestedAction: 'Recarga Imediata' },
     ],
     'ins-002': [
-        { equipmentId: 'eq-003', location: 'Corredor Térreo', situation: InspectionItemStatus.Conforme, suggestedAction: 'Nenhuma' },
+        { clientEquipmentId: 'asset-003', location: 'Corredor Térreo', situation: InspectionItemStatus.Conforme, suggestedAction: 'Nenhuma' },
     ],
     'ins-003': [
-        { equipmentId: 'eq-004', location: 'Pátio de Serviços', situation: InspectionItemStatus.NaoConforme, suggestedAction: 'Substituição do manômetro e recarga.' },
+        { clientEquipmentId: 'asset-004', location: 'Pátio de Serviços', situation: InspectionItemStatus.NaoConforme, suggestedAction: 'Substituição do manômetro e recarga.' },
     ],
 };
 

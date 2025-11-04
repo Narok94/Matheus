@@ -15,7 +15,7 @@ export const useSettings = () => {
 
     const initialCompanyProfile = useMemo(() => {
         if (currentUser === 'admin') {
-            return { name: 'InspecPro' };
+            return { name: 'MDS' };
         }
         return { name: 'Empresa ABC' };
     }, [currentUser]);

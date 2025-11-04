@@ -30,8 +30,7 @@ const TabContent: React.FC<{ activeTab: Tab; tabName: Tab; children: ReactNode; 
 
 export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ showToast }) => {
     const { currentUserDetails, handleUpdateUser, handleLogout } = useAuth();
-    // FIX: Destructure licenses, deliveries, and expenses from useData to include them in the backup.
-    const { clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses, handleImportData, lastBackupTimestamp, confirmAutoRestore: confirmDataAutoRestore } = useData();
+    const { clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses, handleImportData, lastBackupTimestamp, confirmAutoRestore: confirmDataAutoRestore } = useData();
     const { theme, setTheme, companyProfile, setCompanyProfile, appSettings, handleImportSettings, confirmAutoRestoreSettings } = useSettings();
 
     const [activeTab, setActiveTab] = useState<Tab>('system');
@@ -93,9 +92,8 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
     };
 
     const handleExportData = () => {
-        // FIX: Add licenses, deliveries, and expenses to the backupData object to match the BackupData type.
         const backupData: BackupData = {
-            clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses,
+            clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses,
             companyProfile, appSettings,
         };
         const jsonString = JSON.stringify(backupData, null, 2);
@@ -103,7 +101,7 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `InspecPro_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = `MDS_Backup_${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
         URL.revokeObjectURL(url);
         showToast("Backup exportado com sucesso!");

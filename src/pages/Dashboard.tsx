@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, DeliveryStatus, LicenseStatus, License } from '../../types';
+import { View, DeliveryStatus, LicenseStatus, License, ClientEquipment, InspectionStatus } from '../../types';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/common';
@@ -17,7 +17,7 @@ const DashboardGridButton = ({ label, icon, onClick }: { label: string, icon: Re
 const daysUntil = (date: Date) => Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
 export const Dashboard = ({ setView, onScheduleForClient }: { setView: (view: View) => void; onScheduleForClient: (clientId: string) => void; }) => {
-  const { clients, licenses, deliveries, equipment, handleUpdateLicense } = useData();
+  const { clients, licenses, deliveries, clientEquipment, handleUpdateLicense, equipment } = useData();
   const { currentUserDetails } = useAuth();
   
   const firstName = currentUserDetails?.fullName?.split(' ')[0] || 'Usuário';
@@ -32,8 +32,8 @@ export const Dashboard = ({ setView, onScheduleForClient }: { setView: (view: Vi
         .filter(l => l.status === LicenseStatus.Pendente && parseLocalDate(l.expiryDate) < ninetyDaysFromNow)
         .map(l => ({ ...l, expiryDateObj: parseLocalDate(l.expiryDate) }));
 
-    const expiringEquipment = equipment
-        .filter(e => parseLocalDate(e.expiryDate) < ninetyDaysFromNow)
+    const expiringClientEquipment = clientEquipment
+        .filter(e => parseLocalDate(e.expiryDate) < ninetyDaysFromNow && e.status !== InspectionStatus.Reprovado)
         .map(e => ({ ...e, expiryDateObj: parseLocalDate(e.expiryDate) }));
     
     const combined = [
@@ -45,18 +45,21 @@ export const Dashboard = ({ setView, onScheduleForClient }: { setView: (view: Vi
             expiryDate: l.expiryDateObj,
             original: l
         })),
-        ...expiringEquipment.map(e => ({
-            id: e.id,
-            type: 'equipment' as const,
-            clientId: e.clientId,
-            name: e.name,
-            expiryDate: e.expiryDateObj,
-            original: e
-        }))
+        ...expiringClientEquipment.map(e => {
+            const product = equipment.find(p => p.id === e.equipmentId);
+            return {
+                id: e.id,
+                type: 'equipment' as const,
+                clientId: e.clientId,
+                name: product?.name || 'Equipamento desconhecido',
+                expiryDate: e.expiryDateObj,
+                original: e
+            }
+        })
     ];
     
     return combined.sort((a, b) => a.expiryDate.getTime() - b.expiryDate.getTime()).slice(0, 5);
-  }, [licenses, equipment]);
+  }, [licenses, clientEquipment, equipment]);
   
   return (
     <div className="p-4 space-y-6">

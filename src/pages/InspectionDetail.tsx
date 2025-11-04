@@ -9,7 +9,7 @@ export const InspectionDetail: React.FC<{
     inspectionId: string;
     showToast: (msg: string, type?: 'success' | 'error') => void;
 }> = ({ inspectionId, showToast }) => {
-    const { inspections, clients, equipment, handleUpdateInspection, handleAddCertificate, certificates } = useData();
+    const { inspections, clients, equipment, clientEquipment, handleUpdateInspection, handleAddCertificate, certificates } = useData();
 
     const inspection = inspections.find(i => i.id === inspectionId);
 
@@ -70,14 +70,15 @@ export const InspectionDetail: React.FC<{
                 {inspection.inspectedItems.length > 0 ? (
                      <ul className="space-y-3">
                         {inspection.inspectedItems.map(item => {
-                            const eq = equipment.find(e => e.id === item.equipmentId);
-                            if (!eq) return null;
+                            const asset = clientEquipment.find(e => e.id === item.clientEquipmentId);
+                            if (!asset) return null;
+                            const product = equipment.find(p => p.id === asset.equipmentId);
                              return (
-                                 <li key={item.equipmentId} className="text-sm p-3 bg-primary rounded-lg border border-border">
+                                 <li key={item.clientEquipmentId} className="text-sm p-3 bg-primary rounded-lg border border-border">
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <p className="font-semibold text-text-primary">{eq.name}</p>
-                                            <p className="text-text-secondary text-xs">S/N: {eq.serialNumber}</p>
+                                            <p className="font-semibold text-text-primary">{product?.name}</p>
+                                            <p className="text-text-secondary text-xs">S/N: {asset.serialNumber}</p>
                                         </div>
                                         <span className={`px-2 py-0.5 text-xs rounded-full ${item.situation === 'Conforme' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{item.situation}</span>
                                     </div>

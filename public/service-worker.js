@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inspecpro-cache-v4'; // Increment version to trigger update
+const CACHE_NAME = 'mds-cache-v1'; // Increment version to trigger update
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
@@ -81,7 +81,7 @@ self.addEventListener('fetch', event => {
 // Ouve por eventos de push para exibir notificações.
 self.addEventListener('push', event => {
   console.log('[Service Worker] Push Recebido.');
-  const title = 'Alerta InspecPro';
+  const title = 'Alerta MDS';
   const options = {
     body: 'Um equipamento está próximo do vencimento. Verifique o painel.',
     icon: '/icons/icon-192x192.png',

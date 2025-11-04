@@ -6,7 +6,7 @@ import { InspecProLogo, ShareIcon } from '../components/Icons';
 import { parseLocalDate } from '../utils';
 
 export const CertificateDetail: React.FC<{ certificateId: string }> = ({ certificateId }) => {
-    const { certificates, inspections, clients, equipment } = useData();
+    const { certificates, inspections, clients, equipment, clientEquipment } = useData();
     const { companyProfile } = useSettings();
     const printRef = useRef<HTMLDivElement>(null);
 
@@ -19,8 +19,8 @@ export const CertificateDetail: React.FC<{ certificateId: string }> = ({ certifi
     const client = clients.find(c => c.id === certificate.clientId);
     if (!client) return <p className="p-4">Cliente não encontrado.</p>;
 
-    const certifiedEquipmentIds = inspection.inspectedItems.map(item => item.equipmentId);
-    const certifiedEquipment = equipment.filter(e => certifiedEquipmentIds.includes(e.id));
+    const certifiedAssetIds = inspection.inspectedItems.map(item => item.clientEquipmentId);
+    const certifiedAssets = clientEquipment.filter(e => certifiedAssetIds.includes(e.id));
 
     const handleExport = () => {
         window.print();
@@ -97,13 +97,16 @@ export const CertificateDetail: React.FC<{ certificateId: string }> = ({ certifi
                                 </tr>
                             </thead>
                             <tbody>
-                                {certifiedEquipment.map(eq => (
-                                    <tr key={eq.id}>
-                                        <td className="p-2 border-b border-border text-sm text-text-primary">{eq.name}</td>
-                                        <td className="p-2 border-b border-border text-sm text-text-primary">{eq.serialNumber}</td>
-                                        <td className="p-2 border-b border-border text-sm text-text-primary">{eq.category}</td>
-                                    </tr>
-                                ))}
+                                {certifiedAssets.map(asset => {
+                                    const product = equipment.find(p => p.id === asset.equipmentId);
+                                    return (
+                                        <tr key={asset.id}>
+                                            <td className="p-2 border-b border-border text-sm text-text-primary">{product?.name}</td>
+                                            <td className="p-2 border-b border-border text-sm text-text-primary">{asset.serialNumber}</td>
+                                            <td className="p-2 border-b border-border text-sm text-text-primary">{product?.category}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

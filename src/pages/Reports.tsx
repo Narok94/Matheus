@@ -5,19 +5,20 @@ import { DownloadIcon, EquipmentIcon, FinancialIcon } from '../components/Icons'
 import { setWorksheetColumns, parseLocalDate } from '../utils';
 
 export const Reports: React.FC = () => {
-    const { equipment, clients, financial } = useData();
+    const { equipment, clientEquipment, clients, financial } = useData();
 
     const handleDownloadEquipmentReport = () => {
         const XLSX = (window as any).XLSX;
-        const dataToExport = equipment.map(eq => {
-            const client = clients.find(c => c.id === eq.clientId);
+        const dataToExport = clientEquipment.map(asset => {
+            const client = clients.find(c => c.id === asset.clientId);
+            const product = equipment.find(p => p.id === asset.equipmentId);
             return {
-                "Equipamento": eq.name,
-                "Número de Série": eq.serialNumber,
+                "Equipamento": product?.name || 'N/A',
+                "Número de Série": asset.serialNumber,
                 "Cliente": client?.name || 'N/A',
-                "Status": eq.status,
-                "Data de Vencimento": parseLocalDate(eq.expiryDate),
-                "Última Inspeção": eq.lastInspectionDate ? parseLocalDate(eq.lastInspectionDate) : 'N/A',
+                "Status": asset.status,
+                "Data de Vencimento": parseLocalDate(asset.expiryDate),
+                "Última Inspeção": asset.lastInspectionDate ? parseLocalDate(asset.lastInspectionDate) : 'N/A',
             };
         });
 
@@ -41,8 +42,8 @@ export const Reports: React.FC = () => {
 
 
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Equipamentos");
-        XLSX.writeFile(workbook, "Relatorio_Equipamentos_InspecPro.xlsx");
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Equipamentos_Clientes");
+        XLSX.writeFile(workbook, "Relatorio_Equipamentos_Clientes_MDS.xlsx");
     };
 
     const handleDownloadFinancialReport = () => {
@@ -88,7 +89,7 @@ export const Reports: React.FC = () => {
         
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Financeiro");
-        XLSX.writeFile(workbook, "Relatorio_Financeiro_InspecPro.xlsx");
+        XLSX.writeFile(workbook, "Relatorio_Financeiro_MDS.xlsx");
     };
 
 
@@ -96,8 +97,8 @@ export const Reports: React.FC = () => {
         <div className="p-4 space-y-6">
             <h1 className="text-2xl font-bold text-text-primary px-4 md:px-0">Central de Relatórios</h1>
             
-            <Card title="Relatório de Equipamentos" actions={<EquipmentIcon className="w-6 h-6 text-accent"/>}>
-                <p className="text-text-secondary mb-4">Gere uma planilha completa de todos os equipamentos cadastrados no sistema.</p>
+            <Card title="Relatório de Equipamentos de Clientes" actions={<EquipmentIcon className="w-6 h-6 text-accent"/>}>
+                <p className="text-text-secondary mb-4">Gere uma planilha completa de todos os equipamentos registrados para seus clientes.</p>
                 <div className="flex justify-end">
                     <Button onClick={handleDownloadEquipmentReport}>
                         <DownloadIcon className="w-5 h-5 mr-2" />
