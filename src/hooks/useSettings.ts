@@ -9,7 +9,7 @@ export const useSettings = () => {
     const dataKeyPrefix = useMemo(() => {
         if (!currentUser) return 'guest';
         // The data key prefix should be stable to avoid data loss on updates.
-        return currentUser;
+        return `inspecpro-data-${currentUser}`;
     }, [currentUser]);
 
     const initialCompanyProfile = useMemo(() => {
