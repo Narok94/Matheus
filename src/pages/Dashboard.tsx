@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, DeliveryStatus, LicenseStatus, License, ClientEquipment, InspectionStatus } from '../../types';
+import { View, DeliveryStatus, LicenseStatus, License, InspectionStatus } from '../../types';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/common';

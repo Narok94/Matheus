@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { InspecProLogo, UserIcon, LockIcon } from './Icons';
+import { UserIcon, LockIcon } from './Icons';
 import { useAuth } from '../context/AuthContext';
 import { get } from '../idb';
 import { CompanyProfile } from '../../types';

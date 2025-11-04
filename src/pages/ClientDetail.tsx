@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch, Select, Textarea } from '../components/common';
+import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch, Select } from '../components/common';
 import { AgendaIcon, DownloadIcon, EditIcon, TrashIcon, PlusIcon } from '../components/Icons';
 import { capitalizeWords, formatDocument, formatPhone, setWorksheetColumns, parseLocalDate } from '../utils';
 import { Client, ClientEquipment, InspectionStatus } from '../../types';
