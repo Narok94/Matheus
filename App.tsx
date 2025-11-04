@@ -265,7 +265,7 @@ const AppContent: React.FC = () => {
     return (
         <div className="flex h-screen bg-primary">
             <Sidebar currentView={currentView} setView={handleSetView} companyProfile={companyProfile} />
-            <div className="flex-1 flex flex-col h-screen">
+            <div className="flex-1 flex flex-col h-screen min-w-0">
                 <Header view={currentView} onBack={handleBack} setView={handleSetView} companyProfile={companyProfile} />
                 <main className="flex-1 overflow-y-auto pb-24">
                     {renderView()}
