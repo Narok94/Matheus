@@ -2,7 +2,7 @@ import React from 'react';
 import { useData } from '../context/DataContext';
 import { Card, Button } from '../components/common';
 import { DownloadIcon, EquipmentIcon, FinancialIcon } from '../components/Icons';
-import { setWorksheetColumns } from '../utils';
+import { setWorksheetColumns, parseLocalDate } from '../utils';
 
 export const Reports: React.FC = () => {
     const { equipment, clients, financial } = useData();
@@ -16,8 +16,8 @@ export const Reports: React.FC = () => {
                 "Número de Série": eq.serialNumber,
                 "Cliente": client?.name || 'N/A',
                 "Status": eq.status,
-                "Data de Vencimento": new Date(eq.expiryDate),
-                "Última Inspeção": eq.lastInspectionDate ? new Date(eq.lastInspectionDate) : 'N/A',
+                "Data de Vencimento": parseLocalDate(eq.expiryDate),
+                "Última Inspeção": eq.lastInspectionDate ? parseLocalDate(eq.lastInspectionDate) : 'N/A',
             };
         });
 
@@ -54,8 +54,8 @@ export const Reports: React.FC = () => {
                 "Descrição": rec.description,
                 "Valor (R$)": rec.value,
                 "Status": rec.status,
-                "Emissão": new Date(rec.issueDate),
-                "Vencimento": new Date(rec.dueDate),
+                "Emissão": parseLocalDate(rec.issueDate),
+                "Vencimento": parseLocalDate(rec.dueDate),
             };
         });
 

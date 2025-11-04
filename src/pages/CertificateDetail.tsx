@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { useSettings } from '../context/SettingsContext';
 import { Button } from '../components/common';
 import { InspecProLogo, ShareIcon } from '../components/Icons';
+import { parseLocalDate } from '../utils';
 
 export const CertificateDetail: React.FC<{ certificateId: string }> = ({ certificateId }) => {
     const { certificates, inspections, clients, equipment } = useData();
@@ -78,9 +79,9 @@ export const CertificateDetail: React.FC<{ certificateId: string }> = ({ certifi
                 <div className="my-6">
                      <h2 className="text-xl font-semibold text-text-primary border-b border-border pb-2 mb-4">Detalhes da Certificação</h2>
                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4 text-sm info-grid">
-                        <div className="info-item"><p className="label text-text-secondary">Data da Inspeção:</p><p className="value font-semibold text-text-primary">{new Date(inspection.date).toLocaleDateString()}</p></div>
-                        <div className="info-item"><p className="label text-text-secondary">Data de Emissão:</p><p className="value font-semibold text-text-primary">{new Date(certificate.issueDate).toLocaleDateString()}</p></div>
-                        <div className="info-item"><p className="label text-text-secondary">Data de Vencimento:</p><p className="value font-semibold text-text-primary">{new Date(certificate.expiryDate).toLocaleDateString()}</p></div>
+                        <div className="info-item"><p className="label text-text-secondary">Data da Inspeção:</p><p className="value font-semibold text-text-primary">{parseLocalDate(inspection.date).toLocaleDateString()}</p></div>
+                        <div className="info-item"><p className="label text-text-secondary">Data de Emissão:</p><p className="value font-semibold text-text-primary">{parseLocalDate(certificate.issueDate).toLocaleDateString()}</p></div>
+                        <div className="info-item"><p className="label text-text-secondary">Data de Vencimento:</p><p className="value font-semibold text-text-primary">{parseLocalDate(certificate.expiryDate).toLocaleDateString()}</p></div>
                      </div>
                 </div>
 

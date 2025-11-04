@@ -2,6 +2,7 @@ import React from 'react';
 import { useData } from '../context/DataContext';
 import { Card, Button, EmptyState } from '../components/common';
 import { CertificateIcon } from '../components/Icons';
+import { parseLocalDate } from '../utils';
 
 export const Certificates: React.FC<{ onViewCertificate: (certificateId: string) => void }> = ({ onViewCertificate }) => {
     const { certificates, clients } = useData();
@@ -15,7 +16,7 @@ export const Certificates: React.FC<{ onViewCertificate: (certificateId: string)
                             <div>
                                 <h4 className="font-semibold text-text-primary">{client?.name}</h4>
                                 <p className="text-sm text-text-secondary">Certificado #{cert.id.slice(-6).toUpperCase()}</p>
-                                <p className="text-xs text-text-secondary">Válido até: {new Date(cert.expiryDate).toLocaleDateString()}</p>
+                                <p className="text-xs text-text-secondary">Válido até: {parseLocalDate(cert.expiryDate).toLocaleDateString()}</p>
                             </div>
                             <Button variant="secondary" onClick={(e) => { e.stopPropagation(); onViewCertificate(cert.id); }}>Ver Detalhes</Button>
                         </div>

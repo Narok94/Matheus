@@ -4,6 +4,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/common';
 import { PlusIcon, ClientsIcon, EquipmentIcon, AgendaIcon, ReportsIcon, SettingsIcon, CertificateIcon, ArrowUpCircleIcon, ArrowDownCircleIcon, FireExtinguisherIcon } from '../components/Icons';
+import { parseLocalDate } from '../utils';
 
 
 const DashboardGridButton = ({ label, icon, onClick }: { label: string, icon: React.ReactNode, onClick: () => void }) => (
@@ -28,12 +29,12 @@ export const Dashboard = ({ setView, onScheduleForClient }: { setView: (view: Vi
     ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90);
 
     const pendingLicenses = licenses
-        .filter(l => l.status === LicenseStatus.Pendente && new Date(l.expiryDate) < ninetyDaysFromNow)
-        .map(l => ({ ...l, expiryDateObj: new Date(l.expiryDate) }));
+        .filter(l => l.status === LicenseStatus.Pendente && parseLocalDate(l.expiryDate) < ninetyDaysFromNow)
+        .map(l => ({ ...l, expiryDateObj: parseLocalDate(l.expiryDate) }));
 
     const expiringEquipment = equipment
-        .filter(e => new Date(e.expiryDate) < ninetyDaysFromNow)
-        .map(e => ({ ...e, expiryDateObj: new Date(e.expiryDate) }));
+        .filter(e => parseLocalDate(e.expiryDate) < ninetyDaysFromNow)
+        .map(e => ({ ...e, expiryDateObj: parseLocalDate(e.expiryDate) }));
     
     const combined = [
         ...pendingLicenses.map(l => ({
@@ -114,7 +115,7 @@ export const Dashboard = ({ setView, onScheduleForClient }: { setView: (view: Vi
                          <div key={del.id} className="text-sm p-3 bg-primary rounded-md">
                             <p className="font-semibold text-text-primary">{client?.name}</p>
                             <p className="text-text-secondary">{del.description}</p>
-                            <p className="text-status-scheduled">Data: {new Date(del.deliveryDate).toLocaleDateString()}</p>
+                            <p className="text-status-scheduled">Data: {parseLocalDate(del.deliveryDate).toLocaleDateString()}</p>
                          </div>
                        )
                   }) : <p className="text-text-secondary text-sm">Nenhuma entrega pendente.</p>}

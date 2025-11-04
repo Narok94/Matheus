@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { PaymentStatus, FinancialRecord, Client } from '../../types';
-import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus } from '../components/common';
-import { FinancialIcon, PlusIcon, AgendaIcon } from '../components/Icons';
+import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus, ConfirmationModal } from '../components/common';
+import { FinancialIcon, PlusIcon, AgendaIcon, EditIcon, TrashIcon } from '../components/Icons';
+import { parseLocalDate } from '../utils';
 
 type FinancialStatusFilter = PaymentStatus | 'Atrasado' | 'all';
 
@@ -81,9 +82,10 @@ const RecurringPayments: React.FC<{
                 const currentInstallment = (client.paidInstallments || 0) + 1;
                 const totalInstallments = client.recurringInstallments || 0;
                 
-                const dueDate = new Date(client.recurringCycleStart || new Date());
+                const cycleStartDate = parseLocalDate(client.recurringCycleStart || new Date().toISOString());
+                const dueDate = new Date(cycleStartDate.getTime());
                 dueDate.setMonth(dueDate.getMonth() + (client.paidInstallments || 0));
-                dueDate.setDate(new Date(client.recurringCycleStart || new Date()).getDate());
+                dueDate.setDate(cycleStartDate.getDate());
 
                 return (
                     <div key={client.id} className="p-3 bg-primary rounded-lg border border-border">
@@ -111,12 +113,26 @@ const RecurringPayments: React.FC<{
 
 
 export const Financial: React.FC = () => {
-    const { financial, clients, handleAddFinancial, handleMarkInstallmentAsPaid } = useData();
-    const [isAddModalOpen, setAddModalOpen] = useState(false);
+    const { financial, clients, handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial, handleMarkInstallmentAsPaid } = useData();
+    const [isModalOpen, setModalOpen] = useState(false);
     const [filter, setFilter] = useState<FinancialStatusFilter>('all');
+    const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
+    const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     
     const initialRecordState: Omit<FinancialRecord, 'id'> = { clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente, paymentDate: '' };
-    const [newRecord, setNewRecord] = useState(initialRecordState);
+    const [formState, setFormState] = useState(initialRecordState);
+
+    useEffect(() => {
+        if (isModalOpen && editingRecord) {
+            setFormState({
+                ...editingRecord,
+                paymentDate: editingRecord.paymentDate || '',
+            });
+        } else {
+            setFormState(initialRecordState);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isModalOpen, editingRecord]);
     
     const financialSummary = financial.reduce((acc, record) => {
         if (record.status === PaymentStatus.Pago) acc.received += record.value;
@@ -131,9 +147,30 @@ export const Financial: React.FC = () => {
     
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        handleAddFinancial(newRecord);
-        setNewRecord(initialRecordState);
-        setAddModalOpen(false);
+        if (editingRecord) {
+            handleUpdateFinancial({ ...formState, id: editingRecord.id });
+        } else {
+            handleAddFinancial(formState);
+        }
+        setModalOpen(false);
+    };
+
+    const openModal = (rec: FinancialRecord | null = null) => {
+        setEditingRecord(rec);
+        setModalOpen(true);
+    };
+
+    const openDeleteConfirm = (rec: FinancialRecord) => {
+        setEditingRecord(rec);
+        setDeleteConfirmOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (editingRecord) {
+            handleDeleteFinancial(editingRecord.id);
+        }
+        setDeleteConfirmOpen(false);
+        setEditingRecord(null);
     };
 
     return (
@@ -164,42 +201,53 @@ export const Financial: React.FC = () => {
                                 <div className="text-right flex-shrink-0 ml-4">
                                     <div className="flex items-center justify-end text-xs text-text-secondary mb-1">
                                         <AgendaIcon className="w-3 h-3 mr-1.5" />
-                                        <span>Venc.: {new Date(rec.dueDate).toLocaleDateString()}</span>
+                                        <span>Venc.: {parseLocalDate(rec.dueDate).toLocaleDateString()}</span>
                                     </div>
                                     <FinancialStatusBadge record={rec} />
                                 </div>
                             </div>
+                            <div className="flex justify-end space-x-2 mt-2 border-t border-border pt-2">
+                                <button onClick={() => openModal(rec)} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
+                                <button onClick={() => openDeleteConfirm(rec)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
+                            </div>
                         </Card>
                     );
-                }) : <EmptyState message="Nenhum registro financeiro para este filtro." icon={<FinancialIcon className="w-12 h-12" />} action={<Button onClick={() => setAddModalOpen(true)}>Adicionar Registro</Button>}/>}
+                }) : <EmptyState message="Nenhum registro financeiro para este filtro." icon={<FinancialIcon className="w-12 h-12" />} action={<Button onClick={() => openModal()}>Adicionar Registro</Button>}/>}
             </div>
-             <FloatingActionButton onClick={() => setAddModalOpen(true)} icon={<PlusIcon />} />
-             <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Adicionar Contas a Receber">
+             <FloatingActionButton onClick={() => openModal()} icon={<PlusIcon />} />
+             <Modal isOpen={isModalOpen} onClose={() => { setModalOpen(false); setEditingRecord(null); }} title={editingRecord ? "Editar Conta a Receber" : "Adicionar Conta a Receber"}>
                  <form onSubmit={handleFormSubmit} className="space-y-4">
                     <FormField label="Cliente">
-                        <Select name="clientId" value={newRecord.clientId} onChange={e => setNewRecord(p => ({...p, clientId: e.target.value}))} required>
+                        <Select name="clientId" value={formState.clientId} onChange={e => setFormState(p => ({...p, clientId: e.target.value}))} required>
                             <option value="">Selecione um cliente</option>
                             {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </Select>
                     </FormField>
-                    <FormField label="Descrição"><Input value={newRecord.description} onChange={e => setNewRecord(p => ({...p, description: e.target.value}))} required/></FormField>
-                    <FormField label="Valor (R$)"><Input type="number" step="0.01" value={newRecord.value} onChange={e => setNewRecord(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
+                    <FormField label="Descrição"><Input value={formState.description} onChange={e => setFormState(p => ({...p, description: e.target.value}))} required/></FormField>
+                    <FormField label="Valor (R$)"><Input type="number" step="0.01" value={formState.value} onChange={e => setFormState(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField label="Data de Emissão"><Input type="date" value={newRecord.issueDate} onChange={e => setNewRecord(p => ({...p, issueDate: e.target.value}))} required /></FormField>
-                        <FormField label="Data de Vencimento"><Input type="date" value={newRecord.dueDate} onChange={e => setNewRecord(p => ({...p, dueDate: e.target.value}))} required /></FormField>
+                        <FormField label="Data de Emissão"><Input type="date" value={formState.issueDate} onChange={e => setFormState(p => ({...p, issueDate: e.target.value}))} required /></FormField>
+                        <FormField label="Data de Vencimento"><Input type="date" value={formState.dueDate} onChange={e => setFormState(p => ({...p, dueDate: e.target.value}))} required /></FormField>
                     </div>
                      <FormField label="Status">
-                        <Select value={newRecord.status} onChange={e => setNewRecord(p => ({...p, status: e.target.value as PaymentStatus}))}>
+                        <Select value={formState.status} onChange={e => setFormState(p => ({...p, status: e.target.value as PaymentStatus}))}>
                             <option value={PaymentStatus.Pendente}>Pendente</option>
                             <option value={PaymentStatus.Pago}>Pago</option>
                         </Select>
                     </FormField>
-                     {newRecord.status === PaymentStatus.Pago && (
-                        <FormField label="Data de Recebimento"><Input type="date" value={newRecord.paymentDate} onChange={e => setNewRecord(p => ({...p, paymentDate: e.target.value}))} /></FormField>
+                     {formState.status === PaymentStatus.Pago && (
+                        <FormField label="Data de Recebimento"><Input type="date" value={formState.paymentDate} onChange={e => setFormState(p => ({...p, paymentDate: e.target.value}))} /></FormField>
                     )}
-                    <div className="flex justify-end pt-4"><Button type="submit">Salvar Registro</Button></div>
+                    <div className="flex justify-end pt-4"><Button type="submit">{editingRecord ? 'Salvar Alterações' : 'Salvar Registro'}</Button></div>
                  </form>
              </Modal>
+              <ConfirmationModal 
+                isOpen={isDeleteConfirmOpen}
+                onClose={() => setDeleteConfirmOpen(false)}
+                onConfirm={confirmDelete}
+                title="Confirmar Exclusão"
+                message={`Tem certeza que deseja excluir o registro "${editingRecord?.description}"?`}
+            />
         </div>
     );
 };

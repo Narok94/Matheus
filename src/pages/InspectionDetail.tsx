@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { InspectionStatus } from '../../types';
 import { Card, getStatusBadge, Button, Select, FormField } from '../components/common';
 import { CertificateIcon, EquipmentIcon } from '../components/Icons';
+import { parseLocalDate } from '../utils';
 
 export const InspectionDetail: React.FC<{
     inspectionId: string;
@@ -36,7 +37,7 @@ export const InspectionDetail: React.FC<{
     return (
         <div className="p-4 space-y-6">
             <div>
-                <p className="text-sm text-text-secondary">{new Date(inspection.date).toLocaleDateString('pt-BR', { dateStyle: 'full' })}</p>
+                <p className="text-sm text-text-secondary">{parseLocalDate(inspection.date).toLocaleDateString('pt-BR', { dateStyle: 'full' })}</p>
                 <h1 className="text-2xl font-bold text-text-primary">{client?.name}</h1>
                 <div className="mt-2">
                     {getStatusBadge(inspection.status)}

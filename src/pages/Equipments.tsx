@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { Equipment, InspectionStatus } from '../../types';
 import { Card, Modal, getStatusBadge, Button, Input, Select, FormField, EmptyState, FloatingActionButton, ConfirmationModal, Textarea } from '../components/common';
 import { EquipmentIcon, PlusIcon, EditIcon, TrashIcon } from '../components/Icons';
+import { parseLocalDate } from '../utils';
 
 export const Equipments: React.FC<{showToast: (msg: string, type?: 'success' | 'error') => void}> = ({ showToast }) => {
     const { equipment, clients, handleAddEquipment, handleUpdateEquipment, handleDeleteEquipment } = useData();
@@ -98,7 +99,7 @@ export const Equipments: React.FC<{showToast: (msg: string, type?: 'success' | '
                                 <div className="text-xs text-text-secondary mt-2 flex justify-between items-end">
                                     <div>
                                         <p>Cliente: <span className="font-semibold text-text-primary">{client?.name}</span></p>
-                                        <p>Vencimento: {new Date(eq.expiryDate).toLocaleDateString()}</p>
+                                        <p>Vencimento: {parseLocalDate(eq.expiryDate).toLocaleDateString()}</p>
                                     </div>
                                     <div className="flex space-x-2">
                                         <button onClick={() => openEditModal(eq)} className="p-2 hover:bg-primary rounded-full"><EditIcon /></button>

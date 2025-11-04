@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch } from '../components/common';
 import { AgendaIcon, DownloadIcon, EditIcon, TrashIcon } from '../components/Icons';
-import { capitalizeWords, formatDocument, formatPhone, setWorksheetColumns } from '../utils';
+import { capitalizeWords, formatDocument, formatPhone, setWorksheetColumns, parseLocalDate } from '../utils';
 import { Client } from '../../types';
 
 export const ClientDetail: React.FC<{ 
@@ -76,7 +76,7 @@ export const ClientDetail: React.FC<{
     
         let equipmentWorksheet;
         if (clientEquipment.length > 0) {
-            const equipmentDataForSheet = clientEquipment.map(eq => ({ "Nome": eq.name, "Nº Série": eq.serialNumber, "Categoria": eq.category, "Capacidade": eq.capacity, "Fabricante": eq.manufacturer, "Status": eq.status, "Vencimento": new Date(eq.expiryDate).toLocaleDateString(), "Últ. Inspeção": eq.lastInspectionDate ? new Date(eq.lastInspectionDate).toLocaleDateString() : 'N/A' }));
+            const equipmentDataForSheet = clientEquipment.map(eq => ({ "Nome": eq.name, "Nº Série": eq.serialNumber, "Categoria": eq.category, "Capacidade": eq.capacity, "Fabricante": eq.manufacturer, "Status": eq.status, "Vencimento": parseLocalDate(eq.expiryDate).toLocaleDateString(), "Últ. Inspeção": eq.lastInspectionDate ? parseLocalDate(eq.lastInspectionDate).toLocaleDateString() : 'N/A' }));
             equipmentWorksheet = XLSX.utils.json_to_sheet(equipmentDataForSheet);
             setWorksheetColumns(equipmentWorksheet, equipmentDataForSheet);
         } else {
@@ -85,7 +85,7 @@ export const ClientDetail: React.FC<{
     
         let inspectionWorksheet;
         if (clientInspections.length > 0) {
-            const inspectionDataForSheet = clientInspections.map(insp => ({ "Data": new Date(insp.date).toLocaleDateString(), "Inspetor": insp.inspector, "Status": insp.status, "Observações": insp.observations, "Nº Itens": insp.inspectedItems.length }));
+            const inspectionDataForSheet = clientInspections.map(insp => ({ "Data": parseLocalDate(insp.date).toLocaleDateString(), "Inspetor": insp.inspector, "Status": insp.status, "Observações": insp.observations, "Nº Itens": insp.inspectedItems.length }));
             inspectionWorksheet = XLSX.utils.json_to_sheet(inspectionDataForSheet);
             setWorksheetColumns(inspectionWorksheet, inspectionDataForSheet);
         } else {
@@ -143,7 +143,7 @@ export const ClientDetail: React.FC<{
                         </div>
                         <div className="flex justify-between">
                             <span className="text-text-secondary">Início do Ciclo:</span>
-                            <span className="font-semibold text-text-primary">{client.recurringCycleStart ? new Date(client.recurringCycleStart).toLocaleDateString() : 'N/A'}</span>
+                            <span className="font-semibold text-text-primary">{client.recurringCycleStart ? parseLocalDate(client.recurringCycleStart).toLocaleDateString() : 'N/A'}</span>
                         </div>
                     </div>
                 </Card>
@@ -154,7 +154,7 @@ export const ClientDetail: React.FC<{
                     <div key={eq.id} className="flex justify-between items-center py-2 border-b border-border last:border-b-0">
                         <div>
                             <p className="font-semibold text-text-primary">{eq.name} <span className="text-text-secondary text-xs">({eq.serialNumber})</span></p>
-                            <p className="text-sm text-text-secondary">Vencimento: {new Date(eq.expiryDate).toLocaleDateString()}</p>
+                            <p className="text-sm text-text-secondary">Vencimento: {parseLocalDate(eq.expiryDate).toLocaleDateString()}</p>
                         </div>
                         {getStatusBadge(eq.status)}
                     </div>
@@ -165,7 +165,7 @@ export const ClientDetail: React.FC<{
                 {clientInspections.length > 0 ? clientInspections.map(insp => (
                     <div key={insp.id} onClick={() => onViewInspection(insp.id)} className="flex justify-between items-center py-2 border-b border-border last:border-b-0 cursor-pointer hover:bg-primary/50 -mx-4 px-4 rounded-md">
                         <div>
-                            <p className="font-semibold text-text-primary">Data: {new Date(insp.date).toLocaleDateString()}</p>
+                            <p className="font-semibold text-text-primary">Data: {parseLocalDate(insp.date).toLocaleDateString()}</p>
                             <p className="text-sm text-text-secondary">Inspetor: {insp.inspector}</p>
                         </div>
                         {getStatusBadge(insp.status)}

@@ -77,6 +77,12 @@ export const useData = () => {
         const newRecord: FinancialRecord = { ...recordData, id: `fin-${crypto.randomUUID()}` };
         setFinancial(prev => [...prev, newRecord]);
     };
+     const handleUpdateFinancial = (updatedRecord: FinancialRecord) => {
+        setFinancial(prev => prev.map(rec => rec.id === updatedRecord.id ? updatedRecord : rec));
+    };
+    const handleDeleteFinancial = (recordId: string) => {
+        setFinancial(prev => prev.filter(rec => rec.id !== recordId));
+    };
 
     // Expenses (Payables)
     const handleAddExpense = (expenseData: Omit<Expense, 'id'>) => {
@@ -189,7 +195,7 @@ export const useData = () => {
         // Inspection
         handleAddInspection, handleUpdateInspection,
         // Financial
-        handleAddFinancial,
+        handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial,
         // Expense
         handleAddExpense, handleUpdateExpense, handleDeleteExpense,
         // Certificate

@@ -61,3 +61,18 @@ export const setWorksheetColumns = (worksheet: any, data: any[]) => {
     });
     worksheet['!cols'] = colWidths;
 };
+
+// --- DATE UTILITY ---
+// Parses a 'YYYY-MM-DD' string as a local date, avoiding timezone shifts.
+export const parseLocalDate = (dateString: string): Date => {
+  if (!dateString) return new Date();
+  // Check for 'YYYY-MM-DD' format specifically to avoid timezone issues.
+  // new Date('2025-11-20') can be interpreted as UTC midnight.
+  // new Date(2025, 10, 20) is interpreted in the local timezone's midnight.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  // For other formats (like full ISO strings), the default constructor is usually fine.
+  return new Date(dateString);
+};

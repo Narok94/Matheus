@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { Card, EmptyState, FloatingActionButton, Modal, FormField, Input, Select, Button, ConfirmationModal, FinancialStatusBadge } from '../components/common';
 import { ArrowUpCircleIcon, PlusIcon, EditIcon, TrashIcon } from '../components/Icons';
 import { Expense, PaymentStatus } from '../../types';
+import { parseLocalDate } from '../utils';
 
 export const Payables: React.FC = () => {
     const { expenses, handleAddExpense, handleUpdateExpense, handleDeleteExpense } = useData();
@@ -69,7 +70,7 @@ export const Payables: React.FC = () => {
                                 <h4 className="font-semibold text-text-primary">R$ {rec.value.toFixed(2).replace('.', ',')}</h4>
                                 <p className="text-sm text-text-secondary">{rec.description}</p>
                                 {rec.supplier && <p className="text-xs text-text-secondary">Fornecedor: {rec.supplier}</p>}
-                                <p className="text-xs text-text-secondary mt-1">Vencimento: {new Date(rec.dueDate).toLocaleDateString()}</p>
+                                <p className="text-xs text-text-secondary mt-1">Vencimento: {parseLocalDate(rec.dueDate).toLocaleDateString()}</p>
                             </div>
                             <div className="text-right">
                                 <FinancialStatusBadge record={rec} />
