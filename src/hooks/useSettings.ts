@@ -6,7 +6,11 @@ import { get } from '../idb';
 
 export const useSettings = () => {
     const { currentUser } = useAuth();
-    const dataKeyPrefix = useMemo(() => currentUser || 'guest', [currentUser]);
+    const dataKeyPrefix = useMemo(() => {
+        if (!currentUser) return 'guest';
+        if (currentUser === 'matheus') return 'matheus-v2';
+        return currentUser;
+    }, [currentUser]);
 
     const initialCompanyProfile = useMemo(() => {
         if (currentUser === 'admin') {

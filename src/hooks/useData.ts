@@ -7,7 +7,13 @@ import { get } from '../idb';
 
 export const useData = () => {
     const { currentUser } = useAuth();
-    const dataKeyPrefix = useMemo(() => currentUser || 'guest', [currentUser]);
+    const dataKeyPrefix = useMemo(() => {
+        if (!currentUser) return 'guest';
+        // By changing the key prefix, we effectively reset the user's data to the initial state one time.
+        // Old data remains under the old key but will no longer be accessed.
+        if (currentUser === 'matheus') return 'matheus-v2';
+        return currentUser;
+    }, [currentUser]);
 
     const isInitialMockLoad = useMemo(() => ['admin', 'matheus'].includes(currentUser || ''), [currentUser]);
 
