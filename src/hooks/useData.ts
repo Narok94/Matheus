@@ -10,7 +10,8 @@ export const useData = () => {
     const dataKeyPrefix = useMemo(() => {
         if (!currentUser) return 'guest';
         // The data key prefix should be stable to avoid data loss on updates.
-        return `inspecpro-data-${currentUser}`;
+        // Reverted prefix to restore access to old data.
+        return currentUser;
     }, [currentUser]);
 
     const isInitialMockLoad = useMemo(() => currentUser === 'admin', [currentUser]);
