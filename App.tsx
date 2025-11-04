@@ -202,7 +202,7 @@ const AppContent: React.FC = () => {
     }, [currentView]);
 
     useEffect(() => {
-        const listener = CapacitorApp.addListener('backButton', () => {
+        const listenerPromise = CapacitorApp.addListener('backButton', () => {
             if (currentView !== 'dashboard') {
                 handleBack();
             }
@@ -211,7 +211,7 @@ const AppContent: React.FC = () => {
         });
 
         return () => {
-            listener.remove();
+            listenerPromise.then(listener => listener.remove());
         };
     }, [currentView, handleBack]);
 
