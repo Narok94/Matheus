@@ -6,36 +6,31 @@ import { get } from '../idb';
 
 export const useSettings = () => {
     const { currentUser } = useAuth();
-    const dataKeyPrefix = useMemo(() => {
+    const userSpecificPrefix = useMemo(() => {
         if (!currentUser) return 'guest';
-        // The data key prefix should be stable to avoid data loss on updates.
-        // Reverted prefix to restore access to old settings.
         return currentUser;
     }, [currentUser]);
 
-    const initialCompanyProfile = useMemo(() => {
-        if (currentUser === 'admin') {
-            return { name: 'MDS' };
-        }
-        return { name: 'Empresa ABC' };
-    }, [currentUser]);
+    const companyProfilePrefix = 'admin'; // Company profile is global
 
-    const [theme, setTheme, themeLoaded] = useIndexedDB<'light' | 'dark'>(`${dataKeyPrefix}-theme`, 'dark');
-    const [companyProfile, setCompanyProfile, companyProfileLoaded] = useIndexedDB<CompanyProfile>(`${dataKeyPrefix}-companyProfile`, initialCompanyProfile);
-    const [appSettings, setAppSettings, appSettingsLoaded] = useIndexedDB<AppSettings>(`${dataKeyPrefix}-appSettings`, { reminders: true });
+    const initialCompanyProfile = { name: 'MDS' };
+
+    const [theme, setTheme, themeLoaded] = useIndexedDB<'light' | 'dark'>(`${userSpecificPrefix}-theme`, 'dark');
+    const [companyProfile, setCompanyProfile, companyProfileLoaded] = useIndexedDB<CompanyProfile>(`${companyProfilePrefix}-companyProfile`, initialCompanyProfile);
+    const [appSettings, setAppSettings, appSettingsLoaded] = useIndexedDB<AppSettings>(`${userSpecificPrefix}-appSettings`, { reminders: true });
 
     const isSettingsLoading = !themeLoaded || !companyProfileLoaded || !appSettingsLoaded;
     
     const handleImportSettings = (parsedData: BackupData) => {
-        setCompanyProfile(parsedData.companyProfile || { name: 'Empresa ABC' });
+        setCompanyProfile(parsedData.companyProfile || { name: 'MDS' });
         setAppSettings(parsedData.appSettings || { reminders: true });
     };
 
     const confirmAutoRestoreSettings = async () => {
-        const profileBackup = await get<CompanyProfile>(`${dataKeyPrefix}-companyProfile_backup`);
+        const profileBackup = await get<CompanyProfile>(`${companyProfilePrefix}-companyProfile_backup`);
         if (profileBackup) setCompanyProfile(profileBackup);
 
-        const settingsBackup = await get<AppSettings>(`${dataKeyPrefix}-appSettings_backup`);
+        const settingsBackup = await get<AppSettings>(`${userSpecificPrefix}-appSettings_backup`);
         if (settingsBackup) setAppSettings(settingsBackup);
     };
 
