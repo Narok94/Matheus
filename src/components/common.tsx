@@ -20,7 +20,7 @@ export const Card: React.FC<CardProps> = ({ title, children, className, actions,
     );
 
     return (
-        <div onClick={onClick} className={`bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md rounded-xl shadow-lg dark:shadow-cyan-900/10 border border-border ${className}`}>
+        <div onClick={onClick} className={`bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md rounded-xl shadow-lg dark:shadow-orange-900/10 border border-border ${className}`}>
             {(title || actions) && (
                 <div 
                     className={`flex justify-between items-center p-4 ${!isCollapsed || !collapsible ? 'border-b border-border' : ''} ${collapsible ? 'cursor-pointer' : ''}`}
@@ -109,7 +109,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
 export const FloatingActionButton: React.FC<{ onClick: () => void, icon: ReactNode, className?: string }> = ({ onClick, icon, className }) => (
     <button
         onClick={onClick}
-        className={`fixed bottom-6 right-6 bg-gradient-to-br from-cyan-500 to-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-cyan-500/30 hover:brightness-110 transition-transform duration-200 ease-in-out active:scale-95 z-10 ${className}`}
+        className={`fixed bottom-6 right-6 bg-gradient-to-br from-red-600 to-orange-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 hover:brightness-110 transition-transform duration-200 ease-in-out active:scale-95 z-10 ${className}`}
         aria-label="Adicionar"
     >
         {icon}
@@ -240,7 +240,7 @@ type ButtonProps = {
 export const Button: React.FC<ButtonProps> = ({ children, onClick, type = 'button', variant = 'primary', className = '', disabled = false, loading = false, as = 'button' }) => {
     const baseClasses = "px-5 py-3 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary inline-flex items-center justify-center space-x-2 text-sm transform active:scale-95";
     const variantClasses = variant === 'primary' 
-        ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 focus:ring-cyan-400 shadow-lg shadow-cyan-500/20"
+        ? "bg-gradient-to-r from-red-600 to-orange-500 text-white hover:from-red-500 hover:to-orange-400 focus:ring-orange-400 shadow-lg shadow-orange-500/20"
         : "bg-secondary/50 text-text-primary border border-border hover:bg-secondary/80 focus:ring-accent";
     const disabledClasses = (disabled || loading) ? "opacity-50 cursor-not-allowed" : "";
 

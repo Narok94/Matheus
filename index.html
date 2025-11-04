@@ -18,10 +18,10 @@
               'text-primary': 'var(--color-text-primary)',
               'text-secondary': 'var(--color-text-secondary)',
               'border': 'var(--color-border)',
-              'status-approved': '#28a745',
-              'status-reproved': '#dc3545',
-              'status-pending': '#ffc107',
-              'status-scheduled': '#17a2b8',
+              'status-approved': '#22c55e',
+              'status-reproved': '#dc2626',
+              'status-pending': '#facc15',
+              'status-scheduled': '#3b82f6',
             },
             animation: {
                 'fade-in': 'fadeIn 0.5s ease-out forwards',
@@ -38,20 +38,20 @@
     </script>
     <style>
     :root {
-        --color-primary: #f1f5f9; /* Slate 100 */
+        --color-primary: #fafafa; /* Zinc 50 */
         --color-secondary: #ffffff;
-        --color-accent: #0ea5e9; /* Sky Blue 500 */
-        --color-text-primary: #0f172a; /* Slate 900 */
+        --color-accent: #dc2626; /* Red 600 */
+        --color-text-primary: #1e293b; /* Slate 800 */
         --color-text-secondary: #64748b; /* Slate 500 */
-        --color-border: rgba(0, 0, 0, 0.1);
+        --color-border: #e2e8f0; /* Slate 200 */
     }
     .dark {
-        --color-primary: #0f172a; /* Slate 900 */
-        --color-secondary: #1e293b; /* Slate 800 */
-        --color-accent: #38bdf8; /* Sky 400 */
-        --color-text-primary: #f1f5f9; /* Slate 100 */
+        --color-primary: #18181b; /* Zinc 900 */
+        --color-secondary: #27272a; /* Zinc 800 */
+        --color-accent: #f97316; /* Orange 500 */
+        --color-text-primary: #e2e8f0; /* Slate 200 */
         --color-text-secondary: #94a3b8; /* Slate 400 */
-        --color-border: rgba(56, 189, 248, 0.2); /* Transparent Sky */
+        --color-border: rgba(249, 115, 22, 0.2); /* Transparent Orange */
     }
 
     /* --- MOBILE OPTIMIZATIONS --- */
@@ -83,7 +83,7 @@
 
     /* --- LOGIN PAGE THEME --- */
     body.login-page-active {
-        background-color: #0a0f1f;
+        background-color: #18181b; /* Zinc 900, matching dark theme */
         position: relative;
         overflow: hidden;
         z-index: 1;

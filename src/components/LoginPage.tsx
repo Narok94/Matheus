@@ -34,9 +34,9 @@ const DynamicBackground = () => {
                         <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" strokeWidth="0.5"/>
                     </pattern>
                     <linearGradient id="scanline" x1="0" y1="0" x2="0" y2="100%">
-                        <stop stopColor="#0ea5e9" stopOpacity="0" offset="0%"/>
-                        <stop stopColor="#0ea5e9" stopOpacity="0.3" offset="50%"/>
-                        <stop stopColor="#0ea5e9" stopOpacity="0" offset="100%"/>
+                        <stop stopColor="#f97316" stopOpacity="0" offset="0%"/>
+                        <stop stopColor="#f97316" stopOpacity="0.3" offset="50%"/>
+                        <stop stopColor="#f97316" stopOpacity="0" offset="100%"/>
                     </linearGradient>
                     <filter id="glow">
                         <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
@@ -56,7 +56,7 @@ const DynamicBackground = () => {
                 ))}
 
                 <g transform="translate(50%, 50%) scale(1.5)">
-                    <g filter="url(#glow)" stroke="#0ea5e9" strokeWidth="1" fill="none" opacity="0.6">
+                    <g filter="url(#glow)" stroke="#f97316" strokeWidth="1" fill="none" opacity="0.6">
                         <circle cx="0" cy="0" r="100">
                              <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="30s" repeatCount="indefinite" />
                         </circle>
@@ -100,7 +100,7 @@ const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 const AuthFormCard: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-     <div className="relative z-10 w-full max-w-sm bg-slate-900/40 backdrop-blur-md border border-cyan-400/30 rounded-2xl shadow-2xl shadow-cyan-500/10 p-8 animate-fade-in">
+     <div className="relative z-10 w-full max-w-sm bg-slate-900/40 backdrop-blur-md border border-orange-500/30 rounded-2xl shadow-2xl shadow-orange-500/10 p-8 animate-fade-in">
         {children}
     </div>
 );
@@ -108,7 +108,7 @@ const AuthFormCard: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 const AuthHeader = () => (
     <div className="text-center mb-8">
         <div className="w-16 h-16 mx-auto mb-4">
-            <InspecProLogo className="text-cyan-400 filter drop-shadow-[0_0_8px_rgba(56,189,248,0.7)]" />
+            <InspecProLogo className="text-orange-400 filter drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
         </div>
         <h1 className="text-3xl font-bold text-white tracking-wider">InspecPro</h1>
         <p className="text-sm text-slate-400">Gestão de Inspeções</p>
@@ -122,7 +122,7 @@ const InputWithIcon: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { ic
         </span>
         <input 
             {...props}
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-3 pl-10 pr-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-3 pl-10 pr-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all"
         />
     </div>
 );
@@ -130,7 +130,7 @@ const InputWithIcon: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { ic
 const FormButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = (props) => (
     <button 
         {...props}
-        className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-cyan-500/20 hover:shadow-cyan-400/40 transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-cyan-300 active:scale-95"
+        className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-orange-500/30 hover:shadow-orange-400/40 transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-orange-300 active:scale-95"
     />
 );
 
@@ -173,7 +173,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ showToast, onSwitchToRegis
                             <FormButton type="submit">LOG IN</FormButton>
                         </form>
 
-                        <div className="text-center text-sm mt-6 flex justify-between text-cyan-400">
+                        <div className="text-center text-sm mt-6 flex justify-between text-orange-400">
                             <a 
                                 href="#"
                                 onClick={(e) => {
@@ -250,7 +250,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchT
                                     e.preventDefault();
                                     onSwitchToLogin();
                                 }}
-                                className="text-cyan-400 hover:underline"
+                                className="text-orange-400 hover:underline"
                             >
                                 Already have an account? Log In
                             </a>
