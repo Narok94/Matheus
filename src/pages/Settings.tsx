@@ -222,7 +222,7 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                      <li className="flex justify-between items-center p-3">
                                         <div>
                                             <p className="font-semibold text-text-primary">Restauração Automática</p>
-                                            <p className="text-xs text-text-secondary">Último: {new Date(lastBackupTimestamp).toLocaleDateString()}</p>
+                                            <p className="text-xs text-text-secondary">Último: {new Date(lastBackupTimestamp).toLocaleString('pt-BR')}</p>
                                         </div>
                                         <Button onClick={() => setAutoRestoreConfirmOpen(true)} variant="secondary" className="text-accent border-accent/30 hover:bg-accent/10 !p-2.5">
                                             <RestoreIcon className="w-5 h-5"/>

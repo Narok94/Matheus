@@ -14,7 +14,7 @@ import { Toast } from './src/components/common';
 import { GlobalLoader } from './src/components/GlobalLoader';
 import { 
     DashboardIcon, ClientsIcon, EquipmentIcon, AgendaIcon, 
-    CertificateIcon, FinancialIcon, SettingsIcon, ReportsIcon
+    CertificateIcon, FinancialIcon, SettingsIcon, ReportsIcon, LogoutIcon
 } from './src/components/Icons';
 import { useIdleTimer } from './src/hooks/useIdleTimer';
 
@@ -32,7 +32,8 @@ const Header: React.FC<{
     onBack: () => void;
     setView: (view: View) => void;
     companyProfile: CompanyProfile;
-}> = ({ view, onBack, setView, companyProfile }) => {
+    onLogout: () => void;
+}> = ({ view, onBack, setView, companyProfile, onLogout }) => {
 
     if (view === 'dashboard') {
         return (
@@ -50,9 +51,14 @@ const Header: React.FC<{
                     </div>
                     <h1 className="text-xl font-bold ml-4 text-text-primary">{companyProfile.name}</h1>
                 </div>
-                 <button onClick={() => setView('settings')} className="text-text-secondary hover:text-accent p-2 rounded-full md:hidden">
-                    <SettingsIcon />
-                 </button>
+                 <div className="flex items-center space-x-2">
+                    <button onClick={() => setView('settings')} className="text-text-secondary hover:text-accent p-2 rounded-full md:hidden" aria-label="Configurações">
+                        <SettingsIcon />
+                    </button>
+                    <button onClick={onLogout} className="text-text-secondary hover:text-status-reproved p-2 rounded-full" aria-label="Encerrar sessão">
+                        <LogoutIcon />
+                    </button>
+                 </div>
             </header>
         );
     }
@@ -272,7 +278,13 @@ const AppContent: React.FC = () => {
         <div className="flex h-screen bg-primary">
             <Sidebar currentView={currentView} setView={handleSetView} companyProfile={companyProfile} />
             <div className="flex-1 flex flex-col h-screen min-w-0">
-                <Header view={currentView} onBack={handleBack} setView={handleSetView} companyProfile={companyProfile} />
+                <Header 
+                    view={currentView} 
+                    onBack={handleBack} 
+                    setView={handleSetView} 
+                    companyProfile={companyProfile}
+                    onLogout={() => handleLogout('manual', showToast)}
+                />
                 <main className="flex-1 overflow-y-auto pb-24">
                     {renderView()}
                 </main>
