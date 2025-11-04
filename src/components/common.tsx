@@ -181,6 +181,11 @@ export const getStatusBadge = (status: InspectionStatus | PaymentStatus) => {
 type FinancialStatus = PaymentStatus | 'Atrasado';
 
 export const getFinancialStatus = (record: FinancialRecord | Expense): FinancialStatus => {
+    // Check if it's a FinancialRecord and has the conditional property
+    if ('isConditionalDueDate' in record && record.isConditionalDueDate) {
+        return record.status; // It's conditional, so it's just 'Pendente' or 'Pago', never 'Atrasado'
+    }
+
     if (record.status === PaymentStatus.Pendente && new Date(record.dueDate) < new Date()) {
         return 'Atrasado';
     }

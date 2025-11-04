@@ -92,6 +92,18 @@ export const MOCK_FINANCIAL: FinancialRecord[] = [
     { id: 'fin-004', clientId: 'cli-003', inspectionId: 'ins-003', description: 'Serviço de vistoria e recarga', value: 350.50, issueDate: formatDate(addDays(today, -5)), dueDate: formatDate(addDays(today, -2)), status: PaymentStatus.Pendente }, // Atrasado
     { id: 'fin-005', clientId: 'cli-004', inspectionId: '', description: 'Taxa de consultoria mensal', value: 500.00, issueDate: formatDate(addDays(today, -10)), dueDate: formatDate(addDays(today, -1)), paymentDate: formatDate(addDays(today, -1)), status: PaymentStatus.Pago },
     { id: 'fin-006', clientId: 'cli-005', inspectionId: '', description: 'Sinal para vistoria geral', value: 1200.00, issueDate: formatDate(addDays(today, 0)), dueDate: formatDate(addDays(today, 7)), status: PaymentStatus.Pendente },
+    { 
+        id: 'fin-007', 
+        clientId: 'cli-004', 
+        inspectionId: '', 
+        description: 'Pagamento condicionado', 
+        value: 1500.00, 
+        issueDate: formatDate(addDays(today, -5)), 
+        dueDate: '', 
+        status: PaymentStatus.Pendente, 
+        isConditionalDueDate: true, 
+        dueDateCondition: 'Após entrega do alvará de funcionamento' 
+    },
 ];
 
 // --- CERTIFICATES ---

@@ -1,17 +1,17 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { PaymentStatus, FinancialRecord, Client } from '../../types';
-import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus, ConfirmationModal } from '../components/common';
+import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus, ConfirmationModal, ToggleSwitch } from '../components/common';
 import { FinancialIcon, PlusIcon, AgendaIcon, EditIcon, TrashIcon } from '../components/Icons';
 import { parseLocalDate } from '../utils';
 
-type FinancialStatusFilter = PaymentStatus | 'Atrasado' | 'all';
+type FinancialStatusFilter = PaymentStatus | 'Atrasado' | 'Condicional' | 'all';
 
 const StatusFilter: React.FC<{
     selectedStatus: FinancialStatusFilter;
     onStatusChange: (status: FinancialStatusFilter) => void;
 }> = ({ selectedStatus, onStatusChange }) => {
-    const statuses: FinancialStatusFilter[] = ['all', PaymentStatus.Pendente, PaymentStatus.Pago, 'Atrasado'];
+    const statuses: FinancialStatusFilter[] = ['all', PaymentStatus.Pendente, 'Atrasado', 'Condicional', PaymentStatus.Pago];
     return (
         <div className="flex space-x-2 overflow-x-auto pb-2 -mx-4 px-4">
             {statuses.map(status => (
@@ -119,19 +119,23 @@ export const Financial: React.FC = () => {
     const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
     const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     
-    const initialRecordState: Omit<FinancialRecord, 'id'> = { clientId: '', inspectionId: '', description: '', value: 0, issueDate: '', dueDate: '', status: PaymentStatus.Pendente, paymentDate: '' };
+    const initialRecordState: Omit<FinancialRecord, 'id'> = { clientId: '', inspectionId: '', description: '', value: 0, issueDate: new Date().toISOString().split('T')[0], dueDate: new Date().toISOString().split('T')[0], status: PaymentStatus.Pendente, paymentDate: '', isConditionalDueDate: false, dueDateCondition: '' };
     const [formState, setFormState] = useState(initialRecordState);
 
     useEffect(() => {
-        if (isModalOpen && editingRecord) {
-            setFormState({
-                ...editingRecord,
-                paymentDate: editingRecord.paymentDate || '',
-            });
-        } else {
-            setFormState(initialRecordState);
+        if (isModalOpen) {
+            if (editingRecord) {
+                setFormState({
+                    ...editingRecord,
+                    paymentDate: editingRecord.paymentDate || '',
+                    isConditionalDueDate: editingRecord.isConditionalDueDate || false,
+                    dueDateCondition: editingRecord.dueDateCondition || '',
+                });
+            } else {
+                const today = new Date().toISOString().split('T')[0];
+                setFormState({ ...initialRecordState, issueDate: today, dueDate: today });
+            }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isModalOpen, editingRecord]);
     
     const financialSummary = financial.reduce((acc, record) => {
@@ -141,8 +145,16 @@ export const Financial: React.FC = () => {
     }, { received: 0, pending: 0 });
 
     const filteredFinancial = useMemo(() => {
-        if (filter === 'all') return financial;
-        return financial.filter(rec => getFinancialStatus(rec) === filter);
+        switch (filter) {
+            case 'all':
+                return financial;
+            case 'Condicional':
+                return financial.filter(rec => rec.isConditionalDueDate && rec.status === PaymentStatus.Pendente);
+            case 'Pendente':
+                return financial.filter(rec => getFinancialStatus(rec) === 'Pendente' && !rec.isConditionalDueDate);
+            default: // Handles 'Atrasado' and 'Pago'
+                return financial.filter(rec => getFinancialStatus(rec) === filter);
+        }
     }, [financial, filter]);
     
     const handleFormSubmit = (e: React.FormEvent) => {
@@ -201,7 +213,11 @@ export const Financial: React.FC = () => {
                                 <div className="text-right flex-shrink-0 ml-4">
                                     <div className="flex items-center justify-end text-xs text-text-secondary mb-1">
                                         <AgendaIcon className="w-3 h-3 mr-1.5" />
-                                        <span>Venc.: {parseLocalDate(rec.dueDate).toLocaleDateString()}</span>
+                                        {rec.isConditionalDueDate ? (
+                                            <span className="italic" title={rec.dueDateCondition}>{rec.dueDateCondition && rec.dueDateCondition.length > 30 ? `${rec.dueDateCondition.substring(0, 30)}...` : rec.dueDateCondition}</span>
+                                        ) : (
+                                            <span>Venc.: {parseLocalDate(rec.dueDate).toLocaleDateString()}</span>
+                                        )}
                                     </div>
                                     <FinancialStatusBadge record={rec} />
                                 </div>
@@ -224,11 +240,49 @@ export const Financial: React.FC = () => {
                         </Select>
                     </FormField>
                     <FormField label="Descrição"><Input value={formState.description} onChange={e => setFormState(p => ({...p, description: e.target.value}))} required/></FormField>
-                    <FormField label="Valor (R$)"><Input type="number" step="0.01" value={formState.value} onChange={e => setFormState(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField label="Valor (R$)"><Input type="number" step="0.01" value={formState.value} onChange={e => setFormState(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
                         <FormField label="Data de Emissão"><Input type="date" value={formState.issueDate} onChange={e => setFormState(p => ({...p, issueDate: e.target.value}))} required /></FormField>
-                        <FormField label="Data de Vencimento"><Input type="date" value={formState.dueDate} onChange={e => setFormState(p => ({...p, dueDate: e.target.value}))} required /></FormField>
                     </div>
+
+                    <div className="p-3 bg-primary/50 rounded-lg space-y-3 border border-border">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-text-secondary">Vencimento Condicional?</label>
+                            <ToggleSwitch 
+                                enabled={formState.isConditionalDueDate || false} 
+                                onChange={enabled => setFormState(p => ({
+                                    ...p, 
+                                    isConditionalDueDate: enabled,
+                                    dueDate: enabled ? '' : (p.dueDate || new Date().toISOString().split('T')[0]),
+                                }))} 
+                            />
+                        </div>
+
+                        {formState.isConditionalDueDate ? (
+                            <div className="animate-fade-in">
+                                <FormField label="Condição para Vencimento">
+                                    <Input 
+                                        value={formState.dueDateCondition} 
+                                        onChange={e => setFormState(p => ({...p, dueDateCondition: e.target.value}))} 
+                                        required 
+                                        placeholder="Ex: Entrega do documento X"
+                                    />
+                                </FormField>
+                            </div>
+                        ) : (
+                            <div className="animate-fade-in">
+                                <FormField label="Data de Vencimento">
+                                    <Input 
+                                        type="date" 
+                                        value={formState.dueDate} 
+                                        onChange={e => setFormState(p => ({...p, dueDate: e.target.value}))} 
+                                        required 
+                                    />
+                                </FormField>
+                            </div>
+                        )}
+                    </div>
+
                      <FormField label="Status">
                         <Select value={formState.status} onChange={e => setFormState(p => ({...p, status: e.target.value as PaymentStatus}))}>
                             <option value={PaymentStatus.Pendente}>Pendente</option>
@@ -236,7 +290,9 @@ export const Financial: React.FC = () => {
                         </Select>
                     </FormField>
                      {formState.status === PaymentStatus.Pago && (
-                        <FormField label="Data de Recebimento"><Input type="date" value={formState.paymentDate} onChange={e => setFormState(p => ({...p, paymentDate: e.target.value}))} /></FormField>
+                         <div className="animate-fade-in">
+                            <FormField label="Data de Recebimento"><Input type="date" value={formState.paymentDate} onChange={e => setFormState(p => ({...p, paymentDate: e.target.value}))} /></FormField>
+                         </div>
                     )}
                     <div className="flex justify-end pt-4"><Button type="submit">{editingRecord ? 'Salvar Alterações' : 'Salvar Registro'}</Button></div>
                  </form>

@@ -102,9 +102,11 @@ export interface FinancialRecord {
   description: string;
   value: number;
   issueDate: string;
-  dueDate: string;
+  dueDate: string; // Will be empty string if conditional
   paymentDate?: string;
   status: PaymentStatus;
+  isConditionalDueDate?: boolean;
+  dueDateCondition?: string;
 }
 
 export interface License {
