@@ -8,7 +8,7 @@ export const useSettings = () => {
     const { currentUser } = useAuth();
     const dataKeyPrefix = useMemo(() => {
         if (!currentUser) return 'guest';
-        if (currentUser === 'matheus') return 'matheus-v2';
+        // The data key prefix should be stable to avoid data loss on updates.
         return currentUser;
     }, [currentUser]);
 
