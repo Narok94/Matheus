@@ -65,28 +65,33 @@ const RecurringPayments: React.FC<{
     clients: ReturnType<typeof useData>['clients'];
     onMarkAsPaid: (clientId: string) => void;
 }> = ({ clients, onMarkAsPaid }) => {
-    const recurringClients = clients.filter(c =>
-        c.isRecurring &&
-        c.recurringInstallments !== undefined &&
-        c.paidInstallments !== undefined &&
-        c.paidInstallments < c.recurringInstallments
-    );
+    
+    const recurringClientsWithDueDate = useMemo(() => clients
+        .filter(c =>
+            c.isRecurring &&
+            c.recurringInstallments !== undefined &&
+            c.paidInstallments !== undefined &&
+            c.paidInstallments < c.recurringInstallments
+        )
+        .map(client => {
+            const cycleStartDate = parseLocalDate(client.recurringCycleStart || new Date().toISOString());
+            const targetMonth = cycleStartDate.getMonth() + (client.paidInstallments || 0);
+            // This correctly handles year rollovers as well
+            const dueDate = new Date(cycleStartDate.getFullYear(), targetMonth, cycleStartDate.getDate());
+            return { client, dueDate };
+        })
+        .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime()), [clients]);
 
-    if (recurringClients.length === 0) {
+    if (recurringClientsWithDueDate.length === 0) {
         return <p className="text-text-secondary text-sm">Nenhum pagamento recorrente pendente.</p>;
     }
 
     return (
         <div className="space-y-3">
-            {recurringClients.map(client => {
+            {recurringClientsWithDueDate.map(({ client, dueDate }) => {
                 const currentInstallment = (client.paidInstallments || 0) + 1;
                 const totalInstallments = client.recurringInstallments || 0;
                 
-                const cycleStartDate = parseLocalDate(client.recurringCycleStart || new Date().toISOString());
-                const dueDate = new Date(cycleStartDate.getTime());
-                dueDate.setMonth(dueDate.getMonth() + (client.paidInstallments || 0));
-                dueDate.setDate(cycleStartDate.getDate());
-
                 return (
                     <div key={client.id} className="p-3 bg-primary rounded-lg border border-border">
                         <div className="flex justify-between items-start">
@@ -112,7 +117,7 @@ const RecurringPayments: React.FC<{
 };
 
 
-export const Financial: React.FC = () => {
+export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ showToast }) => {
     const { financial, clients, handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial, handleMarkInstallmentAsPaid } = useData();
     const [isModalOpen, setModalOpen] = useState(false);
     const [filter, setFilter] = useState<FinancialStatusFilter>('all');
@@ -192,10 +197,15 @@ export const Financial: React.FC = () => {
         setEditingRecord(null);
     };
 
+    const handlePaymentConfirmation = (clientId: string) => {
+        handleMarkInstallmentAsPaid(clientId);
+        showToast('Pagamento recorrente registrado com sucesso!', 'success');
+    };
+
     return (
         <div className="p-4 space-y-6">
             <Card title="Pagamentos Recorrentes" collapsible>
-                <RecurringPayments clients={clients} onMarkAsPaid={handleMarkInstallmentAsPaid} />
+                <RecurringPayments clients={clients} onMarkAsPaid={handlePaymentConfirmation} />
             </Card>
 
             <Card title="💰 Resumo Financeiro" collapsible>

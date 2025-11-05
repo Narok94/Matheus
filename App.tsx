@@ -234,7 +234,7 @@ const AppContent: React.FC = () => {
             case 'agenda': return <Agenda prefilledData={prefilledInspectionData} onPrefillHandled={() => setPrefilledInspectionData(null)} showToast={showToast} onViewInspection={handleViewInspection} />;
             case 'certificates': return <Certificates onViewCertificate={handleViewCertificate} />;
             case 'reports': return <Reports />;
-            case 'financial': return <Financial />;
+            case 'financial': return <Financial showToast={showToast} />;
             case 'settings': return <Settings showToast={showToast} />;
             case 'payables': return <Payables />;
             case 'clientDetail': 
