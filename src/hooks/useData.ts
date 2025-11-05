@@ -4,6 +4,7 @@ import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CE
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';
 import { get } from '../idb';
+import { parseLocalDate } from '../utils';
 
 export const useData = () => {
     const { currentUser } = useAuth();
@@ -164,9 +165,25 @@ export const useData = () => {
         
         // Create financial record
         const issueDate = new Date();
-        const dueDate = new Date(client.recurringCycleStart);
-        dueDate.setMonth(dueDate.getMonth() + currentPaidInstallments);
-        dueDate.setDate(new Date(client.recurringCycleStart).getDate());
+        
+        // --- CORRECTED DATE LOGIC ---
+        const cycleStartDate = parseLocalDate(client.recurringCycleStart);
+        const startYear = cycleStartDate.getFullYear();
+        const startMonth = cycleStartDate.getMonth();
+        const startDay = cycleStartDate.getDate();
+        
+        const targetMonth = startMonth + currentPaidInstallments;
+        
+        let dueDate = new Date(startYear, targetMonth, startDay);
+        
+        // If the day of month doesn't match, it means we rolled over to the next month
+        // e.g., trying to set Nov 31 results in Dec 1.
+        if (dueDate.getDate() !== startDay) {
+            // In that case, we set the date to the last day of the intended month.
+            // Day 0 of the *next* month gives us the last day of the *current* month.
+            dueDate = new Date(startYear, targetMonth + 1, 0);
+        }
+        // --- END OF CORRECTION ---
 
         const newRecord: Omit<FinancialRecord, 'id'> = {
             clientId: client.id,

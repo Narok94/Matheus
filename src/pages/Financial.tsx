@@ -75,9 +75,21 @@ const RecurringPayments: React.FC<{
         )
         .map(client => {
             const cycleStartDate = parseLocalDate(client.recurringCycleStart || new Date().toISOString());
-            const targetMonth = cycleStartDate.getMonth() + (client.paidInstallments || 0);
-            // This correctly handles year rollovers as well
-            const dueDate = new Date(cycleStartDate.getFullYear(), targetMonth, cycleStartDate.getDate());
+            const startYear = cycleStartDate.getFullYear();
+            const startMonth = cycleStartDate.getMonth();
+            const startDay = cycleStartDate.getDate();
+
+            const targetMonth = startMonth + (client.paidInstallments || 0);
+
+            let dueDate = new Date(startYear, targetMonth, startDay);
+            
+            // If the day of month doesn't match, it means we rolled over to the next month
+            // e.g., trying to set Nov 31 results in Dec 1.
+            if (dueDate.getDate() !== startDay) {
+                // In that case, we set the date to the last day of the intended month.
+                // Day 0 of the *next* month gives us the last day of the *current* month.
+                dueDate = new Date(startYear, targetMonth + 1, 0);
+            }
             return { client, dueDate };
         })
         .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime()), [clients]);
