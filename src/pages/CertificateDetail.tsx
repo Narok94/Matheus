@@ -14,7 +14,7 @@ export const CertificateDetail: React.FC<{ certificateId: string }> = ({ certifi
     if (!certificate) return <p className="p-4">Certificado não encontrado.</p>;
 
     const inspection = inspections.find(i => i.id === certificate.inspectionId);
-    if (!inspection) return <p className="p-4">Inspeção relacionada não encontrada.</p>;
+    if (!inspection) return <p className="p-4">Inspeção/Vistoria relacionada não encontrada.</p>;
     
     const client = clients.find(c => c.id === certificate.clientId);
     if (!client) return <p className="p-4">Cliente não encontrado.</p>;
@@ -55,7 +55,7 @@ export const CertificateDetail: React.FC<{ certificateId: string }> = ({ certifi
             <div ref={printRef} className="bg-secondary p-4 md:p-8 rounded-lg shadow-lg border border-border print-section">
                 <div className="cert-header flex flex-col md:flex-row justify-between items-start pb-4 border-b border-border mb-4">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-accent cert-title">Certificado de Inspeção</h1>
+                        <h1 className="text-2xl md:text-3xl font-bold text-accent cert-title">Certificado de Inspeção/Vistoria</h1>
                         <p className="text-text-secondary">Nº {certificate.id.slice(-6).toUpperCase()}</p>
                     </div>
                     <div className="text-left md:text-right mt-4 md:mt-0">
@@ -79,7 +79,7 @@ export const CertificateDetail: React.FC<{ certificateId: string }> = ({ certifi
                 <div className="my-6">
                      <h2 className="text-xl font-semibold text-text-primary border-b border-border pb-2 mb-4">Detalhes da Certificação</h2>
                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4 text-sm info-grid">
-                        <div className="info-item"><p className="label text-text-secondary">Data da Inspeção:</p><p className="value font-semibold text-text-primary">{parseLocalDate(inspection.date).toLocaleDateString()}</p></div>
+                        <div className="info-item"><p className="label text-text-secondary">Data da Inspeção/Vistoria:</p><p className="value font-semibold text-text-primary">{parseLocalDate(inspection.date).toLocaleDateString()}</p></div>
                         <div className="info-item"><p className="label text-text-secondary">Data de Emissão:</p><p className="value font-semibold text-text-primary">{parseLocalDate(certificate.issueDate).toLocaleDateString()}</p></div>
                         <div className="info-item"><p className="label text-text-secondary">Data de Vencimento:</p><p className="value font-semibold text-text-primary">{parseLocalDate(certificate.expiryDate).toLocaleDateString()}</p></div>
                      </div>

@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import { PaymentStatus, FinancialRecord, Client } from '../../types';
 import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus, ConfirmationModal } from '../components/common';
 import { FinancialIcon, PlusIcon, EditIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons';
-import { parseLocalDate } from '../utils';
+import { parseLocalDate, formatLocalDate } from '../utils';
 
 type ActiveTab = 'all' | 'recorrente';
 type StatusFilter = 'all' | PaymentStatus | 'Atrasado' | 'Condicional';
@@ -65,7 +65,7 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
         return () => clearInterval(interval);
     }, [selectedDate]);
     
-    const initialRecordState: Omit<FinancialRecord, 'id'> = { clientId: '', inspectionId: '', description: '', value: 0, issueDate: new Date().toISOString().split('T')[0], dueDate: new Date().toISOString().split('T')[0], status: PaymentStatus.Pendente, paymentDate: '', isConditionalDueDate: false, dueDateCondition: '' };
+    const initialRecordState: Omit<FinancialRecord, 'id'> = { clientId: '', inspectionId: '', description: '', value: 0, issueDate: formatLocalDate(new Date()), dueDate: formatLocalDate(new Date()), status: PaymentStatus.Pendente, paymentDate: '', isConditionalDueDate: false, dueDateCondition: '' };
     const [formState, setFormState] = useState(initialRecordState);
     const [dueDateType, setDueDateType] = useState<'fixed' | 'delivery'>('fixed');
 
@@ -84,7 +84,7 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                     setDueDateType('fixed');
                 }
             } else {
-                const today = new Date().toISOString().split('T')[0];
+                const today = formatLocalDate(new Date());
                 setFormState({ ...initialRecordState, issueDate: today, dueDate: today });
                 setDueDateType('fixed');
             }
@@ -129,8 +129,8 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                     inspectionId: existingRecordId,
                     description: `Pagamento Recorrente - Parcela ${installmentNumber}/${client.recurringInstallments}`,
                     value: client.recurringAmount || 0,
-                    issueDate: new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0],
-                    dueDate: dueDate.toISOString().split('T')[0],
+                    issueDate: formatLocalDate(new Date(selectedYear, selectedMonth, 1)),
+                    dueDate: formatLocalDate(dueDate),
                     status: PaymentStatus.Pendente,
                     isVirtual: true,
                 };
@@ -183,9 +183,9 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
             inspectionId: `recorrente-${client.id}-${installmentNumber}`,
             description: `Pagamento Recorrente - Parcela ${installmentNumber}/${client.recurringInstallments}`,
             value: client.recurringAmount || 0,
-            issueDate: new Date().toISOString().split('T')[0],
+            issueDate: formatLocalDate(new Date()),
             dueDate: dueDate,
-            paymentDate: new Date().toISOString().split('T')[0],
+            paymentDate: formatLocalDate(new Date()),
             status: PaymentStatus.Pago
         };
         handleAddFinancial(newRecord);
@@ -204,7 +204,7 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
         handleUpdateFinancial({
             ...record,
             status: PaymentStatus.Pago,
-            paymentDate: new Date().toISOString().split('T')[0],
+            paymentDate: formatLocalDate(new Date()),
         });
         showToast('Conta marcada como paga!');
     };
@@ -362,7 +362,7 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                                         ...p,
                                         isConditionalDueDate: false,
                                         dueDateCondition: '',
-                                        dueDate: p.dueDate || new Date().toISOString().split('T')[0],
+                                        dueDate: p.dueDate || formatLocalDate(new Date()),
                                     }));
                                 }}
                                 className="!py-2"

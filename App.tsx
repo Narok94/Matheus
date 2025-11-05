@@ -1,7 +1,7 @@
 import React, { useState, ReactNode, useEffect, useCallback } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
 // FIX: Import ToastMessage to resolve type error.
-import { View, DetailView, PrefilledInspectionData, ToastMessage, CompanyProfile } from './types';
+import { View, DetailView, AgendaAction, ToastMessage, CompanyProfile } from './types';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { DataProvider, useData } from './src/context/DataContext';
 import { SettingsProvider, useSettings } from './src/context/SettingsContext';
@@ -23,7 +23,7 @@ const viewTitles: Record<View, string> = {
     dashboard: 'Início', clients: 'Clientes', equipment: 'Equipamentos',
     agenda: 'Agenda', certificates: 'Certificados', financial: 'Contas a Receber',
     settings: 'Configurações', clientDetail: 'Detalhes do Cliente', 
-    inspectionDetail: 'Detalhes da Inspeção', reports: 'Relatórios',
+    inspectionDetail: 'Detalhes da Inspeção/Vistoria', reports: 'Relatórios',
     certificateDetail: 'Certificado', payables: 'Contas a Pagar'
 };
 
@@ -142,7 +142,7 @@ const AppContent: React.FC = () => {
     const [currentView, setCurrentView] = useState<View>('dashboard');
     const [detailView, setDetailView] = useState<DetailView>(null);
     const [toast, setToast] = useState<ToastMessage>(null);
-    const [prefilledInspectionData, setPrefilledInspectionData] = useState<PrefilledInspectionData>(null);
+    const [agendaAction, setAgendaAction] = useState<AgendaAction>(null);
 
     const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         setToast({ id: Date.now(), message, type });
@@ -195,7 +195,12 @@ const AppContent: React.FC = () => {
     }
 
     const handleScheduleForClient = (clientId: string) => {
-        setPrefilledInspectionData({ clientId });
+        setAgendaAction({ action: 'openModal', clientId });
+        handleSetView('agenda');
+    };
+    
+    const handleNewInspection = () => {
+        setAgendaAction({ action: 'openModal' });
         handleSetView('agenda');
     };
     
@@ -228,10 +233,10 @@ const AppContent: React.FC = () => {
 
     const renderView = () => {
         switch (currentView) {
-            case 'dashboard': return <Dashboard setView={handleSetView} onScheduleForClient={handleScheduleForClient} />;
+            case 'dashboard': return <Dashboard setView={handleSetView} onScheduleForClient={handleScheduleForClient} onNewInspection={handleNewInspection} />;
             case 'clients': return <Clients onViewClient={handleViewClient} />;
             case 'equipment': return <Equipments showToast={showToast} />;
-            case 'agenda': return <Agenda prefilledData={prefilledInspectionData} onPrefillHandled={() => setPrefilledInspectionData(null)} showToast={showToast} onViewInspection={handleViewInspection} />;
+            case 'agenda': return <Agenda action={agendaAction} onActionHandled={() => setAgendaAction(null)} showToast={showToast} onViewInspection={handleViewInspection} />;
             case 'certificates': return <Certificates onViewCertificate={handleViewCertificate} />;
             case 'reports': return <Reports />;
             case 'financial': return <Financial showToast={showToast} />;
@@ -246,7 +251,7 @@ const AppContent: React.FC = () => {
             case 'certificateDetail':
                 if (detailView?.type !== 'certificate') return <p>Erro: Certificado não especificado.</p>;
                 return <CertificateDetail certificateId={detailView.id} />;
-            default: return <Dashboard setView={handleSetView} onScheduleForClient={handleScheduleForClient} />;
+            default: return <Dashboard setView={handleSetView} onScheduleForClient={handleScheduleForClient} onNewInspection={handleNewInspection} />;
         }
     };
 

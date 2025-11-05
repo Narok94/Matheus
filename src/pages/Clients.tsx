@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
-import { Modal, Button, Input, FormField, EmptyState, FloatingActionButton, ToggleSwitch } from '../components/common';
+import { Modal, Button, Input, FormField, EmptyState, FloatingActionButton, ToggleSwitch, Textarea } from '../components/common';
 import { ClientsIcon, PlusIcon } from '../components/Icons';
 import { capitalizeWords, formatDocument, formatPhone } from '../utils';
 import { Client } from '../../types';
@@ -20,7 +20,8 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
 
     const initialClientState: Omit<Client, 'id'> = { 
         name: '', document: '', address: '', city: '', contactName: '', contact: '', email: '',
-        isRecurring: false, recurringAmount: 0, recurringInstallments: 0, recurringCycleStart: new Date().toISOString().split('T')[0], paidInstallments: 0
+        isRecurring: false, recurringAmount: 0, recurringInstallments: 0, recurringCycleStart: new Date().toISOString().split('T')[0], paidInstallments: 0,
+        licenseValidityNotes: ''
     };
     const [newClient, setNewClient] = useState(initialClientState);
 
@@ -37,7 +38,7 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
                 client.city.toLowerCase().includes(searchTerm.toLowerCase())
             ), [searchTerm, clients, recurrenceFilter]);
 
-     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         let formattedValue: string | number = value;
 
@@ -128,6 +129,9 @@ export const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
                     <FormField label="Nome do Contato"><Input name="contactName" value={newClient.contactName} onChange={handleInputChange} required /></FormField>
                     <FormField label="Telefone de Contato"><Input name="contact" type="tel" value={newClient.contact} onChange={handleInputChange} required /></FormField>
                     <FormField label="Email"><Input name="email" type="email" value={newClient.email} onChange={handleInputChange} /></FormField>
+                    <FormField label="Validade das Licenças (Notas)">
+                        <Textarea name="licenseValidityNotes" value={newClient.licenseValidityNotes || ''} onChange={handleInputChange} placeholder="Ex: Alvará de Funcionamento vence em 10/12/2025..." />
+                    </FormField>
                     
                     <div className="pt-4 space-y-4">
                         <div className="flex items-center justify-between p-3 bg-primary/50 rounded-lg">

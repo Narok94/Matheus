@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch, Select } from '../components/common';
+import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch, Select, Textarea } from '../components/common';
 import { AgendaIcon, DownloadIcon, EditIcon, TrashIcon, PlusIcon } from '../components/Icons';
 import { capitalizeWords, formatDocument, formatPhone, setWorksheetColumns, parseLocalDate } from '../utils';
 import { Client, ClientEquipment, InspectionStatus } from '../../types';
@@ -25,7 +25,7 @@ export const ClientDetail: React.FC<{
     const [editingAsset, setEditingAsset] = useState<ClientEquipment | null>(null);
     const [assetToDelete, setAssetToDelete] = useState<ClientEquipment | null>(null);
 
-    const initialAssetState: Omit<ClientEquipment, 'id' | 'clientId'> = { equipmentId: '', serialNumber: '', expiryDate: '', location: '', status: InspectionStatus.Agendada };
+    const initialAssetState: Omit<ClientEquipment, 'id' | 'clientId'> = { equipmentId: '', serialNumber: '', location: '', status: InspectionStatus.Agendada };
     const [assetFormState, setAssetFormState] = useState(initialAssetState);
 
     useEffect(() => {
@@ -50,7 +50,7 @@ export const ClientDetail: React.FC<{
     const clientInspections = inspections.filter(i => i.clientId === client.id);
 
     // Client Edit Handlers
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         let formattedValue: string | number = value;
         if (name === 'document') formattedValue = formatDocument(value);
@@ -127,7 +127,7 @@ export const ClientDetail: React.FC<{
         if (clientAssets.length > 0) {
             const equipmentDataForSheet = clientAssets.map(asset => {
                 const product = equipment.find(p => p.id === asset.equipmentId);
-                return { "Nome": product?.name, "Nº Série": asset.serialNumber, "Localização": asset.location, "Status": asset.status, "Vencimento": parseLocalDate(asset.expiryDate).toLocaleDateString(), "Últ. Inspeção": asset.lastInspectionDate ? parseLocalDate(asset.lastInspectionDate).toLocaleDateString() : 'N/A' }
+                return { "Nome": product?.name, "Nº Série": asset.serialNumber, "Localização": asset.location, "Status": asset.status, "Vencimento": asset.expiryDate ? parseLocalDate(asset.expiryDate).toLocaleDateString() : 'N/A', "Últ. Inspeção": asset.lastInspectionDate ? parseLocalDate(asset.lastInspectionDate).toLocaleDateString() : 'N/A' }
             });
             equipmentWorksheet = XLSX.utils.json_to_sheet(equipmentDataForSheet);
             setWorksheetColumns(equipmentWorksheet, equipmentDataForSheet);
@@ -141,13 +141,13 @@ export const ClientDetail: React.FC<{
             inspectionWorksheet = XLSX.utils.json_to_sheet(inspectionDataForSheet);
             setWorksheetColumns(inspectionWorksheet, inspectionDataForSheet);
         } else {
-            inspectionWorksheet = XLSX.utils.aoa_to_sheet([["Nenhum histórico de inspeção."]]);
+            inspectionWorksheet = XLSX.utils.aoa_to_sheet([["Nenhum histórico de inspeção/vistoria."]]);
         }
     
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, clientWorksheet, "Dados do Cliente");
         XLSX.utils.book_append_sheet(workbook, equipmentWorksheet, "Equipamentos");
-        XLSX.utils.book_append_sheet(workbook, inspectionWorksheet, "Inspeções");
+        XLSX.utils.book_append_sheet(workbook, inspectionWorksheet, "Inspeções e Vistorias");
     
         XLSX.writeFile(workbook, `Relatorio_${client.name.replace(/\s+/g, '_')}.xlsx`);
     };
@@ -171,10 +171,18 @@ export const ClientDetail: React.FC<{
                 </div>
             </div>
 
+            {client.licenseValidityNotes && (
+                <Card title="Validade das Licenças" collapsible>
+                    <p className="text-text-secondary text-sm whitespace-pre-wrap">
+                        {client.licenseValidityNotes}
+                    </p>
+                </Card>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Button onClick={() => onScheduleInspection(client.id)} className="w-full justify-center">
                     <AgendaIcon className="w-5 h-5" />
-                    <span>Agendar Inspeção</span>
+                    <span>Agendar Inspeção/Vistoria</span>
                 </Button>
                  <Button onClick={handleExportReport} variant="secondary" className="w-full justify-center">
                     <DownloadIcon className="w-5 h-5" />
@@ -209,7 +217,7 @@ export const ClientDetail: React.FC<{
                         <div className="flex justify-between items-center">
                             <div>
                                 <p className="font-semibold text-text-primary">{product?.name} <span className="text-text-secondary text-xs">({asset.serialNumber})</span></p>
-                                <p className="text-sm text-text-secondary">Vencimento: {parseLocalDate(asset.expiryDate).toLocaleDateString()}</p>
+                                <p className="text-sm text-text-secondary">Vencimento: {asset.expiryDate ? parseLocalDate(asset.expiryDate).toLocaleDateString() : 'N/A'}</p>
                             </div>
                             {getStatusBadge(asset.status)}
                         </div>
@@ -221,7 +229,7 @@ export const ClientDetail: React.FC<{
                 )}) : <p className="text-text-secondary text-sm">Nenhum equipamento cadastrado.</p>}
             </Card>
 
-            <Card title={`Histórico de Inspeções (${clientInspections.length})`} collapsible>
+            <Card title={`Histórico de Inspeções/Vistorias (${clientInspections.length})`} collapsible>
                 {clientInspections.length > 0 ? clientInspections.map(insp => (
                     <div key={insp.id} onClick={() => onViewInspection(insp.id)} className="flex justify-between items-center py-2 border-b border-border last:border-b-0 cursor-pointer hover:bg-primary/50 -mx-4 px-4 rounded-md">
                         <div>
@@ -230,7 +238,7 @@ export const ClientDetail: React.FC<{
                         </div>
                         {getStatusBadge(insp.status)}
                     </div>
-                )) : <p className="text-text-secondary text-sm">Nenhuma inspeção realizada.</p>}
+                )) : <p className="text-text-secondary text-sm">Nenhuma inspeção/vistoria realizada.</p>}
             </Card>
             
              <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Cliente">
@@ -242,6 +250,9 @@ export const ClientDetail: React.FC<{
                     <FormField label="Nome do Contato"><Input name="contactName" value={editedClient.contactName} onChange={handleInputChange} required /></FormField>
                     <FormField label="Telefone de Contato"><Input name="contact" type="tel" value={editedClient.contact} onChange={handleInputChange} required /></FormField>
                     <FormField label="Email"><Input name="email" type="email" value={editedClient.email} onChange={handleInputChange} /></FormField>
+                    <FormField label="Validade das Licenças (Notas)">
+                        <Textarea name="licenseValidityNotes" value={editedClient.licenseValidityNotes || ''} onChange={handleInputChange} placeholder="Ex: Alvará de Funcionamento vence em 10/12/2025..." />
+                    </FormField>
                     
                     <div className="pt-4 space-y-4">
                         <div className="flex items-center justify-between p-3 bg-primary/50 rounded-lg">
@@ -282,7 +293,6 @@ export const ClientDetail: React.FC<{
                     </FormField>
                     <FormField label="Número de Série"><Input name="serialNumber" value={assetFormState.serialNumber} onChange={handleAssetFormChange} required /></FormField>
                     <FormField label="Localização"><Input name="location" value={assetFormState.location} onChange={handleAssetFormChange} required /></FormField>
-                    <FormField label="Data de Vencimento"><Input type="date" name="expiryDate" value={assetFormState.expiryDate} onChange={handleAssetFormChange} required /></FormField>
                     <FormField label="Status">
                         <Select name="status" value={assetFormState.status} onChange={handleAssetFormChange} required>
                             {Object.values(InspectionStatus).map(s => <option key={s} value={s}>{s}</option>)}

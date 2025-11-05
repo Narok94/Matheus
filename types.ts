@@ -41,6 +41,7 @@ export interface Client {
   recurringInstallments?: number; // Total de parcelas
   recurringCycleStart?: string; // Data de início da cobrança
   paidInstallments?: number; // Parcelas pagas
+  licenseValidityNotes?: string;
 }
 
 // Represents a product in the catalog.
@@ -62,7 +63,7 @@ export interface ClientEquipment {
   clientId: string;
   equipmentId: string; // Foreign key to Equipment
   serialNumber: string;
-  expiryDate: string;
+  expiryDate?: string;
   location: string;
   lastInspectionDate?: string;
   status: InspectionStatus;
@@ -81,6 +82,8 @@ export interface Inspection {
   clientId: string;
   inspectedItems: InspectedItem[];
   date: string;
+  time?: string;
+  address?: string;
   inspector: string;
   observations: string;
   clientSignature?: string; // a base64 string or url
@@ -182,7 +185,8 @@ export type AppSettings = {
     reminders: boolean; 
 };
 
-export type PrefilledInspectionData = {
+export type AgendaAction = {
+    action: 'openModal';
     clientId?: string;
 } | null;
 

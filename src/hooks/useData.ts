@@ -4,7 +4,7 @@ import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CE
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';
 import { get } from '../idb';
-import { parseLocalDate } from '../utils';
+import { parseLocalDate, formatLocalDate } from '../utils';
 
 export const useData = () => {
     const { currentUser } = useAuth();
@@ -163,7 +163,7 @@ export const useData = () => {
             pixKey: recurringPayable.pixKey,
             value: recurringPayable.value,
             dueDate,
-            paymentDate: new Date().toISOString().split('T')[0],
+            paymentDate: formatLocalDate(new Date()),
             status: PaymentStatus.Pago,
         };
         handleAddExpense(newExpense);
@@ -182,8 +182,8 @@ export const useData = () => {
             id: `cert-${crypto.randomUUID()}`,
             inspectionId: inspection.id,
             clientId: inspection.clientId,
-            issueDate: issueDate.toISOString().split('T')[0],
-            expiryDate: expiryDate.toISOString().split('T')[0],
+            issueDate: formatLocalDate(issueDate),
+            expiryDate: formatLocalDate(expiryDate),
         };
         setCertificates(prev => [...prev, newCertificate]);
     };
@@ -233,9 +233,9 @@ export const useData = () => {
             inspectionId: `recorrente-${client.id}-${newPaidCount}`,
             description: `Pagamento Recorrente - Parcela ${newPaidCount}/${client.recurringInstallments}`,
             value: client.recurringAmount,
-            issueDate: issueDate.toISOString().split('T')[0],
-            dueDate: dueDate.toISOString().split('T')[0],
-            paymentDate: issueDate.toISOString().split('T')[0],
+            issueDate: formatLocalDate(issueDate),
+            dueDate: formatLocalDate(dueDate),
+            paymentDate: formatLocalDate(issueDate),
             status: PaymentStatus.Pago,
         };
         handleAddFinancial(newRecord);

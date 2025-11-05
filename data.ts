@@ -2,7 +2,12 @@ import { Client, Equipment, Inspection, FinancialRecord, Certificate, License, D
 
 // --- MOCK DATA FOR 'admin' USER ---
 const today = new Date();
-const formatDate = (date: Date) => date.toISOString().split('T')[0];
+const formatDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 const addDays = (date: Date, days: number) => {
     const result = new Date(date);
     result.setDate(result.getDate() + days);
@@ -125,12 +130,12 @@ const MOCK_INSPECTED_ITEMS: Record<string, InspectedItem[]> = {
 };
 
 export const MOCK_INSPECTIONS: Inspection[] = [
-    { id: 'ins-001', clientId: 'cli-001', inspectedItems: MOCK_INSPECTED_ITEMS['ins-001'], date: formatDate(addDays(today, -30)), inspector: 'Carlos Pereira', observations: 'Extintor de água próximo do vencimento da recarga.', status: InspectionStatus.Pendente },
-    { id: 'ins-002', clientId: 'cli-002', inspectedItems: MOCK_INSPECTED_ITEMS['ins-002'], date: formatDate(addDays(today, -10)), inspector: 'Admin', observations: 'Tudo conforme.', status: InspectionStatus.Aprovado },
+    { id: 'ins-001', clientId: 'cli-001', inspectedItems: MOCK_INSPECTED_ITEMS['ins-001'], date: formatDate(addDays(today, -30)), inspector: 'Carlos Pereira', observations: 'Extintor de água próximo do vencimento da recarga.', status: InspectionStatus.Pendente, time: '10:00', address: 'Rua das Flores, 123' },
+    { id: 'ins-002', clientId: 'cli-002', inspectedItems: MOCK_INSPECTED_ITEMS['ins-002'], date: formatDate(addDays(today, -10)), inspector: 'Admin', observations: 'Tudo conforme.', status: InspectionStatus.Aprovado, time: '14:30', address: 'Avenida Principal, 456' },
     { id: 'ins-003', clientId: 'cli-003', inspectedItems: MOCK_INSPECTED_ITEMS['ins-003'], date: formatDate(addDays(today, -5)), inspector: 'Carlos Pereira', observations: 'Equipamento reprovado por baixa pressão.', status: InspectionStatus.Reprovado },
-    { id: 'ins-004', clientId: 'cli-005', inspectedItems: [], date: formatDate(addDays(today, 15)), inspector: 'Admin', observations: 'Vistoria geral do condomínio agendada.', status: InspectionStatus.Agendada },
+    { id: 'ins-004', clientId: 'cli-005', inspectedItems: [], date: formatDate(addDays(today, 15)), inspector: 'Admin', observations: 'Vistoria geral do condomínio agendada.', status: InspectionStatus.Agendada, time: '09:00', address: 'Rua Central, 1500' },
     { id: 'ins-005', clientId: 'cli-006', inspectedItems: MOCK_INSPECTED_ITEMS['ins-005'], date: formatDate(addDays(today, -50)), inspector: 'Admin', observations: 'Vistoria periódica realizada com sucesso.', status: InspectionStatus.Aprovado },
-    { id: 'ins-006', clientId: 'cli-007', inspectedItems: [], date: formatDate(addDays(today, 7)), inspector: 'Carlos Pereira', observations: 'Inspeção anual programada para a próxima semana.', status: InspectionStatus.Agendada },
+    { id: 'ins-006', clientId: 'cli-007', inspectedItems: [], date: formatDate(addDays(today, 7)), inspector: 'Carlos Pereira', observations: 'Inspeção anual programada para a próxima semana.', status: InspectionStatus.Agendada, time: '11:00', address: 'Avenida do Saber, 1024' },
     { id: 'ins-007', clientId: 'cli-008', inspectedItems: MOCK_INSPECTED_ITEMS['ins-007'], date: formatDate(addDays(today, -2)), inspector: 'Admin', observations: 'Extintor da sala de servidores vencido. Necessária substituição imediata.', status: InspectionStatus.Reprovado },
     { id: 'ins-008', clientId: 'cli-010', inspectedItems: MOCK_INSPECTED_ITEMS['ins-008'], date: formatDate(addDays(today, -40)), inspector: 'Carlos Pereira', observations: 'Cliente solicitou adiantamento da vistoria. Tudo OK.', status: InspectionStatus.Pendente },
 ];

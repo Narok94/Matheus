@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import { Card, EmptyState, FloatingActionButton, Modal, FormField, Input, Select, Button, ConfirmationModal, FinancialStatusBadge, getFinancialStatus } from '../components/common';
 import { ArrowUpCircleIcon, PlusIcon, EditIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, ClipboardIcon } from '../components/Icons';
 import { Expense, PaymentStatus, RecurringPayable } from '../../types';
-import { parseLocalDate, formatDocument } from '../utils';
+import { parseLocalDate, formatDocument, formatLocalDate } from '../utils';
 
 
 type ActiveTab = 'all' | 'recorrente';
@@ -47,10 +47,10 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
     const [formType, setFormType] = useState<'single' | 'recurring'>('single');
     const [dueDateType, setDueDateType] = useState<'fixed' | 'delivery'>('fixed');
 
-    const initialExpenseState: Omit<Expense, 'id' | 'recurringPayableId'> = { description: '', value: 0, dueDate: new Date().toISOString().split('T')[0], status: PaymentStatus.Pendente, supplier: '', document: '', pixKey: '', paymentDate: '', isConditionalDueDate: false, dueDateCondition: '' };
+    const initialExpenseState: Omit<Expense, 'id' | 'recurringPayableId'> = { description: '', value: 0, dueDate: formatLocalDate(new Date()), status: PaymentStatus.Pendente, supplier: '', document: '', pixKey: '', paymentDate: '', isConditionalDueDate: false, dueDateCondition: '' };
     const [singleExpenseState, setSingleExpenseState] = useState(initialExpenseState);
     
-    const initialRecurringState: Omit<RecurringPayable, 'id' | 'paidInstallments'> = { description: '', value: 0, recurringInstallments: 12, recurringCycleStart: new Date().toISOString().split('T')[0], supplier: '', document: '', pixKey: ''};
+    const initialRecurringState: Omit<RecurringPayable, 'id' | 'paidInstallments'> = { description: '', value: 0, recurringInstallments: 12, recurringCycleStart: formatLocalDate(new Date()), supplier: '', document: '', pixKey: ''};
     const [recurringPayableState, setRecurringPayableState] = useState(initialRecurringState);
     
     useEffect(() => {
@@ -70,7 +70,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                 }
             } else {
                 setFormType('single');
-                const today = new Date().toISOString().split('T')[0];
+                const today = formatLocalDate(new Date());
                 setSingleExpenseState({...initialExpenseState, dueDate: today});
                 setRecurringPayableState(initialRecurringState);
                 setDueDateType('fixed');
@@ -101,7 +101,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                     id: `virtual-${payable.id}-${installmentNumber}`,
                     description: `${payable.description} - Parcela ${installmentNumber}/${payable.recurringInstallments}`,
                     value: payable.value,
-                    dueDate: dueDate.toISOString().split('T')[0],
+                    dueDate: formatLocalDate(dueDate),
                     status: PaymentStatus.Pendente,
                     supplier: payable.supplier, document: payable.document, pixKey: payable.pixKey,
                     isVirtual: true,
@@ -274,7 +274,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                                 ...p,
                                                 isConditionalDueDate: false,
                                                 dueDateCondition: '',
-                                                dueDate: p.dueDate || new Date().toISOString().split('T')[0],
+                                                dueDate: p.dueDate || formatLocalDate(new Date()),
                                             }));
                                         }}
                                         className="!py-2"

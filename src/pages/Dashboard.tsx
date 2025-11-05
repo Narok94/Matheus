@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { View, DeliveryStatus, LicenseStatus, License, InspectionStatus } from '../../types';
+import { View, DeliveryStatus, InspectionStatus } from '../../types';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/common';
-import { PlusIcon, ClientsIcon, EquipmentIcon, AgendaIcon, ReportsIcon, SettingsIcon, CertificateIcon, ArrowUpCircleIcon, ArrowDownCircleIcon, FireExtinguisherIcon } from '../components/Icons';
+import { PlusIcon, ClientsIcon, EquipmentIcon, AgendaIcon, ReportsIcon, SettingsIcon, CertificateIcon, ArrowUpCircleIcon, ArrowDownCircleIcon } from '../components/Icons';
 import { parseLocalDate } from '../utils';
 
 
@@ -16,50 +16,26 @@ const DashboardGridButton = ({ label, icon, onClick }: { label: string, icon: Re
 
 const daysUntil = (date: Date) => Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
-export const Dashboard = ({ setView, onScheduleForClient }: { setView: (view: View) => void; onScheduleForClient: (clientId: string) => void; }) => {
-  const { clients, licenses, deliveries, clientEquipment, handleUpdateLicense, equipment } = useData();
+export const Dashboard = ({ setView, onScheduleForClient, onNewInspection }: { setView: (view: View) => void; onScheduleForClient: (clientId: string) => void; onNewInspection: () => void; }) => {
+  const { clients, deliveries, inspections } = useData();
   const { currentUserDetails } = useAuth();
   
   const firstName = currentUserDetails?.fullName?.split(' ')[0] || 'Usuário';
 
   const pendingDeliveries = deliveries.filter(d => d.status === DeliveryStatus.Pendente).slice(0, 3);
   
-  const expiringItems = useMemo(() => {
-    const ninetyDaysFromNow = new Date();
-    ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90);
+  const upcomingInspections = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to start of day
 
-    const pendingLicenses = licenses
-        .filter(l => l.status === LicenseStatus.Pendente && parseLocalDate(l.expiryDate) < ninetyDaysFromNow)
-        .map(l => ({ ...l, expiryDateObj: parseLocalDate(l.expiryDate) }));
-
-    const expiringClientEquipment = clientEquipment
-        .filter(e => parseLocalDate(e.expiryDate) < ninetyDaysFromNow && e.status !== InspectionStatus.Reprovado)
-        .map(e => ({ ...e, expiryDateObj: parseLocalDate(e.expiryDate) }));
-    
-    const combined = [
-        ...pendingLicenses.map(l => ({
-            id: l.id,
-            type: 'license' as const,
-            clientId: l.clientId,
-            name: l.type,
-            expiryDate: l.expiryDateObj,
-            original: l
-        })),
-        ...expiringClientEquipment.map(e => {
-            const product = equipment.find(p => p.id === e.equipmentId);
-            return {
-                id: e.id,
-                type: 'equipment' as const,
-                clientId: e.clientId,
-                name: product?.name || 'Equipamento desconhecido',
-                expiryDate: e.expiryDateObj,
-                original: e
-            }
+    return inspections
+        .filter(i => {
+            const inspectionDate = parseLocalDate(i.date);
+            return i.status === InspectionStatus.Agendada && inspectionDate >= today;
         })
-    ];
-    
-    return combined.sort((a, b) => a.expiryDate.getTime() - b.expiryDate.getTime()).slice(0, 5);
-  }, [licenses, clientEquipment, equipment]);
+        .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
+        .slice(0, 5); // Limit to 5 for the dashboard
+  }, [inspections]);
   
   return (
     <div className="p-4 space-y-6">
@@ -71,42 +47,32 @@ export const Dashboard = ({ setView, onScheduleForClient }: { setView: (view: Vi
 
       {/* Alert Lists */}
       <div className="space-y-6">
-          <Card title={`🚨 Alerta de Vencimentos (${expiringItems.length})`} collapsible>
+          <Card title={`🗓️ Vistorias Agendadas (${upcomingInspections.length})`} collapsible>
               <div className="space-y-3">
-                  {expiringItems.length > 0 ? expiringItems.map(item => {
-                      const client = clients.find(c => c.id === item.clientId);
-                      const daysLeft = daysUntil(item.expiryDate);
-                      const urgencyColor = daysLeft <= 15 ? 'text-status-reproved' : daysLeft <= 30 ? 'text-status-pending' : 'text-text-secondary';
+                  {upcomingInspections.length > 0 ? upcomingInspections.map(inspection => {
+                      const client = clients.find(c => c.id === inspection.clientId);
+                      const inspectionDate = parseLocalDate(inspection.date);
+                      const daysLeft = daysUntil(inspectionDate);
+                      const urgencyColor = daysLeft <= 1 ? 'text-status-reproved' : daysLeft <= 7 ? 'text-status-pending' : 'text-text-secondary';
                       
                       return (
-                        <div key={`${item.type}-${item.id}`} className="text-sm p-3 bg-primary rounded-lg border border-border">
+                        <div key={inspection.id} className="text-sm p-3 bg-primary rounded-lg border border-border">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="font-semibold text-text-primary flex items-center">
-                                        {item.type === 'license' ? <CertificateIcon className="w-4 h-4 mr-2" /> : <FireExtinguisherIcon className="w-4 h-4 mr-2" />}
-                                        {item.name}
+                                        <AgendaIcon className="w-4 h-4 mr-2" />
+                                        Vistoria Agendada
                                     </p>
                                     <p className="text-text-secondary text-xs mt-1">Cliente: {client?.name || 'N/A'}</p>
                                 </div>
                                 <div className={`text-right flex-shrink-0 ml-2`}>
-                                     <p className={`font-bold ${urgencyColor}`}>{daysLeft > 0 ? `Vence em ${daysLeft} dia(s)` : `Venceu`}</p>
-                                     <p className="text-xs text-text-secondary">{item.expiryDate.toLocaleDateString()}</p>
+                                     <p className={`font-bold ${urgencyColor}`}>{daysLeft > 0 ? `Em ${daysLeft} dia(s)` : `Hoje`}</p>
+                                     <p className="text-xs text-text-secondary">{inspectionDate.toLocaleDateString()}</p>
                                 </div>
-                            </div>
-                            <div className="flex justify-end mt-2">
-                                {item.type === 'license' ? (
-                                    <Button onClick={() => handleUpdateLicense({ ...item.original as License, status: LicenseStatus.Renovada })} variant="secondary" className="!py-1.5 !px-4 !text-xs">
-                                        Renovar
-                                    </Button>
-                                ) : (
-                                    <Button onClick={() => onScheduleForClient(item.clientId)} variant="secondary" className="!py-1.5 !px-4 !text-xs">
-                                       Agendar Vistoria
-                                    </Button>
-                                )}
                             </div>
                         </div>
                       )
-                  }) : <p className="text-text-secondary text-sm">Nenhum item vencendo nos próximos 90 dias.</p>}
+                  }) : <p className="text-text-secondary text-sm">Nenhuma vistoria agendada para os próximos dias.</p>}
               </div>
           </Card>
 
@@ -128,7 +94,7 @@ export const Dashboard = ({ setView, onScheduleForClient }: { setView: (view: Vi
 
       {/* Grid Buttons */}
       <div className="grid grid-cols-3 gap-3">
-        <DashboardGridButton label="Nova Vistoria" icon={<PlusIcon className="w-8 h-8" />} onClick={() => setView('agenda')} />
+        <DashboardGridButton label="Nova Vistoria" icon={<PlusIcon className="w-8 h-8" />} onClick={onNewInspection} />
         <DashboardGridButton label="Clientes" icon={<ClientsIcon className="w-8 h-8" />} onClick={() => setView('clients')} />
         <DashboardGridButton label="Cadastro de Equip." icon={<EquipmentIcon className="w-8 h-8" />} onClick={() => setView('equipment')} />
         <DashboardGridButton label="Agenda" icon={<AgendaIcon className="w-8 h-8" />} onClick={() => setView('agenda')} />

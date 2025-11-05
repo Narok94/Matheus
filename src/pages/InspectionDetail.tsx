@@ -14,7 +14,7 @@ export const InspectionDetail: React.FC<{
     const inspection = inspections.find(i => i.id === inspectionId);
 
     if (!inspection) {
-        return <div className="p-4 text-center text-text-secondary">Inspeção não encontrada.</div>;
+        return <div className="p-4 text-center text-text-secondary">Inspeção/Vistoria não encontrada.</div>;
     }
 
     const client = clients.find(c => c.id === inspection.clientId);
@@ -22,7 +22,7 @@ export const InspectionDetail: React.FC<{
 
     const handleStatusChange = (newStatus: InspectionStatus) => {
         handleUpdateInspection({ ...inspection, status: newStatus });
-        showToast(`Status da inspeção atualizado para "${newStatus}".`);
+        showToast(`Status da inspeção/vistoria atualizado para "${newStatus}".`);
     };
 
     const generateCertificate = () => {
@@ -33,12 +33,17 @@ export const InspectionDetail: React.FC<{
             showToast("Este certificado já foi gerado.", "error");
         }
     };
+    
+    const inspectionTime = inspection.time ? `às ${inspection.time}` : '';
+    const inspectionDate = parseLocalDate(inspection.date).toLocaleDateString('pt-BR', { dateStyle: 'full' });
+
 
     return (
         <div className="p-4 space-y-6">
             <div>
-                <p className="text-sm text-text-secondary">{parseLocalDate(inspection.date).toLocaleDateString('pt-BR', { dateStyle: 'full' })}</p>
+                <p className="text-sm text-text-secondary">{inspectionDate} {inspectionTime}</p>
                 <h1 className="text-2xl font-bold text-text-primary">{client?.name}</h1>
+                {inspection.address && <p className="text-sm text-text-secondary mt-1">{inspection.address}</p>}
                 <div className="mt-2">
                     {getStatusBadge(inspection.status)}
                 </div>
@@ -46,7 +51,7 @@ export const InspectionDetail: React.FC<{
 
             <Card title="Ações Rápidas">
                 <div className="space-y-4">
-                    <FormField label="Alterar Status da Inspeção">
+                    <FormField label="Alterar Status da Inspeção/Vistoria">
                         <Select 
                             value={inspection.status} 
                             onChange={(e) => handleStatusChange(e.target.value as InspectionStatus)}
@@ -91,12 +96,12 @@ export const InspectionDetail: React.FC<{
                         })}
                     </ul>
                 ) : (
-                    <p className="text-text-secondary text-sm">Nenhum equipamento vinculado a esta inspeção.</p>
+                    <p className="text-text-secondary text-sm">Nenhum equipamento vinculado a esta inspeção/vistoria.</p>
                 )}
             </Card>
 
             <Card title="Observações do Inspetor">
-                <p className="text-text-secondary text-sm">
+                <p className="text-text-secondary text-sm whitespace-pre-wrap">
                     {inspection.observations || "Nenhuma observação registrada."}
                 </p>
             </Card>
