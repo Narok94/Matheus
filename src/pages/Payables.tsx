@@ -45,6 +45,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     
     const [formType, setFormType] = useState<'single' | 'recurring'>('single');
+    const [dueDateType, setDueDateType] = useState<'fixed' | 'delivery'>('fixed');
 
     const initialExpenseState: Omit<Expense, 'id' | 'recurringPayableId'> = { description: '', value: 0, dueDate: new Date().toISOString().split('T')[0], status: PaymentStatus.Pendente, supplier: '', document: '', pixKey: '', paymentDate: '', isConditionalDueDate: false, dueDateCondition: '' };
     const [singleExpenseState, setSingleExpenseState] = useState(initialExpenseState);
@@ -61,11 +62,18 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                 } else { // It's an Expense
                     setFormType('single');
                     setSingleExpenseState(editingItem);
+                    if (editingItem.isConditionalDueDate) {
+                        setDueDateType('delivery');
+                    } else {
+                        setDueDateType('fixed');
+                    }
                 }
             } else {
                 setFormType('single');
-                setSingleExpenseState(initialExpenseState);
+                const today = new Date().toISOString().split('T')[0];
+                setSingleExpenseState({...initialExpenseState, dueDate: today});
                 setRecurringPayableState(initialRecurringState);
+                setDueDateType('fixed');
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -254,7 +262,69 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                 </div>
                             </FormField>
                             <FormField label="Valor (R$)"><Input type="number" step="0.01" value={singleExpenseState.value} onChange={e => setSingleExpenseState(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
-                            <FormField label="Data de Vencimento"><Input type="date" value={singleExpenseState.dueDate} onChange={e => setSingleExpenseState(p => ({ ...p, dueDate: e.target.value }))} required /></FormField>
+                            
+                            <FormField label="Opção de Vencimento">
+                                <div className="grid grid-cols-2 gap-2 mt-1">
+                                    <Button
+                                        type="button"
+                                        variant={dueDateType === 'fixed' ? 'primary' : 'secondary'}
+                                        onClick={() => {
+                                            setDueDateType('fixed');
+                                            setSingleExpenseState(p => ({
+                                                ...p,
+                                                isConditionalDueDate: false,
+                                                dueDateCondition: '',
+                                                dueDate: p.dueDate || new Date().toISOString().split('T')[0],
+                                            }));
+                                        }}
+                                        className="!py-2"
+                                    >
+                                        Data Fixa
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={dueDateType === 'delivery' ? 'primary' : 'secondary'}
+                                        onClick={() => {
+                                            setDueDateType('delivery');
+                                            setSingleExpenseState(p => ({
+                                                ...p,
+                                                isConditionalDueDate: true,
+                                                dueDateCondition: p.dueDateCondition || 'A combinar',
+                                                dueDate: '',
+                                            }));
+                                        }}
+                                        className="!py-2"
+                                    >
+                                        Na Entrega
+                                    </Button>
+                                </div>
+                            </FormField>
+
+                            {dueDateType === 'fixed' ? (
+                                <div className="animate-fade-in">
+                                    <FormField label="Data de Vencimento">
+                                        <Input
+                                            type="date"
+                                            value={singleExpenseState.dueDate}
+                                            onChange={e => setSingleExpenseState(p => ({ ...p, dueDate: e.target.value }))}
+                                            required
+                                        />
+                                    </FormField>
+                                </div>
+                            ) : (
+                                <div className="animate-fade-in">
+                                    <FormField label="Condição de Vencimento">
+                                        <Input
+                                            type="text"
+                                            value={singleExpenseState.dueDateCondition}
+                                            onChange={e => setSingleExpenseState(p => ({ ...p, dueDateCondition: e.target.value }))}
+                                            placeholder="Ex: Após aprovação da campanha"
+                                            required
+                                        />
+                                    </FormField>
+                                </div>
+                            )}
+
                             <FormField label="Status">
                                 <Select value={singleExpenseState.status} onChange={e => setSingleExpenseState(p => ({...p, status: e.target.value as PaymentStatus}))}>
                                     <option value={PaymentStatus.Pendente}>Pendente</option>

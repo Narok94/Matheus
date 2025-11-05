@@ -377,7 +377,7 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                                     setFormState(p => ({
                                         ...p,
                                         isConditionalDueDate: true,
-                                        dueDateCondition: 'Na Entrega',
+                                        dueDateCondition: p.dueDateCondition || 'Na Entrega',
                                         dueDate: '',
                                     }));
                                 }}
@@ -388,13 +388,25 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                         </div>
                     </FormField>
 
-                    {dueDateType === 'fixed' && (
+                    {dueDateType === 'fixed' ? (
                          <div className="animate-fade-in">
                             <FormField label="Data de Vencimento">
                                 <Input
                                     type="date"
                                     value={formState.dueDate}
                                     onChange={e => setFormState(p => ({ ...p, dueDate: e.target.value }))}
+                                    required
+                                />
+                            </FormField>
+                        </div>
+                    ) : (
+                        <div className="animate-fade-in">
+                            <FormField label="Condição de Vencimento">
+                                <Input
+                                    type="text"
+                                    value={formState.dueDateCondition}
+                                    onChange={e => setFormState(p => ({ ...p, dueDateCondition: e.target.value }))}
+                                    placeholder="Ex: Após entrega do alvará"
                                     required
                                 />
                             </FormField>
