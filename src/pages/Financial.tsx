@@ -75,9 +75,17 @@ const RecurringPayments: React.FC<{
         )
         .map(client => {
             const cycleStartDate = parseLocalDate(client.recurringCycleStart || new Date().toISOString());
-            const targetMonth = cycleStartDate.getMonth() + (client.paidInstallments || 0);
-            // This correctly handles year rollovers as well
-            const dueDate = new Date(cycleStartDate.getFullYear(), targetMonth, cycleStartDate.getDate());
+            const installmentsPaid = client.paidInstallments || 0;
+
+            // Cria uma nova data baseada na data de início para evitar mutação
+            const dueDate = new Date(cycleStartDate.getFullYear(), cycleStartDate.getMonth() + installmentsPaid, 1);
+            
+            // Pega o número de dias no mês de destino
+            const daysInMonth = new Date(dueDate.getFullYear(), dueDate.getMonth() + 1, 0).getDate();
+            
+            // Define o dia, garantindo que não ultrapasse o último dia do mês
+            dueDate.setDate(Math.min(cycleStartDate.getDate(), daysInMonth));
+            
             return { client, dueDate };
         })
         .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime()), [clients]);
