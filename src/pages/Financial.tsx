@@ -121,6 +121,7 @@ export const Financial: React.FC = () => {
     
     const initialRecordState: Omit<FinancialRecord, 'id'> = { clientId: '', inspectionId: '', description: '', value: 0, issueDate: new Date().toISOString().split('T')[0], dueDate: new Date().toISOString().split('T')[0], status: PaymentStatus.Pendente, paymentDate: '', isConditionalDueDate: false, dueDateCondition: '' };
     const [formState, setFormState] = useState(initialRecordState);
+    const [dueDateType, setDueDateType] = useState<'fixed' | 'delivery'>('fixed');
 
     useEffect(() => {
         if (isModalOpen) {
@@ -131,9 +132,15 @@ export const Financial: React.FC = () => {
                     isConditionalDueDate: editingRecord.isConditionalDueDate || false,
                     dueDateCondition: editingRecord.dueDateCondition || '',
                 });
+                if (editingRecord.isConditionalDueDate) {
+                    setDueDateType('delivery');
+                } else {
+                    setDueDateType('fixed');
+                }
             } else {
                 const today = new Date().toISOString().split('T')[0];
                 setFormState({ ...initialRecordState, issueDate: today, dueDate: today });
+                setDueDateType('fixed');
             }
         }
     }, [isModalOpen, editingRecord]);
@@ -245,43 +252,55 @@ export const Financial: React.FC = () => {
                         <FormField label="Data de Emissão"><Input type="date" value={formState.issueDate} onChange={e => setFormState(p => ({...p, issueDate: e.target.value}))} required /></FormField>
                     </div>
 
-                    <div className="p-3 bg-primary/50 rounded-lg space-y-3 border border-border">
-                        <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-text-secondary">Vencimento Condicional?</label>
-                            <ToggleSwitch 
-                                enabled={formState.isConditionalDueDate || false} 
-                                onChange={enabled => setFormState(p => ({
-                                    ...p, 
-                                    isConditionalDueDate: enabled,
-                                    dueDate: enabled ? '' : (p.dueDate || new Date().toISOString().split('T')[0]),
-                                }))} 
-                            />
+                    <FormField label="Tipo de Vencimento">
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                            <Button
+                                type="button"
+                                variant={dueDateType === 'fixed' ? 'primary' : 'secondary'}
+                                onClick={() => {
+                                    setDueDateType('fixed');
+                                    setFormState(p => ({
+                                        ...p,
+                                        isConditionalDueDate: false,
+                                        dueDateCondition: '',
+                                        dueDate: p.dueDate || new Date().toISOString().split('T')[0],
+                                    }));
+                                }}
+                                className="!py-2"
+                            >
+                                Data Fixa
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={dueDateType === 'delivery' ? 'primary' : 'secondary'}
+                                onClick={() => {
+                                    setDueDateType('delivery');
+                                    setFormState(p => ({
+                                        ...p,
+                                        isConditionalDueDate: true,
+                                        dueDateCondition: 'Na Entrega',
+                                        dueDate: '',
+                                    }));
+                                }}
+                                className="!py-2"
+                            >
+                                Na Entrega
+                            </Button>
                         </div>
+                    </FormField>
 
-                        {formState.isConditionalDueDate ? (
-                            <div className="animate-fade-in">
-                                <FormField label="Condição para Vencimento">
-                                    <Input 
-                                        value={formState.dueDateCondition} 
-                                        onChange={e => setFormState(p => ({...p, dueDateCondition: e.target.value}))} 
-                                        required 
-                                        placeholder="Ex: Entrega do documento X"
-                                    />
-                                </FormField>
-                            </div>
-                        ) : (
-                            <div className="animate-fade-in">
-                                <FormField label="Data de Vencimento">
-                                    <Input 
-                                        type="date" 
-                                        value={formState.dueDate} 
-                                        onChange={e => setFormState(p => ({...p, dueDate: e.target.value}))} 
-                                        required 
-                                    />
-                                </FormField>
-                            </div>
-                        )}
-                    </div>
+                    {dueDateType === 'fixed' && (
+                         <div className="animate-fade-in">
+                            <FormField label="Data de Vencimento">
+                                <Input
+                                    type="date"
+                                    value={formState.dueDate}
+                                    onChange={e => setFormState(p => ({ ...p, dueDate: e.target.value }))}
+                                    required
+                                />
+                            </FormField>
+                        </div>
+                    )}
 
                      <FormField label="Status">
                         <Select value={formState.status} onChange={e => setFormState(p => ({...p, status: e.target.value as PaymentStatus}))}>
