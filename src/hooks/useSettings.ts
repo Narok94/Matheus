@@ -14,17 +14,16 @@ export const useSettings = () => {
     const companyProfilePrefix = 'admin'; // Company profile is global
 
     const initialCompanyProfile = { name: 'MDS' };
-    const initialAppSettings: AppSettings = { reminders: true, dataProtectionEnabled: false };
 
     const [theme, setTheme, themeLoaded] = useIndexedDB<'light' | 'dark'>(`${userSpecificPrefix}-theme`, 'dark');
     const [companyProfile, setCompanyProfile, companyProfileLoaded] = useIndexedDB<CompanyProfile>(`${companyProfilePrefix}-companyProfile`, initialCompanyProfile);
-    const [appSettings, setAppSettings, appSettingsLoaded] = useIndexedDB<AppSettings>(`${userSpecificPrefix}-appSettings`, initialAppSettings);
+    const [appSettings, setAppSettings, appSettingsLoaded] = useIndexedDB<AppSettings>(`${userSpecificPrefix}-appSettings`, { reminders: true });
 
     const isSettingsLoading = !themeLoaded || !companyProfileLoaded || !appSettingsLoaded;
     
     const handleImportSettings = (parsedData: BackupData) => {
         setCompanyProfile(parsedData.companyProfile || { name: 'MDS' });
-        setAppSettings(parsedData.appSettings || initialAppSettings);
+        setAppSettings(parsedData.appSettings || { reminders: true });
     };
 
     const confirmAutoRestoreSettings = async () => {

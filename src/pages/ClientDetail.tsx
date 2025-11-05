@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { useSettings } from '../context/SettingsContext';
 import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch, Select } from '../components/common';
 import { AgendaIcon, DownloadIcon, EditIcon, TrashIcon, PlusIcon } from '../components/Icons';
 import { capitalizeWords, formatDocument, formatPhone, setWorksheetColumns, parseLocalDate } from '../utils';
@@ -15,7 +14,6 @@ export const ClientDetail: React.FC<{
         clients, equipment, clientEquipment, inspections, handleUpdateClient, handleDeleteClient, 
         handleAddClientEquipment, handleUpdateClientEquipment, handleDeleteClientEquipment 
     } = useData();
-    const { appSettings } = useSettings();
 
     const client = clients.find(c => c.id === clientId);
 
@@ -164,7 +162,7 @@ export const ClientDetail: React.FC<{
                     </div>
                     <div className="flex space-x-2">
                         <button onClick={() => setEditModalOpen(true)} className="p-2 text-text-secondary hover:text-accent"><EditIcon /></button>
-                        <button onClick={() => setDeleteModalOpen(true)} className="p-2 text-text-secondary hover:text-status-reproved disabled:opacity-50 disabled:cursor-not-allowed" disabled={appSettings.dataProtectionEnabled}><TrashIcon /></button>
+                        <button onClick={() => setDeleteModalOpen(true)} className="p-2 text-text-secondary hover:text-status-reproved"><TrashIcon /></button>
                     </div>
                 </div>
                  <div className="mt-4 text-sm text-text-secondary space-y-1">
@@ -217,7 +215,7 @@ export const ClientDetail: React.FC<{
                         </div>
                         <div className="flex justify-end space-x-2 mt-1">
                             <button onClick={() => { setEditingAsset(asset); setAssetModalOpen(true); }} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
-                            <button onClick={() => openDeleteAssetModal(asset)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved disabled:opacity-50 disabled:cursor-not-allowed" disabled={appSettings.dataProtectionEnabled}><TrashIcon className="w-4 h-4" /></button>
+                            <button onClick={() => openDeleteAssetModal(asset)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
                         </div>
                     </div>
                 )}) : <p className="text-text-secondary text-sm">Nenhum equipamento cadastrado.</p>}

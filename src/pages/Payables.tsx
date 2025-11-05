@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { useSettings } from '../context/SettingsContext';
 import { Card, EmptyState, FloatingActionButton, Modal, FormField, Input, Select, Button, ConfirmationModal, FinancialStatusBadge } from '../components/common';
 import { ArrowUpCircleIcon, PlusIcon, EditIcon, TrashIcon } from '../components/Icons';
 import { Expense, PaymentStatus } from '../../types';
@@ -8,7 +7,6 @@ import { parseLocalDate } from '../utils';
 
 export const Payables: React.FC = () => {
     const { expenses, handleAddExpense, handleUpdateExpense, handleDeleteExpense } = useData();
-    const { appSettings } = useSettings();
     const [isModalOpen, setModalOpen] = useState(false);
     const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -78,7 +76,7 @@ export const Payables: React.FC = () => {
                                 <FinancialStatusBadge record={rec} />
                                 <div className="flex space-x-2 mt-2">
                                     <button onClick={() => openEditModal(rec)} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
-                                    <button onClick={() => openDeleteConfirm(rec)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved disabled:opacity-50 disabled:cursor-not-allowed" disabled={appSettings.dataProtectionEnabled}><TrashIcon className="w-4 h-4" /></button>
+                                    <button onClick={() => openDeleteConfirm(rec)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
                                 </div>
                             </div>
                         </div>

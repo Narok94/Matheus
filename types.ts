@@ -163,7 +163,6 @@ export type CompanyProfile = {
 
 export type AppSettings = { 
     reminders: boolean; 
-    dataProtectionEnabled?: boolean;
 };
 
 export type PrefilledInspectionData = {
