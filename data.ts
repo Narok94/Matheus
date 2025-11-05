@@ -14,24 +14,22 @@ export const MOCK_CLIENTS: Client[] = [
     {
         id: 'cli-001', name: 'Lili Coutinho Bolos', document: '12.345.678/0001-90', address: 'Rua das Flores, 123', city: 'São Paulo',
         contactName: 'Lili Coutinho', contact: '(11) 98765-4321', email: 'contato@lilicoutinho.com',
-        isRecurring: true, recurringAmount: 150, recurringInstallments: 12, recurringCycleStart: formatDate(addDays(today, -60)), paidInstallments: 2,
     },
     {
         id: 'cli-002', name: 'IT De Moraes Me', document: '98.765.432/0001-10', address: 'Avenida Principal, 456', city: 'Rio de Janeiro',
-        contactName: 'Itamar de Moraes', contact: '(21) 91234-5678', email: 'itamar@moraesme.com', isRecurring: false,
+        contactName: 'Itamar de Moraes', contact: '(21) 91234-5678', email: 'itamar@moraesme.com',
     },
     {
         id: 'cli-003', name: 'Oficina Mecânica Veloz', document: '45.678.912/0001-33', address: 'Rua dos Motores, 789', city: 'Belo Horizonte',
-        contactName: 'Carlos Alberto', contact: '(31) 95555-1234', email: 'carlos@velozmecanica.com.br', isRecurring: false,
+        contactName: 'Carlos Alberto', contact: '(31) 95555-1234', email: 'carlos@velozmecanica.com.br',
     },
     {
         id: 'cli-004', name: 'Restaurante Sabor Divino', document: '23.456.789/0001-44', address: 'Praça da Gastronomia, 10', city: 'Curitiba',
         contactName: 'Ana Paula', contact: '(41) 98888-7777', email: 'ana.paula@sabordivino.com',
-        isRecurring: true, recurringAmount: 250, recurringInstallments: 6, recurringCycleStart: formatDate(addDays(today, -30)), paidInstallments: 1,
     },
     {
         id: 'cli-005', name: 'Condomínio Edifício Central', document: '34.567.891/0001-55', address: 'Rua Central, 1500', city: 'Porto Alegre',
-        contactName: 'Sra. Marta (Síndica)', contact: '(51) 97777-8888', email: 'sindica@edcentral.com', isRecurring: false,
+        contactName: 'Sra. Marta (Síndica)', contact: '(51) 97777-8888', email: 'sindica@edcentral.com',
     }
 ];
 

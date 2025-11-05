@@ -109,11 +109,23 @@ export const useData = () => {
         const newRecord: FinancialRecord = { ...recordData, id: `fin-${crypto.randomUUID()}` };
         setFinancial(prev => [...prev, newRecord]);
     };
+    const handleAddFinancials = (recordsData: Omit<FinancialRecord, 'id'>[]) => {
+        const newRecords: FinancialRecord[] = recordsData.map(data => ({ ...data, id: `fin-${crypto.randomUUID()}` }));
+        setFinancial(prev => [...prev, ...newRecords]);
+    };
      const handleUpdateFinancial = (updatedRecord: FinancialRecord) => {
         setFinancial(prev => prev.map(rec => rec.id === updatedRecord.id ? updatedRecord : rec));
     };
     const handleDeleteFinancial = (recordId: string) => {
         setFinancial(prev => prev.filter(rec => rec.id !== recordId));
+    };
+    const handleDeleteFinancialSeries = (groupId: string, fromInstance: number) => {
+        setFinancial(prev => prev.filter(rec => {
+            if (rec.recurringGroupId !== groupId) return true; // Not part of the series
+            if (rec.recurringInstance === undefined || rec.recurringInstance < fromInstance) return true; // Before the starting point
+            if (rec.status === PaymentStatus.Pago) return true; // Keep if it's already paid, regardless of instance
+            return false; // Otherwise, delete it
+        }));
     };
 
     // Expenses (Payables)
@@ -121,11 +133,23 @@ export const useData = () => {
         const newExpense: Expense = { ...expenseData, id: `exp-${crypto.randomUUID()}` };
         setExpenses(prev => [...prev, newExpense]);
     };
+    const handleAddExpenses = (expensesData: Omit<Expense, 'id'>[]) => {
+        const newExpenses: Expense[] = expensesData.map(data => ({ ...data, id: `exp-${crypto.randomUUID()}` }));
+        setExpenses(prev => [...prev, ...newExpenses]);
+    };
     const handleUpdateExpense = (updatedExpense: Expense) => {
         setExpenses(prev => prev.map(exp => exp.id === updatedExpense.id ? updatedExpense : exp));
     };
     const handleDeleteExpense = (expenseId: string) => {
         setExpenses(prev => prev.filter(exp => exp.id !== expenseId));
+    };
+    const handleDeleteExpenseSeries = (groupId: string, fromInstance: number) => {
+        setExpenses(prev => prev.filter(exp => {
+            if (exp.recurringGroupId !== groupId) return true;
+            if (exp.recurringInstance === undefined || exp.recurringInstance < fromInstance) return true;
+            if (exp.status === PaymentStatus.Pago) return true;
+            return false;
+        }));
     };
 
     // Certificate
@@ -147,42 +171,6 @@ export const useData = () => {
     // License
     const handleUpdateLicense = (updatedLicense: License) => {
         setLicenses(prev => prev.map(l => l.id === updatedLicense.id ? updatedLicense : l));
-    };
-    
-    const handleMarkInstallmentAsPaid = (clientId: string) => {
-        const client = clients.find(c => c.id === clientId);
-        if (!client || !client.isRecurring || !client.recurringAmount || !client.recurringInstallments || client.paidInstallments === undefined || !client.recurringCycleStart) {
-            return;
-        }
-
-        const currentPaidInstallments = client.paidInstallments || 0;
-        if (currentPaidInstallments >= client.recurringInstallments) {
-            return; // All paid
-        }
-
-        const newPaidCount = currentPaidInstallments + 1;
-        
-        // Create financial record
-        const issueDate = new Date();
-        const dueDate = new Date(client.recurringCycleStart);
-        dueDate.setMonth(dueDate.getMonth() + currentPaidInstallments);
-        dueDate.setDate(new Date(client.recurringCycleStart).getDate());
-
-        const newRecord: Omit<FinancialRecord, 'id'> = {
-            clientId: client.id,
-            inspectionId: `recorrente-${client.id}-${newPaidCount}`,
-            description: `Pagamento Recorrente - Parcela ${newPaidCount}/${client.recurringInstallments}`,
-            value: client.recurringAmount,
-            issueDate: issueDate.toISOString().split('T')[0],
-            dueDate: dueDate.toISOString().split('T')[0],
-            paymentDate: issueDate.toISOString().split('T')[0],
-            status: PaymentStatus.Pago,
-        };
-        handleAddFinancial(newRecord);
-
-        // Update client
-        const updatedClient = { ...client, paidInstallments: newPaidCount };
-        handleUpdateClient(updatedClient);
     };
 
     // --- Data Handlers ---
@@ -231,15 +219,13 @@ export const useData = () => {
         // Inspection
         handleAddInspection, handleUpdateInspection,
         // Financial
-        handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial,
+        handleAddFinancial, handleAddFinancials, handleUpdateFinancial, handleDeleteFinancial, handleDeleteFinancialSeries,
         // Expense
-        handleAddExpense, handleUpdateExpense, handleDeleteExpense,
+        handleAddExpense, handleAddExpenses, handleUpdateExpense, handleDeleteExpense, handleDeleteExpenseSeries,
         // Certificate
         handleAddCertificate,
         // License
         handleUpdateLicense,
-        // Recurring Payment
-        handleMarkInstallmentAsPaid,
         // Data
         handleImportData,
         lastBackupTimestamp,

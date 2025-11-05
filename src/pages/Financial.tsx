@@ -1,11 +1,19 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { PaymentStatus, FinancialRecord, Client } from '../../types';
-import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus, ConfirmationModal } from '../components/common';
+import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus, ConfirmationModalWithSeriesDelete, ToggleSwitch } from '../components/common';
 import { FinancialIcon, PlusIcon, AgendaIcon, EditIcon, TrashIcon } from '../components/Icons';
 import { parseLocalDate } from '../utils';
 
 type FinancialStatusFilter = PaymentStatus | 'Atrasado' | 'Condicional' | 'all';
+
+type RecurrenceFormState = {
+    isRecurring: boolean;
+    frequency: 'monthly' | 'quarterly' | 'annually';
+    durationType: 'installments' | 'date' | 'indefinite';
+    installments: number;
+    endDate: string;
+}
 
 const StatusFilter: React.FC<{
     selectedStatus: FinancialStatusFilter;
@@ -61,70 +69,20 @@ const FinancialChart = ({ received, pending }: { received: number; pending: numb
     );
 };
 
-const RecurringPayments: React.FC<{
-    clients: Client[];
-    onMarkAsPaid: (clientId: string) => void;
-}> = ({ clients, onMarkAsPaid }) => {
-    const recurringClients = clients.filter(c =>
-        c.isRecurring &&
-        c.recurringInstallments !== undefined &&
-        c.paidInstallments !== undefined &&
-        c.paidInstallments < c.recurringInstallments
-    );
-
-    if (recurringClients.length === 0) {
-        return <p className="text-text-secondary text-sm">Nenhum pagamento recorrente pendente.</p>;
-    }
-
-    return (
-        <div className="space-y-3">
-            {recurringClients.map(client => {
-                const currentInstallment = (client.paidInstallments || 0) + 1;
-                const totalInstallments = client.recurringInstallments || 0;
-                
-                const cycleStartDate = parseLocalDate(client.recurringCycleStart || new Date().toISOString());
-                const dueDate = new Date(cycleStartDate.getTime());
-                dueDate.setMonth(dueDate.getMonth() + (client.paidInstallments || 0));
-                dueDate.setDate(cycleStartDate.getDate());
-
-                return (
-                    <div key={client.id} className="p-3 bg-primary rounded-lg border border-border">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="font-semibold text-text-primary">{client.name}</p>
-                                <p className="text-sm text-text-secondary">R$ {client.recurringAmount?.toFixed(2).replace('.', ',')}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="font-bold text-text-primary">Parcela {currentInstallment}/{totalInstallments}</p>
-                                <p className="text-xs text-text-secondary">Venc.: {dueDate.toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                        <div className="flex justify-end mt-2">
-                            <Button onClick={() => onMarkAsPaid(client.id)} variant="secondary" className="!py-1.5 !px-4 !text-xs">
-                                Marcar como Pago
-                            </Button>
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
-};
-
-
 export const Financial: React.FC = () => {
-    const { financial, clients, handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial, handleMarkInstallmentAsPaid } = useData();
+    const { financial, clients, handleAddFinancial, handleAddFinancials, handleUpdateFinancial, handleDeleteFinancial, handleDeleteFinancialSeries } = useData();
     const [isModalOpen, setModalOpen] = useState(false);
     const [filter, setFilter] = useState<FinancialStatusFilter>('all');
     const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
-    const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [recordToDelete, setRecordToDelete] = useState<FinancialRecord | null>(null);
     
     const initialRecordState: Omit<FinancialRecord, 'id'> = { clientId: '', inspectionId: '', description: '', value: 0, issueDate: new Date().toISOString().split('T')[0], dueDate: new Date().toISOString().split('T')[0], status: PaymentStatus.Pendente, paymentDate: '', isConditionalDueDate: false, dueDateCondition: '' };
     const [formState, setFormState] = useState(initialRecordState);
-    const [dueDateType, setDueDateType] = useState<'fixed' | 'delivery'>('fixed');
+    const [recurrenceState, setRecurrenceState] = useState<RecurrenceFormState>({ isRecurring: false, frequency: 'monthly', durationType: 'installments', installments: 12, endDate: ''});
 
     useEffect(() => {
         if (isModalOpen) {
+            setRecurrenceState({ isRecurring: false, frequency: 'monthly', durationType: 'installments', installments: 12, endDate: ''});
             if (editingRecord) {
                 setFormState({
                     ...editingRecord,
@@ -132,15 +90,9 @@ export const Financial: React.FC = () => {
                     isConditionalDueDate: editingRecord.isConditionalDueDate || false,
                     dueDateCondition: editingRecord.dueDateCondition || '',
                 });
-                if (editingRecord.isConditionalDueDate) {
-                    setDueDateType('delivery');
-                } else {
-                    setDueDateType('fixed');
-                }
             } else {
                 const today = new Date().toISOString().split('T')[0];
                 setFormState({ ...initialRecordState, issueDate: today, dueDate: today });
-                setDueDateType('fixed');
             }
         }
     }, [isModalOpen, editingRecord]);
@@ -166,7 +118,51 @@ export const Financial: React.FC = () => {
     
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (editingRecord) {
+
+        if (recurrenceState.isRecurring && !editingRecord) {
+            // Generate multiple records
+            const recordsToCreate: Omit<FinancialRecord, 'id'>[] = [];
+            const recurringGroupId = crypto.randomUUID();
+            const startDate = parseLocalDate(formState.dueDate);
+            let totalInstallments = 0;
+
+            if (recurrenceState.durationType === 'installments') {
+                totalInstallments = recurrenceState.installments;
+            } else if (recurrenceState.durationType === 'date') {
+                const endDate = parseLocalDate(recurrenceState.endDate);
+                let count = 0;
+                let currentDate = new Date(startDate);
+                while (currentDate <= endDate) {
+                    count++;
+                    if (recurrenceState.frequency === 'monthly') currentDate.setMonth(currentDate.getMonth() + 1);
+                    else if (recurrenceState.frequency === 'quarterly') currentDate.setMonth(currentDate.getMonth() + 3);
+                    else if (recurrenceState.frequency === 'annually') currentDate.setFullYear(currentDate.getFullYear() + 1);
+                }
+                totalInstallments = count;
+            } else { // indefinite
+                totalInstallments = 60; // 5 years
+            }
+            
+            for (let i = 0; i < totalInstallments; i++) {
+                const newDueDate = new Date(startDate);
+                if (recurrenceState.frequency === 'monthly') newDueDate.setMonth(startDate.getMonth() + i);
+                else if (recurrenceState.frequency === 'quarterly') newDueDate.setMonth(startDate.getMonth() + i * 3);
+                else if (recurrenceState.frequency === 'annually') newDueDate.setFullYear(startDate.getFullYear() + i);
+                
+                recordsToCreate.push({
+                    ...formState,
+                    description: `${formState.description} (${recurrenceState.durationType !== 'indefinite' ? `Parcela ${i+1}/${totalInstallments}` : `Recorrente`})`,
+                    dueDate: newDueDate.toISOString().split('T')[0],
+                    status: PaymentStatus.Pendente,
+                    paymentDate: '',
+                    recurringGroupId,
+                    recurringInstance: i + 1,
+                    recurringTotalInstances: recurrenceState.durationType !== 'indefinite' ? totalInstallments : undefined,
+                });
+            }
+            handleAddFinancials(recordsToCreate);
+
+        } else if (editingRecord) {
             handleUpdateFinancial({ ...formState, id: editingRecord.id });
         } else {
             handleAddFinancial(formState);
@@ -180,24 +176,25 @@ export const Financial: React.FC = () => {
     };
 
     const openDeleteConfirm = (rec: FinancialRecord) => {
-        setEditingRecord(rec);
-        setDeleteConfirmOpen(true);
+        setRecordToDelete(rec);
     };
 
-    const confirmDelete = () => {
-        if (editingRecord) {
-            handleDeleteFinancial(editingRecord.id);
+    const confirmDeleteSingle = () => {
+        if (recordToDelete) {
+            handleDeleteFinancial(recordToDelete.id);
         }
-        setDeleteConfirmOpen(false);
-        setEditingRecord(null);
+        setRecordToDelete(null);
     };
+
+    const confirmDeleteSeries = () => {
+        if (recordToDelete?.recurringGroupId && recordToDelete?.recurringInstance) {
+            handleDeleteFinancialSeries(recordToDelete.recurringGroupId, recordToDelete.recurringInstance);
+        }
+        setRecordToDelete(null);
+    }
 
     return (
         <div className="p-4 space-y-6">
-            <Card title="Pagamentos Recorrentes" collapsible>
-                <RecurringPayments clients={clients} onMarkAsPaid={handleMarkInstallmentAsPaid} />
-            </Card>
-
             <Card title="💰 Resumo Financeiro" collapsible>
                <FinancialChart received={financialSummary.received} pending={financialSummary.pending} />
             </Card>
@@ -230,7 +227,7 @@ export const Financial: React.FC = () => {
                                 </div>
                             </div>
                             <div className="flex justify-end space-x-2 mt-2 border-t border-border pt-2">
-                                <button onClick={() => openModal(rec)} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
+                                <button onClick={() => openModal(rec)} className="p-1.5 hover:bg-primary rounded-full" disabled={!!rec.recurringGroupId}><EditIcon className={rec.recurringGroupId ? 'text-gray-400' : ''}/></button>
                                 <button onClick={() => openDeleteConfirm(rec)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
                             </div>
                         </Card>
@@ -252,55 +249,38 @@ export const Financial: React.FC = () => {
                         <FormField label="Data de Emissão"><Input type="date" value={formState.issueDate} onChange={e => setFormState(p => ({...p, issueDate: e.target.value}))} required /></FormField>
                     </div>
 
-                    <FormField label="Opção de Vencimento">
-                        <div className="grid grid-cols-2 gap-2 mt-1">
-                            <Button
-                                type="button"
-                                variant={dueDateType === 'fixed' ? 'primary' : 'secondary'}
-                                onClick={() => {
-                                    setDueDateType('fixed');
-                                    setFormState(p => ({
-                                        ...p,
-                                        isConditionalDueDate: false,
-                                        dueDateCondition: '',
-                                        dueDate: p.dueDate || new Date().toISOString().split('T')[0],
-                                    }));
-                                }}
-                                className="!py-2"
-                            >
-                                Data Fixa
-                            </Button>
-                            <Button
-                                type="button"
-                                variant={dueDateType === 'delivery' ? 'primary' : 'secondary'}
-                                onClick={() => {
-                                    setDueDateType('delivery');
-                                    setFormState(p => ({
-                                        ...p,
-                                        isConditionalDueDate: true,
-                                        dueDateCondition: 'Na Entrega',
-                                        dueDate: '',
-                                    }));
-                                }}
-                                className="!py-2"
-                            >
-                                Na Entrega
-                            </Button>
-                        </div>
-                    </FormField>
-
-                    {dueDateType === 'fixed' && (
-                         <div className="animate-fade-in">
-                            <FormField label="Data de Vencimento">
-                                <Input
-                                    type="date"
-                                    value={formState.dueDate}
-                                    onChange={e => setFormState(p => ({ ...p, dueDate: e.target.value }))}
-                                    required
-                                />
-                            </FormField>
+                    {!editingRecord && (
+                        <div className="pt-2 space-y-4">
+                            <div className="flex items-center justify-between p-3 bg-primary/50 rounded-lg">
+                                <label className="text-sm font-medium text-text-secondary">É uma transação recorrente?</label>
+                                <ToggleSwitch enabled={recurrenceState.isRecurring} onChange={enabled => setRecurrenceState(p => ({...p, isRecurring: enabled}))} />
+                            </div>
+                            {recurrenceState.isRecurring && (
+                                <div className="p-4 border border-border rounded-lg space-y-4 animate-fade-in">
+                                    <p className="text-xs text-text-secondary">A data de vencimento abaixo será usada como data de início para a primeira parcela.</p>
+                                    <FormField label="Frequência">
+                                        <Select value={recurrenceState.frequency} onChange={e => setRecurrenceState(p => ({...p, frequency: e.target.value as any}))}>
+                                            <option value="monthly">Mensal</option>
+                                            <option value="quarterly">Trimestral</option>
+                                            <option value="annually">Anual</option>
+                                        </Select>
+                                    </FormField>
+                                    <FormField label="Duração">
+                                        <div className="flex space-x-4">
+                                            <label className="flex items-center"><input type="radio" name="durationType" value="installments" checked={recurrenceState.durationType === 'installments'} onChange={e => setRecurrenceState(p => ({...p, durationType: e.target.value as any}))} className="mr-2"/> N° de Parcelas</label>
+                                            <label className="flex items-center"><input type="radio" name="durationType" value="date" checked={recurrenceState.durationType === 'date'} onChange={e => setRecurrenceState(p => ({...p, durationType: e.target.value as any}))} className="mr-2"/> Data Final</label>
+                                            <label className="flex items-center"><input type="radio" name="durationType" value="indefinite" checked={recurrenceState.durationType === 'indefinite'} onChange={e => setRecurrenceState(p => ({...p, durationType: e.target.value as any}))} className="mr-2"/> Indefinido</label>
+                                        </div>
+                                    </FormField>
+                                    {recurrenceState.durationType === 'installments' && <FormField label="Total de Parcelas"><Input type="number" value={recurrenceState.installments} onChange={e => setRecurrenceState(p => ({...p, installments: parseInt(e.target.value, 10) || 1}))} /></FormField>}
+                                    {recurrenceState.durationType === 'date' && <FormField label="Data Final"><Input type="date" value={recurrenceState.endDate} onChange={e => setRecurrenceState(p => ({...p, endDate: e.target.value}))} /></FormField>}
+                                    {recurrenceState.durationType === 'indefinite' && <p className="text-xs text-text-secondary p-2 bg-primary/50 rounded-md">Serão geradas cobranças para os próximos 5 anos.</p>}
+                                </div>
+                            )}
                         </div>
                     )}
+                    
+                    <FormField label="Data de Vencimento"><Input type="date" value={formState.dueDate} onChange={e => setFormState(p => ({...p, dueDate: e.target.value}))} required /></FormField>
 
                      <FormField label="Status">
                         <Select value={formState.status} onChange={e => setFormState(p => ({...p, status: e.target.value as PaymentStatus}))}>
@@ -316,12 +296,19 @@ export const Financial: React.FC = () => {
                     <div className="flex justify-end pt-4"><Button type="submit">{editingRecord ? 'Salvar Alterações' : 'Salvar Registro'}</Button></div>
                  </form>
              </Modal>
-              <ConfirmationModal 
-                isOpen={isDeleteConfirmOpen}
-                onClose={() => setDeleteConfirmOpen(false)}
-                onConfirm={confirmDelete}
+              <ConfirmationModalWithSeriesDelete 
+                isOpen={!!recordToDelete}
+                onClose={() => setRecordToDelete(null)}
+                onConfirmSingle={confirmDeleteSingle}
+                onConfirmSeries={confirmDeleteSeries}
                 title="Confirmar Exclusão"
-                message={`Tem certeza que deseja excluir o registro "${editingRecord?.description}"?`}
+                message={
+                    recordToDelete?.recurringGroupId ? (
+                        <p>Este registro faz parte de uma série recorrente. Você deseja excluir apenas esta instância ou esta e todas as futuras cobranças <strong className="text-status-reproved">pendentes</strong>?</p>
+                    ) : (
+                        `Tem certeza que deseja excluir o registro "${recordToDelete?.description}"?`
+                    )
+                }
             />
         </div>
     );

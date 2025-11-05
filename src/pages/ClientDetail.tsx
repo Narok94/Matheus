@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch, Select } from '../components/common';
+import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, Select } from '../components/common';
 import { AgendaIcon, DownloadIcon, EditIcon, TrashIcon, PlusIcon } from '../components/Icons';
 import { capitalizeWords, formatDocument, formatPhone, setWorksheetColumns, parseLocalDate } from '../utils';
 import { Client, ClientEquipment, InspectionStatus } from '../../types';
@@ -56,18 +56,8 @@ export const ClientDetail: React.FC<{
         if (name === 'document') formattedValue = formatDocument(value);
         if (name === 'contact') formattedValue = formatPhone(value);
         if (['name', 'address', 'city', 'contactName'].includes(name)) formattedValue = capitalizeWords(value);
-        if (['recurringAmount', 'recurringInstallments', 'paidInstallments'].includes(name)) formattedValue = parseInt(value, 10) || 0;
-
+        
         setEditedClient(prev => prev ? ({ ...prev, [name]: formattedValue }) : prev);
-    };
-
-     const handleRecurringToggle = (enabled: boolean) => {
-        setEditedClient(prev => prev ? ({
-            ...prev,
-            isRecurring: enabled,
-            recurringAmount: enabled ? (prev.recurringAmount || 0) : 0,
-            recurringInstallments: enabled ? (prev.recurringInstallments || 0) : 0,
-        }) : prev);
     };
 
     const handleUpdate = (e: React.FormEvent) => {
@@ -182,25 +172,6 @@ export const ClientDetail: React.FC<{
                 </Button>
             </div>
 
-            {client.isRecurring && (
-                <Card title="Plano de Pagamento Recorrente" collapsible>
-                    <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-text-secondary">Valor Mensal:</span>
-                            <span className="font-semibold text-text-primary">R$ {client.recurringAmount?.toFixed(2).replace('.',',')}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-text-secondary">Progresso:</span>
-                            <span className="font-semibold text-text-primary">{client.paidInstallments || 0} / {client.recurringInstallments} parcelas pagas</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-text-secondary">Início do Ciclo:</span>
-                            <span className="font-semibold text-text-primary">{client.recurringCycleStart ? parseLocalDate(client.recurringCycleStart).toLocaleDateString() : 'N/A'}</span>
-                        </div>
-                    </div>
-                </Card>
-            )}
-
             <Card title={`Equipamentos do Cliente (${clientAssets.length})`} collapsible actions={<Button variant="secondary" className="!py-1 !px-3 !text-xs" onClick={() => setAssetModalOpen(true)}><PlusIcon className="w-4 h-4 mr-1" /> Adicionar</Button>}>
                 {clientAssets.length > 0 ? clientAssets.map(asset => {
                     const product = equipment.find(p => p.id === asset.equipmentId);
@@ -243,23 +214,6 @@ export const ClientDetail: React.FC<{
                     <FormField label="Telefone de Contato"><Input name="contact" type="tel" value={editedClient.contact} onChange={handleInputChange} required /></FormField>
                     <FormField label="Email"><Input name="email" type="email" value={editedClient.email} onChange={handleInputChange} /></FormField>
                     
-                    <div className="pt-4 space-y-4">
-                        <div className="flex items-center justify-between p-3 bg-primary/50 rounded-lg">
-                            <label className="text-sm font-medium text-text-secondary">Pagamento Recorrente?</label>
-                            <ToggleSwitch enabled={editedClient.isRecurring || false} onChange={handleRecurringToggle} />
-                        </div>
-
-                        {editedClient.isRecurring && (
-                            <div className="p-4 border border-border rounded-lg space-y-4 animate-fade-in">
-                                <FormField label="Valor Mensal (R$)"><Input type="number" step="0.01" name="recurringAmount" value={editedClient.recurringAmount || ''} onChange={handleInputChange} required /></FormField>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField label="Total de Parcelas"><Input type="number" name="recurringInstallments" value={editedClient.recurringInstallments || ''} onChange={handleInputChange} required /></FormField>
-                                    <FormField label="Parcelas Pagas"><Input type="number" name="paidInstallments" value={editedClient.paidInstallments || 0} onChange={handleInputChange} required /></FormField>
-                                </div>
-                                <FormField label="Início da Cobrança"><Input type="date" name="recurringCycleStart" value={editedClient.recurringCycleStart || ''} onChange={handleInputChange} required /></FormField>
-                            </div>
-                        )}
-                    </div>
                     <div className="flex justify-end pt-4"><Button type="submit">Salvar Alterações</Button></div>
                 </form>
             </Modal>

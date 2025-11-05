@@ -36,11 +36,6 @@ export interface Client {
   contactName: string;
   contact: string; // Phone
   email: string;
-  isRecurring?: boolean;
-  recurringAmount?: number;
-  recurringInstallments?: number; // Total de parcelas
-  recurringCycleStart?: string; // Data de início da cobrança
-  paidInstallments?: number; // Parcelas pagas
 }
 
 // Represents a product in the catalog.
@@ -107,6 +102,9 @@ export interface FinancialRecord {
   status: PaymentStatus;
   isConditionalDueDate?: boolean;
   dueDateCondition?: string;
+  recurringGroupId?: string;
+  recurringInstance?: number;
+  recurringTotalInstances?: number;
 }
 
 export interface License {
@@ -134,6 +132,9 @@ export interface Expense { // For "Contas a Pagar"
   dueDate: string;
   paymentDate?: string;
   status: PaymentStatus;
+  recurringGroupId?: string;
+  recurringInstance?: number;
+  recurringTotalInstances?: number;
 }
 
 export type ToastMessage = {
