@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, DeliveryStatus, InspectionStatus } from '../../types';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
-import { Card, Button } from '../components/common';
+import { Card } from '../components/common';
 import { PlusIcon, ClientsIcon, EquipmentIcon, AgendaIcon, ReportsIcon, SettingsIcon, CertificateIcon, ArrowUpCircleIcon, ArrowDownCircleIcon } from '../components/Icons';
 import { parseLocalDate } from '../utils';
 
@@ -16,7 +16,7 @@ const DashboardGridButton = ({ label, icon, onClick }: { label: string, icon: Re
 
 const daysUntil = (date: Date) => Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
-export const Dashboard = ({ setView, onScheduleForClient, onNewInspection }: { setView: (view: View) => void; onScheduleForClient: (clientId: string) => void; onNewInspection: () => void; }) => {
+export const Dashboard = ({ setView, onNewInspection }: { setView: (view: View) => void; onNewInspection: () => void; }) => {
   const { clients, deliveries, inspections } = useData();
   const { currentUserDetails } = useAuth();
   

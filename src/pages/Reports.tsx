@@ -17,7 +17,7 @@ export const Reports: React.FC = () => {
                 "Número de Série": asset.serialNumber,
                 "Cliente": client?.name || 'N/A',
                 "Status": asset.status,
-                "Data de Vencimento": parseLocalDate(asset.expiryDate),
+                "Data de Vencimento": asset.expiryDate ? parseLocalDate(asset.expiryDate) : 'N/A',
                 "Última Inspeção": asset.lastInspectionDate ? parseLocalDate(asset.lastInspectionDate) : 'N/A',
             };
         });
@@ -30,7 +30,7 @@ export const Reports: React.FC = () => {
             const rowIndex = index + 2;
             const expiryCell = `E${rowIndex}`;
             const lastInspectionCell = `F${rowIndex}`;
-            if(worksheet[expiryCell]) {
+            if(worksheet[expiryCell] && worksheet[expiryCell].v !== 'N/A') {
                  worksheet[expiryCell].t = 'd';
                  worksheet[expiryCell].z = 'dd/mm/yyyy';
             }

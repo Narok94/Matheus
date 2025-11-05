@@ -233,7 +233,7 @@ const AppContent: React.FC = () => {
 
     const renderView = () => {
         switch (currentView) {
-            case 'dashboard': return <Dashboard setView={handleSetView} onScheduleForClient={handleScheduleForClient} onNewInspection={handleNewInspection} />;
+            case 'dashboard': return <Dashboard setView={handleSetView} onNewInspection={handleNewInspection} />;
             case 'clients': return <Clients onViewClient={handleViewClient} />;
             case 'equipment': return <Equipments showToast={showToast} />;
             case 'agenda': return <Agenda action={agendaAction} onActionHandled={() => setAgendaAction(null)} showToast={showToast} onViewInspection={handleViewInspection} />;
@@ -251,7 +251,7 @@ const AppContent: React.FC = () => {
             case 'certificateDetail':
                 if (detailView?.type !== 'certificate') return <p>Erro: Certificado não especificado.</p>;
                 return <CertificateDetail certificateId={detailView.id} />;
-            default: return <Dashboard setView={handleSetView} onScheduleForClient={handleScheduleForClient} onNewInspection={handleNewInspection} />;
+            default: return <Dashboard setView={handleSetView} onNewInspection={handleNewInspection} />;
         }
     };
 
