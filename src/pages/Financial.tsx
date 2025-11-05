@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { PaymentStatus, FinancialRecord, Client } from '../../types';
-import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus, ConfirmationModal, ToggleSwitch } from '../components/common';
+import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus, ConfirmationModal } from '../components/common';
 import { FinancialIcon, PlusIcon, AgendaIcon, EditIcon, TrashIcon } from '../components/Icons';
 import { parseLocalDate } from '../utils';
 
@@ -221,9 +221,9 @@ export const Financial: React.FC = () => {
                                     <div className="flex items-center justify-end text-xs text-text-secondary mb-1">
                                         <AgendaIcon className="w-3 h-3 mr-1.5" />
                                         {rec.isConditionalDueDate ? (
-                                            <span className="italic" title={rec.dueDateCondition}>{rec.dueDateCondition && rec.dueDateCondition.length > 30 ? `${rec.dueDateCondition.substring(0, 30)}...` : rec.dueDateCondition}</span>
+                                            <span>Vencimento: {rec.dueDateCondition}</span>
                                         ) : (
-                                            <span>Venc.: {parseLocalDate(rec.dueDate).toLocaleDateString()}</span>
+                                            <span>Vencimento: {parseLocalDate(rec.dueDate).toLocaleDateString()}</span>
                                         )}
                                     </div>
                                     <FinancialStatusBadge record={rec} />
@@ -252,7 +252,7 @@ export const Financial: React.FC = () => {
                         <FormField label="Data de Emissão"><Input type="date" value={formState.issueDate} onChange={e => setFormState(p => ({...p, issueDate: e.target.value}))} required /></FormField>
                     </div>
 
-                    <FormField label="Tipo de Vencimento">
+                    <FormField label="Opção de Vencimento">
                         <div className="grid grid-cols-2 gap-2 mt-1">
                             <Button
                                 type="button"
