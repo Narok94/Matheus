@@ -31,38 +31,8 @@ const StatusFilter: React.FC<{
     );
 };
 
-
-const FinancialChart = ({ received, pending }: { received: number; pending: number; }) => {
-    const total = received + pending;
-    if (total === 0) {
-        return <div className="text-center text-text-secondary p-4">Nenhum dado financeiro para exibir.</div>;
-    }
-    const receivedPercent = (received / total) * 100;
-    
-    return (
-        <div className="space-y-4">
-            <div className="w-full bg-primary rounded-full h-4 flex overflow-hidden border border-border">
-                <div style={{ width: `${receivedPercent}%` }} className="bg-status-approved transition-all duration-500 rounded-full" />
-            </div>
-            <div className="flex justify-between text-sm">
-                 <div className="flex items-center">
-                    <span className="w-3 h-3 rounded-full bg-status-approved mr-2"></span>
-                    <div>
-                        <p className="text-text-secondary">Recebido</p>
-                        <p className="font-bold text-text-primary">R$ {received.toFixed(2).replace('.', ',')}</p>
-                    </div>
-                 </div>
-                 <div className="text-right">
-                    <p className="text-text-secondary">Pendente</p>
-                    <p className="font-bold text-text-primary">R$ {pending.toFixed(2).replace('.', ',')}</p>
-                 </div>
-            </div>
-        </div>
-    );
-};
-
 export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ showToast }) => {
-    const { financial, clients, handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial, handleMarkInstallmentAsPaid, handleUpdateClient } = useData();
+    const { financial, clients, handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial, handleMarkInstallmentAsPaid } = useData();
     const [isModalOpen, setModalOpen] = useState(false);
     const [filter, setFilter] = useState<FinancialStatusFilter>('all');
     const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
@@ -93,12 +63,6 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
             }
         }
     }, [isModalOpen, editingRecord]);
-    
-    const financialSummary = financial.reduce((acc, record) => {
-        if (record.status === PaymentStatus.Pago) acc.received += record.value;
-        if (record.status === PaymentStatus.Pendente) acc.pending += record.value;
-        return acc;
-    }, { received: 0, pending: 0 });
 
     const filteredFinancial = useMemo(() => {
         const recurringVirtualRecords: (FinancialRecord & { isRecurringPayment?: boolean })[] = clients
@@ -173,17 +137,13 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
 
     const confirmDelete = () => {
         if (editingRecord) {
-            if (editingRecord.inspectionId.startsWith('recorrente-')) {
-                const client = clients.find(c => c.id === editingRecord.clientId);
-                if (client && client.isRecurring && (client.paidInstallments || 0) > 0) {
-                     handleUpdateClient({
-                        ...client,
-                        paidInstallments: (client.paidInstallments || 0) - 1,
-                    });
-                     showToast('Parcela estornada do cliente.', 'success');
-                }
-            }
+            const isRecurringReversal = editingRecord.inspectionId.startsWith('recorrente-');
             handleDeleteFinancial(editingRecord.id);
+            if(isRecurringReversal){
+                showToast('Parcela estornada com sucesso.', 'success');
+            } else {
+                showToast('Registro excluído com sucesso.', 'success');
+            }
         }
         setDeleteConfirmOpen(false);
         setEditingRecord(null);
@@ -195,14 +155,8 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
     };
 
     return (
-        <div className="p-4 space-y-6">
-            <Card title="💰 Resumo Financeiro" collapsible>
-               <FinancialChart received={financialSummary.received} pending={financialSummary.pending} />
-            </Card>
-
-            <div>
-                <StatusFilter selectedStatus={filter} onStatusChange={setFilter} />
-            </div>
+        <div className="p-4 space-y-4">
+            <StatusFilter selectedStatus={filter} onStatusChange={setFilter} />
 
             <div className="space-y-4">
                 {filteredFinancial.length > 0 ? filteredFinancial.map(rec => {
