@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import { Card, EmptyState, FloatingActionButton, Modal, FormField, Input, Select, Button, ConfirmationModal, FinancialStatusBadge, getFinancialStatus } from '../components/common';
-import { ArrowUpCircleIcon, PlusIcon, EditIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons';
+import { ArrowUpCircleIcon, PlusIcon, EditIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, ClipboardIcon } from '../components/Icons';
 import { Expense, PaymentStatus, RecurringPayable } from '../../types';
 import { parseLocalDate, formatDocument } from '../utils';
 
@@ -99,7 +99,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                     isVirtual: true,
                     masterId: payable.id, // to find the original payable
                 };
-            }).filter(Boolean) as (Expense & { isVirtual?: boolean, masterId?: string })[];
+            }).filter(Boolean);
         }
 
         let records = expenses.filter(e => !e.recurringPayableId);
@@ -170,7 +170,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
         if (!text) return;
         navigator.clipboard.writeText(text).then(() => {
             showToast('Chave Pix copiada!', 'success');
-        }, (err) => {
+        }, () => {
             showToast('Falha ao copiar Chave Pix.', 'error');
         });
     };
@@ -199,6 +199,14 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                     <h4 className="font-semibold text-text-primary">R$ {rec.value.toFixed(2).replace('.', ',')}</h4>
                                     <p className="text-sm text-text-secondary">{rec.description}</p>
                                     {rec.supplier && <p className="text-xs text-text-secondary">Fornecedor: {rec.supplier} {rec.document && `(${rec.document})`}</p>}
+                                    {rec.pixKey && (
+                                        <div className="text-xs text-text-secondary flex items-center mt-1">
+                                            <span>Pix: {rec.pixKey}</span>
+                                            <button onClick={() => handleCopy(rec.pixKey!)} className="ml-2 p-1 hover:bg-primary rounded-full text-text-secondary hover:text-accent" aria-label="Copiar chave pix">
+                                                <ClipboardIcon className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs text-text-secondary mb-1">Venc.: {rec.isConditionalDueDate ? rec.dueDateCondition : (rec.dueDate ? parseLocalDate(rec.dueDate).toLocaleDateString() : 'N/A')}</p>
@@ -208,7 +216,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                              {(rec.pixKey || !isVirtual) && (
                                 <div className="flex justify-end items-center space-x-2 mt-2 border-t border-border pt-2">
                                     {isVirtual ? (
-                                        <Button onClick={() => handlePayVirtual(rec.masterId!, parseInt(rec.id.split('-').pop()!), rec.dueDate!)} variant="secondary" className="!py-1.5 !px-4 !text-xs">Marcar como Pago</Button>
+                                        <Button onClick={() => handlePayVirtual((rec as any).masterId!, parseInt(rec.id.split('-').pop()!), rec.dueDate!)} variant="secondary" className="!py-1.5 !px-4 !text-xs">Marcar como Pago</Button>
                                     ) : (
                                         <>
                                              <button onClick={() => openModal(rec as Expense)} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
@@ -234,7 +242,14 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                             <FormField label="Descrição"><Input value={singleExpenseState.description} onChange={e => setSingleExpenseState(p => ({...p, description: e.target.value}))} required /></FormField>
                             <FormField label="Fornecedor (Opcional)"><Input value={singleExpenseState.supplier} onChange={e => setSingleExpenseState(p => ({...p, supplier: e.target.value}))} /></FormField>
                             <FormField label="CPF ou CNPJ"><Input value={singleExpenseState.document || ''} onChange={e => setSingleExpenseState(p => ({...p, document: formatDocument(e.target.value)}))} /></FormField>
-                            <FormField label="Chave Pix"><Input value={singleExpenseState.pixKey} onChange={e => setSingleExpenseState(p => ({...p, pixKey: e.target.value}))} /></FormField>
+                            <FormField label="Chave Pix">
+                                <div className="relative">
+                                    <Input value={singleExpenseState.pixKey} onChange={e => setSingleExpenseState(p => ({...p, pixKey: e.target.value}))} className="pr-10" />
+                                    <button type="button" onClick={() => handleCopy(singleExpenseState.pixKey || '')} className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-secondary hover:text-accent" aria-label="Copiar Chave Pix">
+                                        <ClipboardIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </FormField>
                             <FormField label="Valor (R$)"><Input type="number" step="0.01" value={singleExpenseState.value} onChange={e => setSingleExpenseState(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
                             <FormField label="Data de Vencimento"><Input type="date" value={singleExpenseState.dueDate} onChange={e => setSingleExpenseState(p => ({ ...p, dueDate: e.target.value }))} required /></FormField>
                             <FormField label="Status">
@@ -249,7 +264,14 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                             <FormField label="Descrição da Recorrência"><Input value={recurringPayableState.description} onChange={e => setRecurringPayableState(p => ({...p, description: e.target.value}))} required /></FormField>
                             <FormField label="Fornecedor (Opcional)"><Input value={recurringPayableState.supplier} onChange={e => setRecurringPayableState(p => ({...p, supplier: e.target.value}))} /></FormField>
                             <FormField label="CPF ou CNPJ"><Input value={recurringPayableState.document || ''} onChange={e => setRecurringPayableState(p => ({...p, document: formatDocument(e.target.value)}))} /></FormField>
-                             <FormField label="Chave Pix"><Input value={recurringPayableState.pixKey} onChange={e => setRecurringPayableState(p => ({...p, pixKey: e.target.value}))} /></FormField>
+                             <FormField label="Chave Pix">
+                                <div className="relative">
+                                    <Input value={recurringPayableState.pixKey} onChange={e => setRecurringPayableState(p => ({...p, pixKey: e.target.value}))} className="pr-10"/>
+                                     <button type="button" onClick={() => handleCopy(recurringPayableState.pixKey || '')} className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-secondary hover:text-accent" aria-label="Copiar Chave Pix">
+                                        <ClipboardIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </FormField>
                             <FormField label="Valor Mensal (R$)"><Input type="number" step="0.01" value={recurringPayableState.value} onChange={e => setRecurringPayableState(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
                             <div className="grid grid-cols-2 gap-4">
                                <FormField label="Total de Parcelas"><Input type="number" value={recurringPayableState.recurringInstallments} onChange={e => setRecurringPayableState(p => ({...p, recurringInstallments: parseInt(e.target.value,10)}))} required /></FormField>
