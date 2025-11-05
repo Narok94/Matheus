@@ -98,6 +98,8 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                     supplier: payable.supplier, document: payable.document, pixKey: payable.pixKey,
                     isVirtual: true,
                     masterId: payable.id, // to find the original payable
+                    isConditionalDueDate: false,
+                    dueDateCondition: '',
                 };
             }).filter(Boolean);
         }
@@ -191,6 +193,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
             )}
             <div className="space-y-4">
                 {displayedRecords.length > 0 ? displayedRecords.map(rec => {
+                    if (!rec) return null;
                     const isVirtual = 'isVirtual' in rec && rec.isVirtual;
                     return (
                         <Card key={rec.id}>
