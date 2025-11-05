@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
+import { useSettings } from '../context/SettingsContext';
 import { Equipment } from '../../types';
 import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, ConfirmationModal, Textarea } from '../components/common';
 import { EquipmentIcon, PlusIcon, EditIcon, TrashIcon } from '../components/Icons';
 
 export const Equipments: React.FC<{showToast: (msg: string, type?: 'success' | 'error') => void}> = ({ showToast }) => {
     const { equipment, handleAddEquipment, handleUpdateEquipment, handleDeleteEquipment } = useData();
+    const { appSettings } = useSettings();
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setModalOpen] = useState(false);
     const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -101,7 +103,7 @@ export const Equipments: React.FC<{showToast: (msg: string, type?: 'success' | '
                                     </div>
                                     <div className="flex space-x-2">
                                         <button onClick={() => openEditModal(eq)} className="p-2 hover:bg-primary rounded-full"><EditIcon /></button>
-                                        <button onClick={() => openDeleteConfirm(eq)} className="p-2 hover:bg-primary rounded-full text-status-reproved"><TrashIcon /></button>
+                                        <button onClick={() => openDeleteConfirm(eq)} className="p-2 hover:bg-primary rounded-full text-status-reproved disabled:opacity-50 disabled:cursor-not-allowed" disabled={appSettings.dataProtectionEnabled}><TrashIcon /></button>
                                     </div>
                                 </div>
                              </div>

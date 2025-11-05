@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
+import { useSettings } from '../context/SettingsContext';
 import { PaymentStatus, FinancialRecord, Client } from '../../types';
 import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus, ConfirmationModal } from '../components/common';
 import { FinancialIcon, PlusIcon, AgendaIcon, EditIcon, TrashIcon } from '../components/Icons';
@@ -114,6 +115,7 @@ const RecurringPayments: React.FC<{
 
 export const Financial: React.FC = () => {
     const { financial, clients, handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial, handleMarkInstallmentAsPaid } = useData();
+    const { appSettings } = useSettings();
     const [isModalOpen, setModalOpen] = useState(false);
     const [filter, setFilter] = useState<FinancialStatusFilter>('all');
     const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
@@ -231,7 +233,7 @@ export const Financial: React.FC = () => {
                             </div>
                             <div className="flex justify-end space-x-2 mt-2 border-t border-border pt-2">
                                 <button onClick={() => openModal(rec)} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
-                                <button onClick={() => openDeleteConfirm(rec)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
+                                <button onClick={() => openDeleteConfirm(rec)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved disabled:opacity-50 disabled:cursor-not-allowed" disabled={appSettings.dataProtectionEnabled}><TrashIcon className="w-4 h-4" /></button>
                             </div>
                         </Card>
                     );

@@ -31,7 +31,7 @@ const TabContent: React.FC<{ activeTab: Tab; tabName: Tab; children: ReactNode; 
 export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ showToast }) => {
     const { currentUserDetails, handleUpdateUser, handleLogout } = useAuth();
     const { clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses, handleImportData, lastBackupTimestamp, confirmAutoRestore: confirmDataAutoRestore } = useData();
-    const { theme, setTheme, companyProfile, setCompanyProfile, appSettings, handleImportSettings, confirmAutoRestoreSettings } = useSettings();
+    const { theme, setTheme, companyProfile, setCompanyProfile, appSettings, setAppSettings, handleImportSettings, confirmAutoRestoreSettings } = useSettings();
 
     const [activeTab, setActiveTab] = useState<Tab>('system');
     const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
@@ -175,6 +175,18 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                 <ToggleSwitch enabled={theme === 'dark'} onChange={(enabled) => setTheme(enabled ? 'dark' : 'light')} />
                             </div>
                         </Card>
+                         <Card title="Segurança de Dados">
+                            <div className="flex items-center justify-between p-2">
+                                <div>
+                                    <span className="text-text-primary font-medium">Proteger contra exclusão</span>
+                                    <p className="text-xs text-text-secondary">Desativa todos os botões de exclusão e importação no aplicativo.</p>
+                                </div>
+                                <ToggleSwitch 
+                                    enabled={appSettings.dataProtectionEnabled || false} 
+                                    onChange={(enabled) => setAppSettings(prev => ({ ...prev, dataProtectionEnabled: enabled }))} 
+                                />
+                            </div>
+                        </Card>
                         <Card title="Perfil da Empresa">
                             <div className="space-y-4">
                                 <FormField label="Nome da Empresa"><Input name="name" value={localProfile.name} onChange={handleProfileInputChange} /></FormField>
@@ -213,9 +225,9 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                         <p className="font-semibold text-text-primary">Importar Backup</p>
                                         <p className="text-xs text-text-secondary">Substitua os dados por um arquivo.</p>
                                     </div>
-                                     <Button as="label" variant="secondary" className="cursor-pointer !p-2.5">
+                                     <Button as="label" variant="secondary" className="cursor-pointer !p-2.5" disabled={appSettings.dataProtectionEnabled}>
                                         <UploadIcon className="w-5 h-5"/>
-                                        <input type="file" accept=".json" className="hidden" onChange={handleFileImportChange} />
+                                        <input type="file" accept=".json" className="hidden" onChange={handleFileImportChange} disabled={appSettings.dataProtectionEnabled} />
                                      </Button>
                                 </li>
                                 {lastBackupTimestamp && (
@@ -224,7 +236,7 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                             <p className="font-semibold text-text-primary">Restauração Automática</p>
                                             <p className="text-xs text-text-secondary">Último: {new Date(lastBackupTimestamp).toLocaleString('pt-BR')}</p>
                                         </div>
-                                        <Button onClick={() => setAutoRestoreConfirmOpen(true)} variant="secondary" className="text-accent border-accent/30 hover:bg-accent/10 !p-2.5">
+                                        <Button onClick={() => setAutoRestoreConfirmOpen(true)} variant="secondary" className="text-accent border-accent/30 hover:bg-accent/10 !p-2.5" disabled={appSettings.dataProtectionEnabled}>
                                             <RestoreIcon className="w-5 h-5"/>
                                         </Button>
                                     </li>
