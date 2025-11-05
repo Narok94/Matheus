@@ -1,4 +1,4 @@
-import { Client, Equipment, Inspection, FinancialRecord, Certificate, License, Delivery, Expense, InspectionStatus, PaymentStatus, DeliveryStatus, LicenseStatus, InspectedItem, InspectionItemStatus, ClientEquipment } from './types';
+import { Client, Equipment, Inspection, FinancialRecord, Certificate, License, Delivery, Expense, InspectionStatus, PaymentStatus, DeliveryStatus, LicenseStatus, InspectedItem, InspectionItemStatus, ClientEquipment, RecurringPayable } from './types';
 
 // --- MOCK DATA FOR 'admin' USER ---
 const today = new Date();
@@ -178,13 +178,36 @@ export const MOCK_DELIVERIES: Delivery[] = [
     { id: 'del-004', clientId: 'cli-009', description: 'Protocolo de documentação na prefeitura', deliveryDate: formatDate(addDays(today, -2)), status: DeliveryStatus.Entregue },
 ];
 
+// --- RECURRING PAYABLES ---
+export const MOCK_RECURRING_PAYABLES: RecurringPayable[] = [
+    {
+        id: 'rec-pay-001',
+        description: 'Aluguel do escritório',
+        supplier: 'Imobiliária Central',
+        value: 1500.00,
+        recurringInstallments: 24,
+        recurringCycleStart: formatDate(addDays(today, -35)), // First payment was ~5 days ago
+        paidInstallments: 1,
+    },
+    {
+        id: 'rec-pay-002',
+        description: 'Software de Gestão (Mensal)',
+        supplier: 'Tech Solutions',
+        value: 120.00,
+        recurringInstallments: 12,
+        recurringCycleStart: formatDate(addDays(today, -15)),
+        paidInstallments: 0,
+    }
+];
+
+
 // --- EXPENSES (PAYABLES) ---
 export const MOCK_EXPENSES: Expense[] = [
-    { id: 'exp-001', description: 'Compra de manômetros', supplier: 'Fornecedor XYZ', value: 250.00, dueDate: formatDate(addDays(today, 12)), status: PaymentStatus.Pendente },
-    { id: 'exp-002', description: 'Aluguel do escritório', value: 1500.00, dueDate: formatDate(addDays(today, -2)), status: PaymentStatus.Pago, paymentDate: formatDate(addDays(today, -2)) },
-    { id: 'exp-003', description: 'Conta de Energia', supplier: 'Light', value: 450.80, dueDate: formatDate(addDays(today, -1)), status: PaymentStatus.Pendente }, // Atrasado
-    { id: 'exp-004', description: 'Software de Gestão (Anual)', supplier: 'Tech Solutions', value: 1200.00, dueDate: formatDate(addDays(today, 5)), status: PaymentStatus.Pendente },
+    { id: 'exp-001', description: 'Compra de manômetros', supplier: 'Fornecedor XYZ', document: '11.222.333/0001-44', pixKey: 'contato@fornecedor.xyz', value: 250.00, dueDate: formatDate(addDays(today, 12)), status: PaymentStatus.Pendente },
+    { id: 'exp-002', description: 'Aluguel do escritório - Parcela 1/24', recurringPayableId: 'rec-pay-001', supplier: 'Imobiliária Central', value: 1500.00, dueDate: formatDate(addDays(today, -5)), status: PaymentStatus.Pago, paymentDate: formatDate(addDays(today, -5)) },
+    { id: 'exp-003', description: 'Conta de Energia', supplier: 'Light', document: '98.765.432/0001-10', pixKey: 'fatura@light.com', value: 450.80, dueDate: formatDate(addDays(today, -1)), status: PaymentStatus.Pendente }, // Atrasado
+    { id: 'exp-004', description: 'Consultoria de Marketing', supplier: 'Agência Crescer', value: 1200.00, dueDate: '', status: PaymentStatus.Pendente, isConditionalDueDate: true, dueDateCondition: 'Após aprovação da campanha' },
     { id: 'exp-005', description: 'Material de Escritório', supplier: 'Papelaria Central', value: 175.50, dueDate: formatDate(addDays(today, -15)), status: PaymentStatus.Pago, paymentDate: formatDate(addDays(today, -14)) },
     { id: 'exp-006', description: 'Combustível Veículo', supplier: 'Posto Shell', value: 320.00, dueDate: formatDate(addDays(today, -8)), status: PaymentStatus.Pendente }, // Atrasado
-    { id: 'exp-007', description: 'Serviços de Contabilidade', supplier: 'Contábil S.A.', value: 750.00, dueDate: formatDate(addDays(today, 0)), status: PaymentStatus.Pago, paymentDate: formatDate(today) },
+    { id: 'exp-007', description: 'Serviços de Contabilidade', supplier: 'Contábil S.A.', document: '55.666.777/0001-88', pixKey: '12345678900', value: 750.00, dueDate: formatDate(today), status: PaymentStatus.Pago, paymentDate: formatDate(today) },
 ];

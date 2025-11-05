@@ -130,10 +130,27 @@ export interface Expense { // For "Contas a Pagar"
   id: string;
   description: string;
   supplier?: string;
+  document?: string; // CPF/CNPJ
+  pixKey?: string;
   value: number;
-  dueDate: string;
+  dueDate: string; // Will be empty string if conditional
   paymentDate?: string;
   status: PaymentStatus;
+  isConditionalDueDate?: boolean;
+  dueDateCondition?: string;
+  recurringPayableId?: string; // Link to the master recurring payable
+}
+
+export interface RecurringPayable {
+  id: string;
+  description: string;
+  supplier?: string;
+  document?: string;
+  pixKey?: string;
+  value: number; // The recurring amount
+  recurringInstallments: number;
+  recurringCycleStart: string;
+  paidInstallments: number;
 }
 
 export type ToastMessage = {
@@ -179,6 +196,7 @@ export type BackupData = {
     licenses: License[];
     deliveries: Delivery[];
     expenses: Expense[];
+    recurringPayables: RecurringPayable[];
     companyProfile: CompanyProfile;
     appSettings: AppSettings;
 };

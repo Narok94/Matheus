@@ -200,6 +200,15 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
         showToast('Pagamento recorrente registrado!');
     };
 
+    const handleMarkAsPaid = (record: FinancialRecord) => {
+        handleUpdateFinancial({
+            ...record,
+            status: PaymentStatus.Pago,
+            paymentDate: new Date().toISOString().split('T')[0],
+        });
+        showToast('Conta marcada como paga!');
+    };
+
     const openModal = (rec: FinancialRecord | null = null) => {
         setEditingRecord(rec);
         setModalOpen(true);
@@ -260,6 +269,7 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                 {displayedRecords.length > 0 ? displayedRecords.map(rec => {
                     const client = clients.find(c => c.id === rec.clientId);
                     const isVirtual = 'isVirtual' in rec && rec.isVirtual;
+                    const status = getFinancialStatus(rec);
 
                     return (
                         <Card key={rec.id}>
@@ -270,24 +280,37 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                                     <p className="text-xs text-text-secondary">{client?.name}</p>
                                 </div>
                                 <div className="text-right flex-shrink-0 ml-4">
-                                     <div className="flex items-center justify-end text-xs text-text-secondary mb-1">
-                                        <span className="w-3 h-3 mr-1.5" />
+                                    <div className="text-xs text-text-secondary mb-1">
                                         {rec.isConditionalDueDate ? (
                                             <span>{rec.dueDateCondition}</span>
                                         ) : (
                                             <span>Venc.: {rec.dueDate ? parseLocalDate(rec.dueDate).toLocaleDateString() : 'N/A'}</span>
                                         )}
                                     </div>
+                                    {rec.status === PaymentStatus.Pago && rec.paymentDate && (
+                                        <div className="text-xs text-status-approved dark:text-green-400 font-semibold mb-1">
+                                            Pago: {parseLocalDate(rec.paymentDate).toLocaleDateString()}
+                                        </div>
+                                    )}
                                     <FinancialStatusBadge record={rec} />
                                 </div>
                             </div>
-                            <div className="flex justify-end space-x-2 mt-2 border-t border-border pt-2">
+                            <div className="flex justify-end items-center space-x-2 mt-2 border-t border-border pt-2">
                                 {isVirtual ? (
                                     <Button onClick={() => handlePayRecurring(client!, parseInt(rec.inspectionId.split('-').pop()!), rec.dueDate!)} variant="secondary" className="!py-1.5 !px-4 !text-xs">
                                         Marcar como Pago
                                     </Button>
                                 ) : (
                                     <>
+                                        {status !== PaymentStatus.Pago && (
+                                             <Button 
+                                                onClick={() => handleMarkAsPaid(rec as FinancialRecord)} 
+                                                variant="secondary" 
+                                                className="!py-1.5 !px-4 !text-xs bg-green-100/80 text-green-700 border-green-200 hover:bg-green-200/80 dark:bg-green-500/10 dark:text-green-300 dark:border-green-500/20 dark:hover:bg-green-500/20"
+                                            >
+                                                Marcar como Pago
+                                            </Button>
+                                        )}
                                         <button onClick={() => openModal(rec as FinancialRecord)} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
                                         <button onClick={() => openDeleteConfirm(rec as FinancialRecord)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
                                     </>

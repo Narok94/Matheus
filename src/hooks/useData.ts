@@ -1,6 +1,6 @@
 import { useMemo, Dispatch, useEffect } from 'react';
-import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, PaymentStatus, ClientEquipment } from '../../types';
-import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES, MOCK_LICENSES, MOCK_DELIVERIES, MOCK_EXPENSES, MOCK_CLIENT_EQUIPMENT } from '../../data';
+import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, PaymentStatus, ClientEquipment, RecurringPayable } from '../../types';
+import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES, MOCK_LICENSES, MOCK_DELIVERIES, MOCK_EXPENSES, MOCK_CLIENT_EQUIPMENT, MOCK_RECURRING_PAYABLES } from '../../data';
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';
 import { get } from '../idb';
@@ -28,13 +28,14 @@ export const useData = () => {
     const [licenses, setLicenses, licensesLoaded] = useIndexedDB<License[]>(`${dataKeyPrefix}-licenses`, []);
     const [deliveries, setDeliveries, deliveriesLoaded] = useIndexedDB<Delivery[]>(`${dataKeyPrefix}-deliveries`, []);
     const [expenses, setExpenses, expensesLoaded] = useIndexedDB<Expense[]>(`${dataKeyPrefix}-expenses`, []);
+    const [recurringPayables, setRecurringPayables, recurringPayablesLoaded] = useIndexedDB<RecurringPayable[]>(`${dataKeyPrefix}-recurringPayables`, []);
     
     // Auto-backup timestamp state
     const iDBLastBackup = useIndexedDB<string | null>(`${dataKeyPrefix}-lastBackupTimestamp`, null);
     const lastBackupTimestamp = iDBLastBackup[0];
     const lastBackupTimestampLoaded = iDBLastBackup[2];
     
-    const isDataLoading = !clientsLoaded || !equipmentLoaded || !clientEquipmentLoaded || !inspectionsLoaded || !financialLoaded || !certificatesLoaded || !lastBackupTimestampLoaded || !licensesLoaded || !deliveriesLoaded || !expensesLoaded || !initializedLoaded;
+    const isDataLoading = !clientsLoaded || !equipmentLoaded || !clientEquipmentLoaded || !inspectionsLoaded || !financialLoaded || !certificatesLoaded || !lastBackupTimestampLoaded || !licensesLoaded || !deliveriesLoaded || !expensesLoaded || !initializedLoaded || !recurringPayablesLoaded;
 
     // Effect to seed mock data for the 'admin' user only once.
     useEffect(() => {
@@ -49,9 +50,10 @@ export const useData = () => {
             setLicenses(MOCK_LICENSES);
             setDeliveries(MOCK_DELIVERIES);
             setExpenses(MOCK_EXPENSES);
+            setRecurringPayables(MOCK_RECURRING_PAYABLES);
             setInitialized(true);
         }
-    }, [initialized, initializedLoaded, isMockUser, setClients, setEquipment, setClientEquipment, setInspections, setFinancial, setCertificates, setLicenses, setDeliveries, setExpenses, setInitialized]);
+    }, [initialized, initializedLoaded, isMockUser, setClients, setEquipment, setClientEquipment, setInspections, setFinancial, setCertificates, setLicenses, setDeliveries, setExpenses, setRecurringPayables, setInitialized]);
 
 
     // --- CRUD Handlers ---
@@ -126,7 +128,48 @@ export const useData = () => {
         setExpenses(prev => prev.map(exp => exp.id === updatedExpense.id ? updatedExpense : exp));
     };
     const handleDeleteExpense = (expenseId: string) => {
+        const expenseToDelete = expenses.find(e => e.id === expenseId);
+        if (expenseToDelete?.recurringPayableId) {
+            const recurringPayable = recurringPayables.find(rp => rp.id === expenseToDelete.recurringPayableId);
+            if (recurringPayable) {
+                handleUpdateRecurringPayable({
+                    ...recurringPayable,
+                    paidInstallments: Math.max(0, (recurringPayable.paidInstallments || 0) - 1)
+                });
+            }
+        }
         setExpenses(prev => prev.filter(exp => exp.id !== expenseId));
+    };
+
+    // Recurring Payables
+    const handleAddRecurringPayable = (payableData: Omit<RecurringPayable, 'id'>) => {
+        const newPayable: RecurringPayable = { ...payableData, id: `rec-pay-${crypto.randomUUID()}` };
+        setRecurringPayables(prev => [...prev, newPayable]);
+    };
+    const handleUpdateRecurringPayable = (updatedPayable: RecurringPayable) => {
+        setRecurringPayables(prev => prev.map(p => p.id === updatedPayable.id ? updatedPayable : p));
+    };
+    const handleDeleteRecurringPayable = (payableId: string) => {
+        setRecurringPayables(prev => prev.filter(p => p.id !== payableId));
+        setExpenses(prev => prev.filter(e => e.recurringPayableId !== payableId));
+    };
+
+    const handlePayRecurringExpense = (recurringPayable: RecurringPayable, installmentNumber: number, dueDate: string) => {
+        const newExpense: Omit<Expense, 'id'> = {
+            recurringPayableId: recurringPayable.id,
+            description: `${recurringPayable.description} - Parcela ${installmentNumber}/${recurringPayable.recurringInstallments}`,
+            supplier: recurringPayable.supplier,
+            document: recurringPayable.document,
+            pixKey: recurringPayable.pixKey,
+            value: recurringPayable.value,
+            dueDate,
+            paymentDate: new Date().toISOString().split('T')[0],
+            status: PaymentStatus.Pago,
+        };
+        handleAddExpense(newExpense);
+
+        const updatedPayable = { ...recurringPayable, paidInstallments: (recurringPayable.paidInstallments || 0) + 1 };
+        handleUpdateRecurringPayable(updatedPayable);
     };
 
     // Certificate
@@ -213,10 +256,11 @@ export const useData = () => {
         setLicenses(parsedData.licenses || []);
         setDeliveries(parsedData.deliveries || []);
         setExpenses(parsedData.expenses || []);
+        setRecurringPayables(parsedData.recurringPayables || []);
     };
     
     const confirmAutoRestore = async () => {
-        const dataSetKeys: (keyof Omit<BackupData, 'companyProfile' | 'appSettings'>)[] = ['clients', 'equipment', 'clientEquipment', 'inspections', 'financial', 'certificates', 'licenses', 'deliveries', 'expenses'];
+        const dataSetKeys: (keyof Omit<BackupData, 'companyProfile' | 'appSettings'>)[] = ['clients', 'equipment', 'clientEquipment', 'inspections', 'financial', 'certificates', 'licenses', 'deliveries', 'expenses', 'recurringPayables'];
         const setters: Record<typeof dataSetKeys[number], Dispatch<any>> = {
             clients: setClients,
             equipment: setEquipment,
@@ -227,6 +271,7 @@ export const useData = () => {
             licenses: setLicenses,
             deliveries: setDeliveries,
             expenses: setExpenses,
+            recurringPayables: setRecurringPayables,
         };
         for (const key of dataSetKeys) {
             const backupValue = await get(`${dataKeyPrefix}-${key}_backup`);
@@ -237,7 +282,7 @@ export const useData = () => {
     };
 
     return {
-        clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses,
+        clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses, recurringPayables,
         isDataLoading,
         // Client
         handleAddClient, handleUpdateClient, handleDeleteClient,
@@ -251,6 +296,8 @@ export const useData = () => {
         handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial,
         // Expense
         handleAddExpense, handleUpdateExpense, handleDeleteExpense,
+        // Recurring Payables
+        handleAddRecurringPayable, handleUpdateRecurringPayable, handleDeleteRecurringPayable, handlePayRecurringExpense,
         // Certificate
         handleAddCertificate,
         // License

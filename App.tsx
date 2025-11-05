@@ -236,7 +236,7 @@ const AppContent: React.FC = () => {
             case 'reports': return <Reports />;
             case 'financial': return <Financial showToast={showToast} />;
             case 'settings': return <Settings showToast={showToast} />;
-            case 'payables': return <Payables />;
+            case 'payables': return <Payables showToast={showToast} />;
             case 'clientDetail': 
                 if (detailView?.type !== 'client') return <p>Erro: Cliente não especificado.</p>;
                 return <ClientDetail clientId={detailView.id} onScheduleInspection={handleScheduleForClient} onViewInspection={handleViewInspection} />;
