@@ -209,6 +209,15 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
         showToast('Conta marcada como paga!');
     };
 
+    const handleUndoPayment = (record: FinancialRecord) => {
+        handleUpdateFinancial({
+            ...record,
+            status: PaymentStatus.Pendente,
+            paymentDate: '', // Clear the payment date
+        });
+        showToast('Pagamento desfeito!');
+    };
+
     const openModal = (rec: FinancialRecord | null = null) => {
         setEditingRecord(rec);
         setModalOpen(true);
@@ -269,7 +278,6 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                 {displayedRecords.length > 0 ? displayedRecords.map(rec => {
                     const client = clients.find(c => c.id === rec.clientId);
                     const isVirtual = 'isVirtual' in rec && rec.isVirtual;
-                    const status = getFinancialStatus(rec);
 
                     return (
                         <Card key={rec.id}>
@@ -302,7 +310,15 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                                     </Button>
                                 ) : (
                                     <>
-                                        {status !== PaymentStatus.Pago && (
+                                        {rec.status === PaymentStatus.Pago ? (
+                                             <Button 
+                                                onClick={() => handleUndoPayment(rec as FinancialRecord)} 
+                                                variant="secondary" 
+                                                className="!py-1.5 !px-4 !text-xs bg-yellow-100/80 text-yellow-700 border-yellow-200 hover:bg-yellow-200/80 dark:bg-yellow-500/10 dark:text-yellow-300 dark:border-yellow-500/20 dark:hover:bg-yellow-500/20"
+                                            >
+                                                Desfazer
+                                            </Button>
+                                        ) : (
                                              <Button 
                                                 onClick={() => handleMarkAsPaid(rec as FinancialRecord)} 
                                                 variant="secondary" 
