@@ -128,27 +128,6 @@ export const ConfirmationModal: React.FC<{ isOpen: boolean; onClose: () => void;
     </Modal>
 );
 
-export const ConfirmationModalWithSeriesDelete: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirmSingle: () => void;
-  onConfirmSeries: () => void;
-  title: string;
-  message: ReactNode;
-}> = ({ isOpen, onClose, onConfirmSingle, onConfirmSeries, title, message }) => (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
-        <div className="text-text-primary">
-            <div>{message}</div>
-            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 mt-6">
-                <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-                <Button variant="secondary" onClick={onConfirmSingle}>Excluir Apenas Este</Button>
-                <Button onClick={onConfirmSeries} className="bg-status-reproved hover:bg-red-700">Excluir Série Futura</Button>
-            </div>
-        </div>
-    </Modal>
-);
-
-
 export const Toast: React.FC<{ toast: ToastMessage, onDismiss: () => void }> = ({ toast, onDismiss }) => {
     useEffect(() => {
         if (toast) {
