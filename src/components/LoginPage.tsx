@@ -90,13 +90,13 @@ const DynamicBackground = () => {
 
 
 const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="min-h-screen flex items-end md:items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center p-4">
         {children}
     </div>
 );
 
 const AuthFormCard: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-     <div className="relative z-10 w-full bg-slate-900/40 backdrop-blur-md border-t border-x md:border border-orange-500/30 rounded-t-2xl md:rounded-2xl shadow-2xl shadow-orange-500/10 p-6 sm:p-8 animate-fade-in">
+     <div className="relative z-10 w-full bg-slate-900/40 backdrop-blur-md border border-orange-500/30 rounded-2xl shadow-2xl shadow-orange-500/10 p-6 sm:p-8 animate-fade-in">
         {children}
     </div>
 );
