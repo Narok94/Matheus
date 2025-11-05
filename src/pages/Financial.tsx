@@ -189,6 +189,14 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
             status: PaymentStatus.Pago
         };
         handleAddFinancial(newRecord);
+
+        // Increment the client's paid installments count.
+        const currentPaidCount = client.paidInstallments || 0;
+        const totalInstallments = client.recurringInstallments || 0;
+        if (currentPaidCount < totalInstallments) {
+            handleUpdateClient({ ...client, paidInstallments: currentPaidCount + 1 });
+        }
+
         showToast('Pagamento recorrente registrado!');
     };
 
@@ -207,11 +215,11 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
             // Check if it was a recurring payment to potentially adjust client data
             if (editingRecord.inspectionId.startsWith('recorrente-')) {
                 const client = clients.find(c => c.id === editingRecord.clientId);
-                if (client) {
-                     // The logic here is complex if payments are out of order.
-                     // For now, we just delete the record. The virtual record will reappear.
-                     // A more advanced system would decrement a counter.
-                     showToast('Parcela recorrente excluída.', 'success');
+                if (client && typeof client.paidInstallments === 'number' && client.paidInstallments > 0) {
+                     // This is a simplification. It just decrements the count.
+                     const updatedClient = { ...client, paidInstallments: client.paidInstallments - 1 };
+                     handleUpdateClient(updatedClient);
+                     showToast('Parcela recorrente excluída e contador de parcelas ajustado.', 'success');
                 }
             }
             handleDeleteFinancial(editingRecord.id);
