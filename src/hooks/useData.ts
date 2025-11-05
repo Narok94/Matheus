@@ -114,17 +114,6 @@ export const useData = () => {
         setFinancial(prev => prev.map(rec => rec.id === updatedRecord.id ? updatedRecord : rec));
     };
     const handleDeleteFinancial = (recordId: string) => {
-        const recordToDelete = financial.find(rec => rec.id === recordId);
-        if (recordToDelete && recordToDelete.inspectionId.startsWith('recorrente-')) {
-            const client = clients.find(c => c.id === recordToDelete.clientId);
-            if (client && client.isRecurring && (client.paidInstallments || 0) > 0) {
-                const updatedClient = {
-                    ...client,
-                    paidInstallments: (client.paidInstallments || 0) - 1,
-                };
-                handleUpdateClient(updatedClient);
-            }
-        }
         setFinancial(prev => prev.filter(rec => rec.id !== recordId));
     };
 

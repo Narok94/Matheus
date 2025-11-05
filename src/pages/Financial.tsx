@@ -1,42 +1,69 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { PaymentStatus, FinancialRecord } from '../../types';
+import { PaymentStatus, FinancialRecord, Client } from '../../types';
 import { Card, Modal, Button, Input, Select, FormField, EmptyState, FloatingActionButton, FinancialStatusBadge, getFinancialStatus, ConfirmationModal } from '../components/common';
-import { FinancialIcon, PlusIcon, AgendaIcon, EditIcon, TrashIcon } from '../components/Icons';
+import { FinancialIcon, PlusIcon, EditIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons';
 import { parseLocalDate } from '../utils';
 
-type FinancialStatusFilter = PaymentStatus | 'Atrasado' | 'Condicional' | 'Recorrente' | 'all';
+type ActiveTab = 'all' | 'recorrente';
+type StatusFilter = 'all' | PaymentStatus | 'Atrasado' | 'Condicional';
 
-const StatusFilter: React.FC<{
-    selectedStatus: FinancialStatusFilter;
-    onStatusChange: (status: FinancialStatusFilter) => void;
-}> = ({ selectedStatus, onStatusChange }) => {
-    const statuses: FinancialStatusFilter[] = ['all', PaymentStatus.Pendente, 'Atrasado', 'Condicional', 'Recorrente', PaymentStatus.Pago];
+const MonthNavigator: React.FC<{
+    selectedDate: Date;
+    onDateChange: (newDate: Date) => void;
+}> = ({ selectedDate, onDateChange }) => {
+
+    const changeMonth = (offset: number) => {
+        const newDate = new Date(selectedDate);
+        newDate.setMonth(newDate.getMonth() + offset, 1); // Set to day 1 to avoid month-end issues
+        onDateChange(newDate);
+    };
+    
+    const goToToday = () => {
+        onDateChange(new Date());
+    };
+
     return (
-        <div className="flex space-x-2 overflow-x-auto pb-2 -mx-4 px-4">
-            {statuses.map(status => (
-                <button
-                    key={status}
-                    onClick={() => onStatusChange(status)}
-                    className={`px-3 py-1 text-sm font-semibold rounded-full whitespace-nowrap transition-colors ${
-                        selectedStatus === status 
-                        ? 'bg-accent text-white' 
-                        : 'bg-secondary/70 text-text-secondary hover:bg-secondary'
-                    }`}
-                >
-                    {status === 'all' ? 'Todos' : status}
-                </button>
-            ))}
+        <div className="bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md p-3 rounded-xl shadow-lg dark:shadow-cyan-900/10 border border-border flex items-center justify-between">
+            <Button variant="secondary" onClick={() => changeMonth(-1)} className="!p-2.5">
+                <ChevronLeftIcon className="w-5 h-5" />
+            </Button>
+            <div className="text-center">
+                 <h2 className="text-lg font-bold text-text-primary capitalize">
+                    {selectedDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                </h2>
+                <Button variant="secondary" onClick={goToToday} className="!p-0 !text-accent !text-xs !bg-transparent !border-none h-auto">
+                    Ir para Hoje
+                </Button>
+            </div>
+            <Button variant="secondary" onClick={() => changeMonth(1)} className="!p-2.5">
+                <ChevronRightIcon className="w-5 h-5" />
+            </Button>
         </div>
     );
 };
 
 export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ showToast }) => {
-    const { financial, clients, handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial, handleMarkInstallmentAsPaid } = useData();
+    const { financial, clients, handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial, handleUpdateClient } = useData();
     const [isModalOpen, setModalOpen] = useState(false);
-    const [filter, setFilter] = useState<FinancialStatusFilter>('all');
     const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
     const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    
+    // New state for filters
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [activeTab, setActiveTab] = useState<ActiveTab>('all');
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+
+    // Effect to auto-update month view
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const now = new Date();
+            if (now.getMonth() !== selectedDate.getMonth() || now.getFullYear() !== selectedDate.getFullYear()) {
+                setSelectedDate(now);
+            }
+        }, 60 * 1000); // Check every minute
+        return () => clearInterval(interval);
+    }, [selectedDate]);
     
     const initialRecordState: Omit<FinancialRecord, 'id'> = { clientId: '', inspectionId: '', description: '', value: 0, issueDate: new Date().toISOString().split('T')[0], dueDate: new Date().toISOString().split('T')[0], status: PaymentStatus.Pendente, paymentDate: '', isConditionalDueDate: false, dueDateCondition: '' };
     const [formState, setFormState] = useState(initialRecordState);
@@ -63,57 +90,82 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
             }
         }
     }, [isModalOpen, editingRecord]);
+    
+    const displayedRecords = useMemo(() => {
+        const selectedYear = selectedDate.getFullYear();
+        const selectedMonth = selectedDate.getMonth();
 
-    const filteredFinancial = useMemo(() => {
-        const recurringVirtualRecords: (FinancialRecord & { isRecurringPayment?: boolean })[] = clients
-            .filter(c =>
-                c.isRecurring &&
-                c.recurringInstallments !== undefined &&
-                c.paidInstallments !== undefined &&
-                c.paidInstallments < c.recurringInstallments
-            )
-            .map(client => {
-                const cycleStartDate = parseLocalDate(client.recurringCycleStart || new Date().toISOString());
-                const currentPaidInstallments = client.paidInstallments || 0;
-                
-                const targetMonth = cycleStartDate.getMonth() + currentPaidInstallments;
-                let dueDate = new Date(cycleStartDate.getFullYear(), targetMonth, cycleStartDate.getDate());
-                
-                if (dueDate.getDate() !== cycleStartDate.getDate()) {
-                    dueDate = new Date(cycleStartDate.getFullYear(), targetMonth + 1, 0);
+        if (activeTab === 'recorrente') {
+            const recurringClients = clients.filter(c => c.isRecurring);
+            
+            return recurringClients.map(client => {
+                const startDate = parseLocalDate(client.recurringCycleStart || '1970-01-01');
+                const startYear = startDate.getFullYear();
+                const startMonth = startDate.getMonth();
+
+                // Calculate month difference
+                const monthOffset = (selectedYear - startYear) * 12 + (selectedMonth - startMonth);
+                const installmentNumber = monthOffset + 1;
+
+                // Check if this installment is valid
+                if (monthOffset < 0 || installmentNumber > (client.recurringInstallments || 0)) {
+                    return null;
                 }
 
-                const currentInstallment = currentPaidInstallments + 1;
+                // Check if a real record for this installment already exists
+                const existingRecordId = `recorrente-${client.id}-${installmentNumber}`;
+                const existingRecord = financial.find(f => f.inspectionId === existingRecordId);
+                
+                if (existingRecord) {
+                    return existingRecord; // Return the actual paid record
+                }
+                
+                // Generate a virtual record for display
+                const dueDate = new Date(startYear, startMonth + monthOffset, startDate.getDate());
 
                 return {
-                    id: `rec-${client.id}`, // Temporary unique ID for rendering
+                    id: `virtual-${client.id}-${installmentNumber}`,
                     clientId: client.id,
-                    inspectionId: `recorrente-${client.id}-${currentInstallment}`,
-                    description: `Pagamento Recorrente - Parcela ${currentInstallment}/${client.recurringInstallments}`,
+                    inspectionId: existingRecordId,
+                    description: `Pagamento Recorrente - Parcela ${installmentNumber}/${client.recurringInstallments}`,
                     value: client.recurringAmount || 0,
-                    issueDate: new Date().toISOString().split('T')[0],
+                    issueDate: new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0],
                     dueDate: dueDate.toISOString().split('T')[0],
                     status: PaymentStatus.Pendente,
-                    isRecurringPayment: true,
+                    isVirtual: true,
                 };
-            });
-
-        switch (filter) {
-            case 'all':
-                 return [...financial, ...recurringVirtualRecords].sort((a,b) => (a.dueDate && b.dueDate) ? parseLocalDate(a.dueDate).getTime() - parseLocalDate(b.dueDate).getTime() : 0);
-            case 'Condicional':
-                return financial.filter(rec => rec.isConditionalDueDate && rec.status === PaymentStatus.Pendente);
-            case 'Recorrente':
-                return recurringVirtualRecords;
-            case 'Pendente':
-                 return [
-                    ...financial.filter(rec => getFinancialStatus(rec) === 'Pendente' && !rec.isConditionalDueDate),
-                    ...recurringVirtualRecords
-                ].sort((a,b) => (a.dueDate && b.dueDate) ? parseLocalDate(a.dueDate).getTime() - parseLocalDate(b.dueDate).getTime() : 0);
-            default: // Handles 'Atrasado' and 'Pago'
-                return financial.filter(rec => getFinancialStatus(rec) === filter);
+            }).filter(Boolean) as (FinancialRecord & { isVirtual?: boolean })[];
         }
-    }, [financial, filter, clients]);
+
+        // Logic for 'all' tab
+        let records = financial.filter(rec => !rec.inspectionId.startsWith('recorrente-'));
+        
+        // Filter by month
+        records = records.filter(rec => {
+            if (!rec.dueDate && !rec.isConditionalDueDate) return false;
+            // Include conditional items regardless of month unless they are paid.
+            if (rec.isConditionalDueDate) {
+                if (rec.status === PaymentStatus.Pago && rec.paymentDate) {
+                    const paymentDate = parseLocalDate(rec.paymentDate);
+                    return paymentDate.getFullYear() === selectedYear && paymentDate.getMonth() === selectedMonth;
+                }
+                 return true; // Show all pending conditional
+            }
+            const dueDate = parseLocalDate(rec.dueDate);
+            return dueDate.getFullYear() === selectedYear && dueDate.getMonth() === selectedMonth;
+        });
+
+        // Apply status filter
+        if (statusFilter !== 'all') {
+            if (statusFilter === 'Condicional') {
+                return records.filter(rec => rec.isConditionalDueDate && rec.status === PaymentStatus.Pendente);
+            }
+            records = records.filter(rec => getFinancialStatus(rec) === statusFilter);
+        }
+        
+        return records.sort((a,b) => (a.dueDate && b.dueDate) ? parseLocalDate(a.dueDate).getTime() - parseLocalDate(b.dueDate).getTime() : 0);
+
+    }, [financial, clients, selectedDate, activeTab, statusFilter]);
     
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -123,6 +175,21 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
             handleAddFinancial(formState);
         }
         setModalOpen(false);
+    };
+
+    const handlePayRecurring = (client: Client, installmentNumber: number, dueDate: string) => {
+        const newRecord: Omit<FinancialRecord, 'id'> = {
+            clientId: client.id,
+            inspectionId: `recorrente-${client.id}-${installmentNumber}`,
+            description: `Pagamento Recorrente - Parcela ${installmentNumber}/${client.recurringInstallments}`,
+            value: client.recurringAmount || 0,
+            issueDate: new Date().toISOString().split('T')[0],
+            dueDate: dueDate,
+            paymentDate: new Date().toISOString().split('T')[0],
+            status: PaymentStatus.Pago
+        };
+        handleAddFinancial(newRecord);
+        showToast('Pagamento recorrente registrado!');
     };
 
     const openModal = (rec: FinancialRecord | null = null) => {
@@ -137,31 +204,55 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
 
     const confirmDelete = () => {
         if (editingRecord) {
-            const isRecurringReversal = editingRecord.inspectionId.startsWith('recorrente-');
-            handleDeleteFinancial(editingRecord.id);
-            if(isRecurringReversal){
-                showToast('Parcela estornada com sucesso.', 'success');
-            } else {
-                showToast('Registro excluído com sucesso.', 'success');
+            // Check if it was a recurring payment to potentially adjust client data
+            if (editingRecord.inspectionId.startsWith('recorrente-')) {
+                const client = clients.find(c => c.id === editingRecord.clientId);
+                if (client) {
+                     // The logic here is complex if payments are out of order.
+                     // For now, we just delete the record. The virtual record will reappear.
+                     // A more advanced system would decrement a counter.
+                     showToast('Parcela recorrente excluída.', 'success');
+                }
             }
+            handleDeleteFinancial(editingRecord.id);
         }
         setDeleteConfirmOpen(false);
         setEditingRecord(null);
     };
 
-    const handlePaymentConfirmation = (clientId: string) => {
-        handleMarkInstallmentAsPaid(clientId);
-        showToast('Pagamento recorrente registrado com sucesso!', 'success');
-    };
 
     return (
-        <div className="p-4 space-y-4">
-            <StatusFilter selectedStatus={filter} onStatusChange={setFilter} />
+        <div className="p-4 space-y-6">
+            <MonthNavigator selectedDate={selectedDate} onDateChange={setSelectedDate} />
+
+            <div className="border-b border-border flex">
+                <button onClick={() => setActiveTab('all')} className={`px-4 py-2 text-sm font-semibold transition-colors duration-200 border-b-2 ${activeTab === 'all' ? 'border-accent text-accent' : 'border-transparent text-text-secondary'}`}>Todos</button>
+                <button onClick={() => setActiveTab('recorrente')} className={`px-4 py-2 text-sm font-semibold transition-colors duration-200 border-b-2 ${activeTab === 'recorrente' ? 'border-accent text-accent' : 'border-transparent text-text-secondary'}`}>Recorrente</button>
+            </div>
+            
+            {activeTab === 'all' && (
+                 <div className="flex space-x-2 overflow-x-auto pb-2 -mx-4 px-4">
+                    {(['all', PaymentStatus.Pendente, 'Atrasado', 'Condicional', PaymentStatus.Pago] as const).map(status => (
+                        <button
+                            key={status}
+                            onClick={() => setStatusFilter(status)}
+                            className={`px-3 py-1 text-sm font-semibold rounded-full whitespace-nowrap transition-colors ${
+                                statusFilter === status 
+                                ? 'bg-accent text-white' 
+                                : 'bg-secondary/70 text-text-secondary hover:bg-secondary'
+                            }`}
+                        >
+                            {status === 'all' ? 'Todos' : status}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className="space-y-4">
-                {filteredFinancial.length > 0 ? filteredFinancial.map(rec => {
+                {displayedRecords.length > 0 ? displayedRecords.map(rec => {
                     const client = clients.find(c => c.id === rec.clientId);
-                    const isRecurringPayment = 'isRecurringPayment' in rec && rec.isRecurringPayment;
+                    const isVirtual = 'isVirtual' in rec && rec.isVirtual;
+
                     return (
                         <Card key={rec.id}>
                             <div className="flex justify-between items-start">
@@ -171,32 +262,32 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                                     <p className="text-xs text-text-secondary">{client?.name}</p>
                                 </div>
                                 <div className="text-right flex-shrink-0 ml-4">
-                                    <div className="flex items-center justify-end text-xs text-text-secondary mb-1">
-                                        <AgendaIcon className="w-3 h-3 mr-1.5" />
+                                     <div className="flex items-center justify-end text-xs text-text-secondary mb-1">
+                                        <span className="w-3 h-3 mr-1.5" />
                                         {rec.isConditionalDueDate ? (
-                                            <span>Vencimento: {rec.dueDateCondition}</span>
+                                            <span>{rec.dueDateCondition}</span>
                                         ) : (
-                                            <span>Vencimento: {rec.dueDate ? parseLocalDate(rec.dueDate).toLocaleDateString() : 'N/A'}</span>
+                                            <span>Venc.: {rec.dueDate ? parseLocalDate(rec.dueDate).toLocaleDateString() : 'N/A'}</span>
                                         )}
                                     </div>
                                     <FinancialStatusBadge record={rec} />
                                 </div>
                             </div>
-                             {isRecurringPayment ? (
-                                <div className="flex justify-end mt-2 border-t border-border pt-2">
-                                    <Button onClick={() => handlePaymentConfirmation(rec.clientId)} variant="secondary" className="!py-1.5 !px-4 !text-xs">
+                            <div className="flex justify-end space-x-2 mt-2 border-t border-border pt-2">
+                                {isVirtual ? (
+                                    <Button onClick={() => handlePayRecurring(client!, parseInt(rec.inspectionId.split('-').pop()!), rec.dueDate!)} variant="secondary" className="!py-1.5 !px-4 !text-xs">
                                         Marcar como Pago
                                     </Button>
-                                </div>
-                            ) : (
-                                <div className="flex justify-end space-x-2 mt-2 border-t border-border pt-2">
-                                    <button onClick={() => openModal(rec as FinancialRecord)} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
-                                    <button onClick={() => openDeleteConfirm(rec as FinancialRecord)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
-                                </div>
-                            )}
+                                ) : (
+                                    <>
+                                        <button onClick={() => openModal(rec as FinancialRecord)} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
+                                        <button onClick={() => openDeleteConfirm(rec as FinancialRecord)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
+                                    </>
+                                )}
+                            </div>
                         </Card>
                     );
-                }) : <EmptyState message="Nenhum registro financeiro para este filtro." icon={<FinancialIcon className="w-12 h-12" />} action={<Button onClick={() => openModal()}>Adicionar Registro</Button>}/>}
+                }) : <EmptyState message="Nenhum registro financeiro para este período/filtro." icon={<FinancialIcon className="w-12 h-12" />} action={<Button onClick={() => openModal()}>Adicionar Registro</Button>}/>}
             </div>
              <FloatingActionButton onClick={() => openModal()} icon={<PlusIcon />} />
              <Modal isOpen={isModalOpen} onClose={() => { setModalOpen(false); setEditingRecord(null); }} title={editingRecord ? "Editar Conta a Receber" : "Adicionar Conta a Receber"}>
