@@ -2,7 +2,9 @@ export enum InspectionStatus {
   Aprovado = 'Aprovado',
   Reprovado = 'Reprovado',
   Pendente = 'Pendente',
-  Agendada = 'Agendada'
+  Agendada = 'Agendada',
+  Concluída = 'Concluída',
+  Cancelada = 'Cancelada'
 }
 
 export enum PaymentStatus {

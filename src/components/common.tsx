@@ -174,6 +174,12 @@ export const getStatusBadge = (status: InspectionStatus | PaymentStatus) => {
         case InspectionStatus.Agendada:
             colorClasses = 'bg-cyan-100 text-status-scheduled border border-cyan-200 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/30';
             break;
+        case InspectionStatus.Concluída:
+            colorClasses = 'bg-slate-100 text-status-completed border border-slate-200 dark:bg-slate-500/20 dark:text-slate-300 dark:border-slate-500/30';
+            break;
+        case InspectionStatus.Cancelada:
+            colorClasses = 'bg-gray-100 text-status-cancelled border border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30 line-through';
+            break;
     }
     return <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${colorClasses}`}>{status}</span>;
 }

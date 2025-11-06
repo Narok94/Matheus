@@ -124,6 +124,8 @@ export const Agenda: React.FC<{
         [InspectionStatus.Reprovado]: 'bg-status-reproved',
         [InspectionStatus.Pendente]: 'bg-status-pending',
         [InspectionStatus.Agendada]: 'bg-status-scheduled',
+        [InspectionStatus.Concluída]: 'bg-status-completed',
+        [InspectionStatus.Cancelada]: 'bg-status-cancelled',
     };
 
     return (
