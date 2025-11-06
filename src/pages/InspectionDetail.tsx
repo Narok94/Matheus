@@ -1,36 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useData } from '../context/DataContext';
-import { Inspection, InspectionStatus } from '../../types';
-import { Card, getStatusBadge, Button, Select, FormField, Modal, Input, Textarea } from '../components/common';
-import { CertificateIcon, EquipmentIcon, EditIcon } from '../components/Icons';
+import { InspectionStatus } from '../../types';
+import { Card, getStatusBadge, Button } from '../components/common';
+import { CertificateIcon, EquipmentIcon } from '../components/Icons';
 import { parseLocalDate } from '../utils';
 
 export const InspectionDetail: React.FC<{
     inspectionId: string;
     showToast: (msg: string, type?: 'success' | 'error') => void;
 }> = ({ inspectionId, showToast }) => {
-    const { inspections, clients, equipment, clientEquipment, handleUpdateInspection, handleAddCertificate, certificates } = useData();
-    const [isEditModalOpen, setEditModalOpen] = useState(false);
+    const { inspections, clients, equipment, clientEquipment, handleAddCertificate, certificates } = useData();
     
     const inspection = inspections.find(i => i.id === inspectionId);
-    const [editedInspection, setEditedInspection] = useState<Inspection | null>(inspection || null);
 
-    useEffect(() => {
-        setEditedInspection(inspection || null);
-    }, [inspection]);
-
-
-    if (!inspection || !editedInspection) {
+    if (!inspection) {
         return <div className="p-4 text-center text-text-secondary">Inspeção/Vistoria não encontrada.</div>;
     }
 
     const client = clients.find(c => c.id === inspection.clientId);
     const hasCertificate = certificates.some(c => c.inspectionId === inspection.id);
-
-    const handleStatusChange = (newStatus: InspectionStatus) => {
-        handleUpdateInspection({ ...inspection, status: newStatus });
-        showToast(`Status da inspeção/vistoria atualizado para "${newStatus}".`);
-    };
 
     const generateCertificate = () => {
         if (!hasCertificate) {
@@ -38,22 +26,6 @@ export const InspectionDetail: React.FC<{
             showToast("Certificado gerado com sucesso!");
         } else {
             showToast("Este certificado já foi gerado.", "error");
-        }
-    };
-
-    const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        if (editedInspection) {
-            setEditedInspection({ ...editedInspection, [name]: value });
-        }
-    };
-
-    const handleEditSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (editedInspection) {
-            handleUpdateInspection(editedInspection);
-            showToast('Inspeção/Vistoria atualizada com sucesso!');
-            setEditModalOpen(false);
         }
     };
     
@@ -72,31 +44,15 @@ export const InspectionDetail: React.FC<{
                 </div>
             </div>
 
-            <Card title="Ações Rápidas">
-                <div className="space-y-4">
-                     <Button onClick={() => setEditModalOpen(true)} variant="secondary" className="w-full justify-center">
-                        <EditIcon className="w-5 h-5 mr-2" />
-                        Editar Inspeção
+            {inspection.status === InspectionStatus.Aprovado && (
+                <Card title="Certificado">
+                     <Button onClick={generateCertificate} disabled={hasCertificate} className="w-full justify-center">
+                        <CertificateIcon className="w-5 h-5 mr-2" />
+                        {hasCertificate ? 'Certificado Já Gerado' : 'Gerar Certificado'}
                     </Button>
-                    <FormField label="Alterar Status da Inspeção/Vistoria">
-                        <Select 
-                            value={inspection.status} 
-                            onChange={(e) => handleStatusChange(e.target.value as InspectionStatus)}
-                        >
-                            {Object.values(InspectionStatus).map(status => (
-                                <option key={status} value={status}>{status}</option>
-                            ))}
-                        </Select>
-                    </FormField>
+                </Card>
+            )}
 
-                    {inspection.status === InspectionStatus.Aprovado && (
-                        <Button onClick={generateCertificate} disabled={hasCertificate} className="w-full justify-center">
-                            <CertificateIcon className="w-5 h-5 mr-2" />
-                            {hasCertificate ? 'Certificado Já Gerado' : 'Gerar Certificado'}
-                        </Button>
-                    )}
-                </div>
-            </Card>
 
             <Card title={`Equipamentos Inspecionados (${inspection.inspectedItems.length})`} actions={<EquipmentIcon />}>
                 {inspection.inspectedItems.length > 0 ? (
@@ -132,31 +88,6 @@ export const InspectionDetail: React.FC<{
                     {inspection.observations || "Nenhuma observação registrada."}
                 </p>
             </Card>
-
-             <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Inspeção/Vistoria">
-                <form onSubmit={handleEditSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField label="Data">
-                            <Input type="date" name="date" value={editedInspection.date} onChange={handleEditInputChange} required />
-                        </FormField>
-                        <FormField label="Horário">
-                                <Input type="time" name="time" value={editedInspection.time || ''} onChange={handleEditInputChange} />
-                        </FormField>
-                    </div>
-                    <FormField label="Endereço da Vistoria">
-                        <Input name="address" value={editedInspection.address || ''} onChange={handleEditInputChange} required />
-                    </FormField>
-                    <FormField label="Inspetor">
-                        <Input name="inspector" value={editedInspection.inspector} onChange={handleEditInputChange} required />
-                    </FormField>
-                    <FormField label="Observações">
-                        <Textarea name="observations" value={editedInspection.observations} onChange={handleEditInputChange} />
-                    </FormField>
-                    <div className="flex justify-end pt-4">
-                        <Button type="submit">Salvar Alterações</Button>
-                    </div>
-                </form>
-            </Modal>
         </div>
     );
 };

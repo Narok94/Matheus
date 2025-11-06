@@ -106,6 +106,9 @@ export const useData = () => {
     const handleUpdateInspection = (updatedInspection: Inspection) => {
         setInspections(prev => prev.map(insp => insp.id === updatedInspection.id ? updatedInspection : insp));
     };
+    const handleDeleteInspection = (inspectionId: string) => {
+        setInspections(prev => prev.filter(insp => insp.id !== inspectionId));
+    };
     
     // Financial (Receivables)
     const handleAddFinancial = (recordData: Omit<FinancialRecord, 'id'>) => {
@@ -291,7 +294,7 @@ export const useData = () => {
         // Client Equipment (Asset)
         handleAddClientEquipment, handleUpdateClientEquipment, handleDeleteClientEquipment,
         // Inspection
-        handleAddInspection, handleUpdateInspection,
+        handleAddInspection, handleUpdateInspection, handleDeleteInspection,
         // Financial
         handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial,
         // Expense
