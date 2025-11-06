@@ -24,8 +24,13 @@ export const useAuth = () => {
         },
         { 
             username: 'matheus', 
-            passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // Hashed "1234"
+            passwordHash: 'b6859364b4c2a557342617651a0279589d3118536130b9f7ac711d51a6101905', // Hashed "senha123"
             fullName: 'Matheus' 
+        },
+        { 
+            username: 'henrique', 
+            passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // Hashed "1234"
+            fullName: 'Henrique Costa'
         }
     ]);
     const [loginAttempts, setLoginAttempts, isLoginAttemptsLoaded] = useIndexedDB<Record<string, LoginAttempt>>('loginAttempts', {});
@@ -41,8 +46,13 @@ export const useAuth = () => {
                 },
                 { 
                     username: 'matheus', 
-                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
+                    passwordHash: 'b6859364b4c2a557342617651a0279589d3118536130b9f7ac711d51a6101905',
                     fullName: 'Matheus' 
+                },
+                {
+                    username: 'henrique',
+                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
+                    fullName: 'Henrique Costa'
                 }
             ];
 

@@ -1,6 +1,6 @@
 import { Client, Equipment, Inspection, FinancialRecord, Certificate, License, Delivery, Expense, InspectionStatus, PaymentStatus, DeliveryStatus, LicenseStatus, InspectedItem, InspectionItemStatus, ClientEquipment, RecurringPayable } from './types';
 
-// --- MOCK DATA FOR 'admin' USER ---
+// --- UTILITY FUNCTIONS ---
 const today = new Date();
 const formatDate = (date: Date): string => {
     const year = date.getFullYear();
@@ -14,6 +14,7 @@ const addDays = (date: Date, days: number) => {
     return result;
 };
 
+// --- MOCK DATA FOR 'admin' & 'matheus' USERS ---
 // --- CLIENTS ---
 export const MOCK_CLIENTS: Client[] = [
     {
@@ -215,4 +216,63 @@ export const MOCK_EXPENSES: Expense[] = [
     { id: 'exp-005', description: 'Material de Escritório', supplier: 'Papelaria Central', value: 175.50, dueDate: formatDate(addDays(today, -15)), status: PaymentStatus.Pago, paymentDate: formatDate(addDays(today, -14)) },
     { id: 'exp-006', description: 'Combustível Veículo', supplier: 'Posto Shell', value: 320.00, dueDate: formatDate(addDays(today, -8)), status: PaymentStatus.Pendente }, // Atrasado
     { id: 'exp-007', description: 'Serviços de Contabilidade', supplier: 'Contábil S.A.', document: '55.666.777/0001-88', pixKey: '12345678900', value: 750.00, dueDate: formatDate(today), status: PaymentStatus.Pago, paymentDate: formatDate(today) },
+];
+
+
+// --- MOCK DATA FOR 'henrique' USER ---
+
+export const HENRIQUE_MOCK_CLIENTS: Client[] = [
+    { id: 'hen-cli-001', name: 'HC Tech Soluções', document: '11.111.111/0001-11', address: 'Rua da Tecnologia, 100', city: 'Campinas', contactName: 'Henrique Costa', contact: '(19) 99111-1111', email: 'henrique@hctech.com', isRecurring: true, recurringAmount: 500, recurringInstallments: 12, recurringCycleStart: formatDate(addDays(today, -40)), paidInstallments: 1 },
+    { id: 'hen-cli-002', name: 'Cafeteria Grão Nobre', document: '22.222.222/0001-22', address: 'Avenida do Café, 200', city: 'São Paulo', contactName: 'Mariana Silva', contact: '(11) 99222-2222', email: 'mariana@graonobre.com', isRecurring: false },
+    { id: 'hen-cli-003', name: 'Construtora Edificar', document: '33.333.333/0001-33', address: 'Alameda dos Construtores, 300', city: 'Sorocaba', contactName: 'Roberto Almeida', contact: '(15) 99333-3333', email: 'roberto@edificar.com.br', isRecurring: true, recurringAmount: 1200, recurringInstallments: 4, recurringCycleStart: formatDate(addDays(today, -10)), paidInstallments: 0 },
+    { id: 'hen-cli-004', name: 'Clínica Veterinária Pet Feliz', document: '44.444.444/0001-44', address: 'Travessa dos Animais, 400', city: 'Jundiaí', contactName: 'Dr. Fernanda Lima', contact: '(11) 99444-4444', email: 'fernanda@petfeliz.vet.br', isRecurring: false },
+];
+
+export const HENRIQUE_MOCK_CLIENT_EQUIPMENT: ClientEquipment[] = [
+    { id: 'hen-asset-001', clientId: 'hen-cli-001', equipmentId: 'prod-007', serialNumber: 'INT-HC-01', expiryDate: formatDate(addDays(today, 1825)), location: "Escritório", status: InspectionStatus.Aprovado, lastInspectionDate: formatDate(addDays(today, -10)) },
+    { id: 'hen-asset-002', clientId: 'hen-cli-001', equipmentId: 'prod-001', serialNumber: 'CO2-HC-02', expiryDate: formatDate(addDays(today, 355)), location: "Servidores", status: InspectionStatus.Aprovado, lastInspectionDate: formatDate(addDays(today, -10)) },
+    { id: 'hen-asset-003', clientId: 'hen-cli-002', equipmentId: 'prod-004', serialNumber: 'PQS-GN-01', expiryDate: formatDate(addDays(today, 45)), location: "Cozinha", status: InspectionStatus.Pendente, lastInspectionDate: formatDate(addDays(today, -320)) },
+    { id: 'hen-asset-004', clientId: 'hen-cli-002', equipmentId: 'prod-002', serialNumber: 'AP-GN-02', expiryDate: formatDate(addDays(today, -5)), location: "Salão", status: InspectionStatus.Reprovado, lastInspectionDate: formatDate(addDays(today, -370)) },
+    { id: 'hen-asset-005', clientId: 'hen-cli-003', equipmentId: 'prod-009', serialNumber: 'CAR-ED-01', expiryDate: formatDate(addDays(today, 700)), location: "Canteiro de Obras", status: InspectionStatus.Agendada },
+    { id: 'hen-asset-006', clientId: 'hen-cli-004', equipmentId: 'prod-006', serialNumber: 'PQS-PF-01', expiryDate: formatDate(addDays(today, 200)), location: "Recepção", status: InspectionStatus.Aprovado, lastInspectionDate: formatDate(addDays(today, -165)) },
+];
+
+export const HENRIQUE_MOCK_INSPECTIONS: Inspection[] = [
+    { id: 'hen-ins-001', clientId: 'hen-cli-001', inspectedItems: [{ clientEquipmentId: 'hen-asset-001', location: 'Escritório', situation: InspectionItemStatus.Conforme, suggestedAction: 'Nenhuma' }, { clientEquipmentId: 'hen-asset-002', location: 'Servidores', situation: InspectionItemStatus.Conforme, suggestedAction: 'Nenhuma' }], date: formatDate(addDays(today, -10)), inspector: 'Henrique Costa', observations: 'Tudo em ordem.', status: InspectionStatus.Aprovado, time: '09:30' },
+    { id: 'hen-ins-002', clientId: 'hen-cli-002', inspectedItems: [{ clientEquipmentId: 'hen-asset-004', location: 'Salão', situation: InspectionItemStatus.NaoConforme, suggestedAction: 'Substituição imediata por vencimento.' }], date: formatDate(addDays(today, -2)), inspector: 'Henrique Costa', observations: 'Extintor do salão vencido.', status: InspectionStatus.Reprovado, time: '14:00' },
+    { id: 'hen-ins-003', clientId: 'hen-cli-003', inspectedItems: [], date: formatDate(addDays(today, 12)), inspector: 'Henrique Costa', observations: 'Vistoria inicial para liberação de alvará.', status: InspectionStatus.Agendada, time: '10:00' },
+    { id: 'hen-ins-004', clientId: 'hen-cli-004', inspectedItems: [{ clientEquipmentId: 'hen-asset-006', location: 'Recepção', situation: InspectionItemStatus.Conforme, suggestedAction: 'Nenhuma' }], date: formatDate(addDays(today, -165)), inspector: 'Admin', observations: 'Vistoria de rotina OK.', status: InspectionStatus.Concluída, time: '11:00' },
+];
+
+export const HENRIQUE_MOCK_FINANCIAL: FinancialRecord[] = [
+    { id: 'hen-fin-001', clientId: 'hen-cli-002', inspectionId: 'hen-ins-002', description: 'Taxa de vistoria e substituição de extintor', value: 480.00, issueDate: formatDate(addDays(today, -2)), dueDate: formatDate(addDays(today, 28)), status: PaymentStatus.Pendente },
+    { id: 'hen-fin-002', clientId: 'hen-cli-003', inspectionId: 'hen-ins-003', description: 'Sinal - Projeto de Segurança', value: 2500.00, issueDate: formatDate(addDays(today, -1)), dueDate: formatDate(addDays(today, 6)), status: PaymentStatus.Pendente },
+    { id: 'hen-fin-003', clientId: 'hen-cli-004', inspectionId: 'hen-ins-004', description: 'Serviço de vistoria', value: 250.00, issueDate: formatDate(addDays(today, -165)), dueDate: formatDate(addDays(today, -150)), paymentDate: formatDate(addDays(today, -148)), status: PaymentStatus.Pago },
+    { id: 'hen-fin-004', clientId: 'hen-cli-001', inspectionId: 'recorrente-hen-cli-001-1', description: 'Pagamento Recorrente - Parcela 1/12', value: 500.00, issueDate: formatDate(addDays(today, -35)), dueDate: formatDate(addDays(today, -10)), paymentDate: formatDate(addDays(today, -9)), status: PaymentStatus.Pago },
+    { id: 'hen-fin-005', clientId: 'hen-cli-001', inspectionId: '', description: 'Consultoria extra', value: 800.00, issueDate: formatDate(addDays(today, 0)), dueDate: '', status: PaymentStatus.Pendente, isConditionalDueDate: true, dueDateCondition: 'Após reunião de alinhamento' },
+];
+
+export const HENRIQUE_MOCK_CERTIFICATES: Certificate[] = [
+    { id: 'hen-cert-001', inspectionId: 'hen-ins-001', clientId: 'hen-cli-001', issueDate: formatDate(addDays(today, -10)), expiryDate: formatDate(addDays(today, 355)) },
+];
+
+export const HENRIQUE_MOCK_LICENSES: License[] = [
+    { id: 'hen-lic-001', clientId: 'hen-cli-002', type: 'AVCB', issueDate: formatDate(addDays(today, -400)), expiryDate: formatDate(addDays(today, -35)), status: LicenseStatus.Pendente },
+    { id: 'hen-lic-002', clientId: 'hen-cli-001', type: 'Alvará de Funcionamento', issueDate: formatDate(addDays(today, -20)), expiryDate: formatDate(addDays(today, 345)), status: LicenseStatus.Renovada },
+];
+
+export const HENRIQUE_MOCK_DELIVERIES: Delivery[] = [
+    { id: 'hen-del-001', clientId: 'hen-cli-002', description: 'Entrega de 1 extintor AP 10L novo', deliveryDate: formatDate(addDays(today, 1)), status: DeliveryStatus.Pendente },
+    { id: 'hen-del-002', clientId: 'hen-cli-003', description: 'Entrega de documentação para prefeitura', deliveryDate: formatDate(addDays(today, -5)), status: DeliveryStatus.Entregue },
+];
+
+export const HENRIQUE_MOCK_RECURRING_PAYABLES: RecurringPayable[] = [
+    { id: 'hen-rec-pay-001', description: 'Assinatura Software CRM', supplier: 'CRM Inc.', value: 250.00, recurringInstallments: 12, recurringCycleStart: formatDate(addDays(today, -25)), paidInstallments: 0 },
+    { id: 'hen-rec-pay-002', description: 'Plano de telefonia', supplier: 'Vivo', value: 180.00, recurringInstallments: 12, recurringCycleStart: formatDate(addDays(today, -45)), paidInstallments: 1 },
+];
+
+export const HENRIQUE_MOCK_EXPENSES: Expense[] = [
+    { id: 'hen-exp-001', description: 'Compra de EPIs', supplier: 'Segura Epi', value: 345.50, dueDate: formatDate(addDays(today, 15)), status: PaymentStatus.Pendente },
+    { id: 'hen-exp-002', description: 'Plano de telefonia - Parcela 1/12', recurringPayableId: 'hen-rec-pay-002', supplier: 'Vivo', value: 180.00, dueDate: formatDate(addDays(today, -15)), status: PaymentStatus.Pago, paymentDate: formatDate(addDays(today, -14)) },
+    { id: 'hen-exp-003', description: 'Anúncios Google', supplier: 'Google', value: 500.00, dueDate: formatDate(addDays(today, -3)), status: PaymentStatus.Pendente },
 ];

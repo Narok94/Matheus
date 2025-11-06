@@ -1,6 +1,6 @@
 import { useMemo, Dispatch, useEffect } from 'react';
 import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, PaymentStatus, ClientEquipment, RecurringPayable } from '../../types';
-import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES, MOCK_LICENSES, MOCK_DELIVERIES, MOCK_EXPENSES, MOCK_CLIENT_EQUIPMENT, MOCK_RECURRING_PAYABLES } from '../../data';
+import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES, MOCK_LICENSES, MOCK_DELIVERIES, MOCK_EXPENSES, MOCK_CLIENT_EQUIPMENT, MOCK_RECURRING_PAYABLES, HENRIQUE_MOCK_CLIENTS, HENRIQUE_MOCK_CLIENT_EQUIPMENT, HENRIQUE_MOCK_INSPECTIONS, HENRIQUE_MOCK_FINANCIAL, HENRIQUE_MOCK_CERTIFICATES, HENRIQUE_MOCK_LICENSES, HENRIQUE_MOCK_DELIVERIES, HENRIQUE_MOCK_EXPENSES, HENRIQUE_MOCK_RECURRING_PAYABLES } from '../../data';
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';
 import { get } from '../idb';
@@ -12,8 +12,6 @@ export const useData = () => {
         if (!currentUser) return 'guest';
         return currentUser;
     }, [currentUser]);
-
-    const isMockUser = useMemo(() => currentUser === 'admin', [currentUser]);
 
     // Initialization flag to prevent data loss on updates for mock users
     const [initialized, setInitialized, initializedLoaded] = useIndexedDB<boolean>(`${dataKeyPrefix}-initialized`, false);
@@ -37,23 +35,38 @@ export const useData = () => {
     
     const isDataLoading = !clientsLoaded || !equipmentLoaded || !clientEquipmentLoaded || !inspectionsLoaded || !financialLoaded || !certificatesLoaded || !lastBackupTimestampLoaded || !licensesLoaded || !deliveriesLoaded || !expensesLoaded || !initializedLoaded || !recurringPayablesLoaded;
 
-    // Effect to seed mock data for the 'admin' user only once.
+    // Effect to seed mock data for mock users only once.
     useEffect(() => {
-        if (initializedLoaded && !initialized && isMockUser) {
-            console.log("Seeding mock data for admin user...");
-            setClients(MOCK_CLIENTS);
-            setEquipment(MOCK_EQUIPMENT);
-            setClientEquipment(MOCK_CLIENT_EQUIPMENT);
-            setInspections(MOCK_INSPECTIONS);
-            setFinancial(MOCK_FINANCIAL);
-            setCertificates(MOCK_CERTIFICATES);
-            setLicenses(MOCK_LICENSES);
-            setDeliveries(MOCK_DELIVERIES);
-            setExpenses(MOCK_EXPENSES);
-            setRecurringPayables(MOCK_RECURRING_PAYABLES);
-            setInitialized(true);
+        if (initializedLoaded && !initialized) {
+            if (currentUser === 'admin') {
+                console.log("Seeding mock data for admin user...");
+                setClients(MOCK_CLIENTS);
+                setEquipment(MOCK_EQUIPMENT);
+                setClientEquipment(MOCK_CLIENT_EQUIPMENT);
+                setInspections(MOCK_INSPECTIONS);
+                setFinancial(MOCK_FINANCIAL);
+                setCertificates(MOCK_CERTIFICATES);
+                setLicenses(MOCK_LICENSES);
+                setDeliveries(MOCK_DELIVERIES);
+                setExpenses(MOCK_EXPENSES);
+                setRecurringPayables(MOCK_RECURRING_PAYABLES);
+                setInitialized(true);
+            } else if (currentUser === 'henrique') {
+                console.log("Seeding mock data for henrique user...");
+                setClients(HENRIQUE_MOCK_CLIENTS);
+                setEquipment(MOCK_EQUIPMENT); // Shared catalog
+                setClientEquipment(HENRIQUE_MOCK_CLIENT_EQUIPMENT);
+                setInspections(HENRIQUE_MOCK_INSPECTIONS);
+                setFinancial(HENRIQUE_MOCK_FINANCIAL);
+                setCertificates(HENRIQUE_MOCK_CERTIFICATES);
+                setLicenses(HENRIQUE_MOCK_LICENSES);
+                setDeliveries(HENRIQUE_MOCK_DELIVERIES);
+                setExpenses(HENRIQUE_MOCK_EXPENSES);
+                setRecurringPayables(HENRIQUE_MOCK_RECURRING_PAYABLES);
+                setInitialized(true);
+            }
         }
-    }, [initialized, initializedLoaded, isMockUser, setClients, setEquipment, setClientEquipment, setInspections, setFinancial, setCertificates, setLicenses, setDeliveries, setExpenses, setRecurringPayables, setInitialized]);
+    }, [initialized, initializedLoaded, currentUser, setClients, setEquipment, setClientEquipment, setInspections, setFinancial, setCertificates, setLicenses, setDeliveries, setExpenses, setRecurringPayables, setInitialized]);
 
 
     // --- CRUD Handlers ---

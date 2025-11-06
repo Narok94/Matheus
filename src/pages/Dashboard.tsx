@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, DeliveryStatus, InspectionStatus } from '../../types';
+import { View, InspectionStatus, PaymentStatus } from '../../types';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/common';
@@ -17,12 +17,57 @@ const DashboardGridButton = ({ label, icon, onClick }: { label: string, icon: Re
 const daysUntil = (date: Date) => Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
 export const Dashboard = ({ setView, onNewInspection }: { setView: (view: View) => void; onNewInspection: () => void; }) => {
-  const { clients, deliveries, inspections } = useData();
+  const { clients, inspections, financial, expenses } = useData();
   const { currentUserDetails } = useAuth();
   
   const firstName = currentUserDetails?.fullName?.split(' ')[0] || 'Usuário';
 
-  const pendingDeliveries = deliveries.filter(d => d.status === DeliveryStatus.Pendente).slice(0, 3);
+  const financialSummary = useMemo(() => {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+      const totalToReceive = financial
+          .filter(r => {
+              if (r.status !== PaymentStatus.Pendente || !r.dueDate) return false;
+              const dueDate = parseLocalDate(r.dueDate);
+              return dueDate.getMonth() === currentMonth && dueDate.getFullYear() === currentYear;
+          })
+          .reduce((sum, r) => sum + r.value, 0);
+
+      const totalReceived = financial
+          .filter(r => {
+              if (r.status !== PaymentStatus.Pago || !r.paymentDate) return false;
+              const paymentDate = parseLocalDate(r.paymentDate);
+              return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+          })
+          .reduce((sum, r) => sum + r.value, 0);
+
+      const totalToPay = expenses
+          .filter(p => {
+              if (p.status !== PaymentStatus.Pendente || !p.dueDate) return false;
+              const dueDate = parseLocalDate(p.dueDate);
+              return dueDate.getMonth() === currentMonth && dueDate.getFullYear() === currentYear;
+          })
+          .reduce((sum, p) => sum + p.value, 0);
+
+      const totalPaid = expenses
+          .filter(p => {
+              if (p.status !== PaymentStatus.Pago || !p.paymentDate) return false;
+              const paymentDate = parseLocalDate(p.paymentDate);
+              return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+          })
+          .reduce((sum, p) => sum + p.value, 0);
+
+      return {
+          totalToReceive: formatCurrency(totalToReceive),
+          totalReceived: formatCurrency(totalReceived),
+          totalToPay: formatCurrency(totalToPay),
+          totalPaid: formatCurrency(totalPaid),
+      };
+  }, [financial, expenses]);
   
   const upcomingInspections = useMemo(() => {
     const today = new Date();
@@ -47,6 +92,35 @@ export const Dashboard = ({ setView, onNewInspection }: { setView: (view: View) 
 
       {/* Alert Lists */}
       <div className="space-y-6">
+          <Card title="💰 Resumo Financeiro (Mês Atual)" collapsible>
+              <div className="space-y-3">
+                  <div className="p-3 bg-primary rounded-lg border border-border">
+                      <div className="flex justify-between items-center text-sm">
+                          <div>
+                              <p className="text-text-secondary">A Receber</p>
+                              <p className="text-lg font-bold text-status-pending">{financialSummary.totalToReceive}</p>
+                          </div>
+                          <div className="text-right">
+                              <p className="text-text-secondary">Recebido</p>
+                              <p className="text-lg font-bold text-status-approved">{financialSummary.totalReceived}</p>
+                          </div>
+                      </div>
+                  </div>
+                  <div className="p-3 bg-primary rounded-lg border border-border">
+                      <div className="flex justify-between items-center text-sm">
+                          <div>
+                              <p className="text-text-secondary">A Pagar</p>
+                              <p className="text-lg font-bold text-orange-500">{financialSummary.totalToPay}</p>
+                          </div>
+                           <div className="text-right">
+                              <p className="text-text-secondary">Pago</p>
+                              <p className="text-lg font-bold text-status-reproved">{financialSummary.totalPaid}</p>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </Card>
+
           <Card title={`🗓️ Vistorias Agendadas (${upcomingInspections.length})`} collapsible>
               <div className="space-y-3">
                   {upcomingInspections.length > 0 ? upcomingInspections.map(inspection => {
@@ -73,21 +147,6 @@ export const Dashboard = ({ setView, onNewInspection }: { setView: (view: View) 
                         </div>
                       )
                   }) : <p className="text-text-secondary text-sm">Nenhuma vistoria agendada para os próximos dias.</p>}
-              </div>
-          </Card>
-
-          <Card title="🚚 Entregas Pendentes" collapsible>
-              <div className="space-y-3">
-                  {pendingDeliveries.length > 0 ? pendingDeliveries.map(del => {
-                       const client = clients.find(c => c.id === del.clientId);
-                       return (
-                         <div key={del.id} className="text-sm p-3 bg-primary rounded-md">
-                            <p className="font-semibold text-text-primary">{client?.name}</p>
-                            <p className="text-text-secondary">{del.description}</p>
-                            <p className="text-status-scheduled">Data: {parseLocalDate(del.deliveryDate).toLocaleDateString()}</p>
-                         </div>
-                       )
-                  }) : <p className="text-text-secondary text-sm">Nenhuma entrega pendente.</p>}
               </div>
           </Card>
       </div>
