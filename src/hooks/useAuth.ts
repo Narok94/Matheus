@@ -24,7 +24,7 @@ export const useAuth = () => {
         },
         { 
             username: 'matheus', 
-            passwordHash: 'b6859364b4c2a557342617651a0279589d3118536130b9f7ac711d51a6101905', // Hashed "senha123"
+            passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // Hashed "1234"
             fullName: 'Matheus' 
         },
         { 
@@ -46,7 +46,7 @@ export const useAuth = () => {
                 },
                 { 
                     username: 'matheus', 
-                    passwordHash: 'b6859364b4c2a557342617651a0279589d3118536130b9f7ac711d51a6101905',
+                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // Hashed "1234"
                     fullName: 'Matheus' 
                 },
                 {
