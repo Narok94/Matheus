@@ -305,7 +305,7 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                             </div>
                             <div className="flex justify-end items-center space-x-2 mt-2 border-t border-border pt-2">
                                 {isVirtual ? (
-                                    <Button onClick={() => handlePayRecurring(client!, parseInt(rec.inspectionId.split('-').pop()!), rec.dueDate!)} variant="secondary" className="!py-1.5 !px-4 !text-xs">
+                                    <Button onClick={() => handlePayRecurring(client!, parseInt(rec.inspectionId.split('-').pop()!), rec.dueDate!)} variant="secondary" className="!py-1.5 !px-4 !text-xs bg-white text-black border border-gray-300 hover:bg-gray-100">
                                         Marcar como Pago
                                     </Button>
                                 ) : (
@@ -322,7 +322,7 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                                              <Button 
                                                 onClick={() => handleMarkAsPaid(rec as FinancialRecord)} 
                                                 variant="secondary" 
-                                                className="!py-1.5 !px-4 !text-xs bg-green-100/80 text-green-700 border-green-200 hover:bg-green-200/80 dark:bg-green-500/10 dark:text-green-300 dark:border-green-500/20 dark:hover:bg-green-500/20"
+                                                className="!py-1.5 !px-4 !text-xs bg-white text-black border border-gray-300 hover:bg-gray-100"
                                             >
                                                 Marcar como Pago
                                             </Button>

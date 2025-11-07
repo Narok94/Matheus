@@ -227,7 +227,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                              {(rec.pixKey || !isVirtual) && (
                                 <div className="flex justify-end items-center space-x-2 mt-2 border-t border-border pt-2">
                                     {isVirtual ? (
-                                        <Button onClick={() => handlePayVirtual((rec as any).masterId!, parseInt(rec.id.split('-').pop()!), rec.dueDate!)} variant="secondary" className="!py-1.5 !px-4 !text-xs">Marcar como Pago</Button>
+                                        <Button onClick={() => handlePayVirtual((rec as any).masterId!, parseInt(rec.id.split('-').pop()!), rec.dueDate!)} variant="secondary" className="!py-1.5 !px-4 !text-xs bg-white text-black border border-gray-300 hover:bg-gray-100">Marcar como Pago</Button>
                                     ) : (
                                         <>
                                              <button onClick={() => openModal(rec as Expense)} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
