@@ -1,5 +1,6 @@
 import React, { useState, ReactNode, useEffect, useCallback } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
+import { PluginListenerHandle } from '@capacitor/core';
 // FIX: Import ToastMessage to resolve type error.
 import { View, DetailView, AgendaAction, ToastMessage, CompanyProfile } from './types';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -227,7 +228,7 @@ const AppContent: React.FC = () => {
         });
 
         return () => {
-            listenerPromise.then(listener => listener.remove());
+            listenerPromise.then((listener: PluginListenerHandle) => listener.remove());
         };
     }, [currentView, handleBack]);
 
