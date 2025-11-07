@@ -20,6 +20,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "App.tsx", "data.ts", "index.tsx", "types.ts"],
+  "include": ["src", "App.tsx", "data.ts", "index.tsx", "types.ts", "capacitor.config.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
