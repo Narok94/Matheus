@@ -110,8 +110,8 @@ const AuthHeader = ({ logoUrl }: { logoUrl?: string | null }) => (
                 <div className="text-xs leading-tight text-slate-400">Coloque o Logotipo em configuração</div>
             )}
         </div>
-        <h1 className="text-3xl font-bold text-white tracking-wider">MDS</h1>
-        <p className="text-sm text-slate-400">Inspeções e Vistorias</p>
+        <h1 className="text-4xl font-bold text-white tracking-widest font-orbitron" style={{ textShadow: '0 0 5px #f97316, 0 0 10px #f97316' }}>MDS</h1>
+        <p className="text-base text-slate-400 tracking-wider mt-1">Laudos e Vistorias</p>
     </div>
 );
 
