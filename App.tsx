@@ -1,4 +1,6 @@
 import React, { useState, ReactNode, useEffect, useCallback } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
+// FIX: Import ToastMessage to resolve type error.
 import { View, DetailView, AgendaAction, ToastMessage, CompanyProfile } from './types';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { DataProvider, useData } from './src/context/DataContext';
@@ -210,12 +212,24 @@ const AppContent: React.FC = () => {
             previousView = 'agenda';
         } else if (currentView === 'certificateDetail') {
             previousView = 'certificates';
-        } else if (currentView !== 'dashboard') { // Go back to dashboard from main views
-            previousView = 'dashboard';
         }
         setDetailView(null);
         setCurrentView(previousView);
     }, [currentView]);
+
+    useEffect(() => {
+        const listenerPromise = CapacitorApp.addListener('backButton', () => {
+            if (currentView !== 'dashboard') {
+                handleBack();
+            }
+            // If on the dashboard, do nothing to prevent the app from closing,
+            // as requested by the user.
+        });
+
+        return () => {
+            listenerPromise.then(listener => listener.remove());
+        };
+    }, [currentView, handleBack]);
 
     const renderView = () => {
         switch (currentView) {

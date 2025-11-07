@@ -250,18 +250,18 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
 
                     {formType === 'single' ? (
                         <div className="space-y-4 animate-fade-in">
-                            <FormField label="Descrição"><Input value={singleExpenseState.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSingleExpenseState(p => ({...p, description: e.target.value}))} required /></FormField>
-                            <FormField label="Fornecedor (Opcional)"><Input value={singleExpenseState.supplier} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSingleExpenseState(p => ({...p, supplier: e.target.value}))} /></FormField>
-                            <FormField label="CPF ou CNPJ"><Input value={singleExpenseState.document || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSingleExpenseState(p => ({...p, document: formatDocument(e.target.value)}))} /></FormField>
+                            <FormField label="Descrição"><Input value={singleExpenseState.description} onChange={e => setSingleExpenseState(p => ({...p, description: e.target.value}))} required /></FormField>
+                            <FormField label="Fornecedor (Opcional)"><Input value={singleExpenseState.supplier} onChange={e => setSingleExpenseState(p => ({...p, supplier: e.target.value}))} /></FormField>
+                            <FormField label="CPF ou CNPJ"><Input value={singleExpenseState.document || ''} onChange={e => setSingleExpenseState(p => ({...p, document: formatDocument(e.target.value)}))} /></FormField>
                             <FormField label="Chave Pix">
                                 <div className="relative">
-                                    <Input value={singleExpenseState.pixKey} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSingleExpenseState(p => ({...p, pixKey: e.target.value}))} className="pr-10" />
+                                    <Input value={singleExpenseState.pixKey} onChange={e => setSingleExpenseState(p => ({...p, pixKey: e.target.value}))} className="pr-10" />
                                     <button type="button" onClick={() => handleCopy(singleExpenseState.pixKey || '')} className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-secondary hover:text-accent" aria-label="Copiar Chave Pix">
                                         <ClipboardIcon className="w-5 h-5" />
                                     </button>
                                 </div>
                             </FormField>
-                            <FormField label="Valor (R$)"><Input type="number" step="0.01" value={singleExpenseState.value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSingleExpenseState(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
+                            <FormField label="Valor (R$)"><Input type="number" step="0.01" value={singleExpenseState.value} onChange={e => setSingleExpenseState(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
                             
                             <FormField label="Opção de Vencimento">
                                 <div className="grid grid-cols-2 gap-2 mt-1">
@@ -306,7 +306,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                         <Input
                                             type="date"
                                             value={singleExpenseState.dueDate}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSingleExpenseState(p => ({ ...p, dueDate: e.target.value }))}
+                                            onChange={e => setSingleExpenseState(p => ({ ...p, dueDate: e.target.value }))}
                                             required
                                         />
                                     </FormField>
@@ -317,7 +317,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                         <Input
                                             type="text"
                                             value={singleExpenseState.dueDateCondition}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSingleExpenseState(p => ({ ...p, dueDateCondition: e.target.value }))}
+                                            onChange={e => setSingleExpenseState(p => ({ ...p, dueDateCondition: e.target.value }))}
                                             placeholder="Ex: Após aprovação da campanha"
                                             required
                                         />
@@ -326,7 +326,7 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                             )}
 
                             <FormField label="Status">
-                                <Select value={singleExpenseState.status} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSingleExpenseState(p => ({...p, status: e.target.value as PaymentStatus}))}>
+                                <Select value={singleExpenseState.status} onChange={e => setSingleExpenseState(p => ({...p, status: e.target.value as PaymentStatus}))}>
                                     <option value={PaymentStatus.Pendente}>Pendente</option>
                                     <option value={PaymentStatus.Pago}>Pago</option>
                                 </Select>
@@ -334,21 +334,21 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                         </div>
                     ) : (
                         <div className="space-y-4 animate-fade-in">
-                            <FormField label="Descrição da Recorrência"><Input value={recurringPayableState.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecurringPayableState(p => ({...p, description: e.target.value}))} required /></FormField>
-                            <FormField label="Fornecedor (Opcional)"><Input value={recurringPayableState.supplier} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecurringPayableState(p => ({...p, supplier: e.target.value}))} /></FormField>
-                            <FormField label="CPF ou CNPJ"><Input value={recurringPayableState.document || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecurringPayableState(p => ({...p, document: formatDocument(e.target.value)}))} /></FormField>
+                            <FormField label="Descrição da Recorrência"><Input value={recurringPayableState.description} onChange={e => setRecurringPayableState(p => ({...p, description: e.target.value}))} required /></FormField>
+                            <FormField label="Fornecedor (Opcional)"><Input value={recurringPayableState.supplier} onChange={e => setRecurringPayableState(p => ({...p, supplier: e.target.value}))} /></FormField>
+                            <FormField label="CPF ou CNPJ"><Input value={recurringPayableState.document || ''} onChange={e => setRecurringPayableState(p => ({...p, document: formatDocument(e.target.value)}))} /></FormField>
                              <FormField label="Chave Pix">
                                 <div className="relative">
-                                    <Input value={recurringPayableState.pixKey} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecurringPayableState(p => ({...p, pixKey: e.target.value}))} className="pr-10"/>
+                                    <Input value={recurringPayableState.pixKey} onChange={e => setRecurringPayableState(p => ({...p, pixKey: e.target.value}))} className="pr-10"/>
                                      <button type="button" onClick={() => handleCopy(recurringPayableState.pixKey || '')} className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-secondary hover:text-accent" aria-label="Copiar Chave Pix">
                                         <ClipboardIcon className="w-5 h-5" />
                                     </button>
                                 </div>
                             </FormField>
-                            <FormField label="Valor Mensal (R$)"><Input type="number" step="0.01" value={recurringPayableState.value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecurringPayableState(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
+                            <FormField label="Valor Mensal (R$)"><Input type="number" step="0.01" value={recurringPayableState.value} onChange={e => setRecurringPayableState(p => ({...p, value: parseFloat(e.target.value)}))} required /></FormField>
                             <div className="grid grid-cols-2 gap-4">
-                               <FormField label="Total de Parcelas"><Input type="number" value={recurringPayableState.recurringInstallments} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecurringPayableState(p => ({...p, recurringInstallments: parseInt(e.target.value,10)}))} required /></FormField>
-                               <FormField label="Início da Cobrança"><Input type="date" value={recurringPayableState.recurringCycleStart} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecurringPayableState(p => ({ ...p, recurringCycleStart: e.target.value }))} required /></FormField>
+                               <FormField label="Total de Parcelas"><Input type="number" value={recurringPayableState.recurringInstallments} onChange={e => setRecurringPayableState(p => ({...p, recurringInstallments: parseInt(e.target.value,10)}))} required /></FormField>
+                               <FormField label="Início da Cobrança"><Input type="date" value={recurringPayableState.recurringCycleStart} onChange={e => setRecurringPayableState(p => ({ ...p, recurringCycleStart: e.target.value }))} required /></FormField>
                             </div>
                         </div>
                     )}
