@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { useData } from '../context/DataContext';
 import { Card, Button } from '../components/common';
 import { DownloadIcon, EquipmentIcon, FinancialIcon } from '../components/Icons';

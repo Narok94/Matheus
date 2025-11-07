@@ -1,4 +1,5 @@
-import React, { useState, useEffect, ReactNode } from 'react';
+import * as React from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useSettings } from '../context/SettingsContext';
@@ -8,7 +9,14 @@ import { LogoutIcon, DownloadIcon, UploadIcon, RestoreIcon, BuildingIcon } from 
 
 type Tab = 'profile' | 'system' | 'account';
 
-const TabButton: React.FC<{ activeTab: Tab; tabName: Tab; label: string; onClick: (tab: Tab) => void; }> = ({ activeTab, tabName, label, onClick }) => (
+interface TabButtonProps {
+    activeTab: Tab;
+    tabName: Tab;
+    label: string;
+    onClick: (tab: Tab) => void;
+}
+
+const TabButton: React.FC<TabButtonProps> = ({ activeTab, tabName, label, onClick }) => (
     <button
         onClick={() => onClick(tabName)}
         className={`px-4 py-2 text-sm font-semibold transition-colors duration-200 border-b-2 ${
@@ -21,16 +29,24 @@ const TabButton: React.FC<{ activeTab: Tab; tabName: Tab; label: string; onClick
     </button>
 );
 
-const TabContent: React.FC<{ activeTab: Tab; tabName: Tab; children: ReactNode; }> = ({ activeTab, tabName, children }) => (
+interface TabContentProps {
+    activeTab: Tab;
+    tabName: Tab;
+    children: ReactNode;
+}
+
+const TabContent: React.FC<TabContentProps> = ({ activeTab, tabName, children }) => (
     <div className={`${activeTab === tabName ? 'block animate-fade-in' : 'hidden'}`}>
         {children}
     </div>
 );
 
+interface SettingsProps {
+    showToast: (msg: string, type?: 'success' | 'error') => void;
+}
 
-export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ showToast }) => {
+export const Settings: React.FC<SettingsProps> = ({ showToast }) => {
     const { currentUserDetails, handleUpdateUser, handleLogout } = useAuth();
-    // FIX: Added recurringPayables to destructuring from useData hook.
     const { clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses, recurringPayables, handleImportData, lastBackupTimestamp, confirmAutoRestore: confirmDataAutoRestore } = useData();
     const { theme, setTheme, companyProfile, setCompanyProfile, appSettings, handleImportSettings, confirmAutoRestoreSettings } = useSettings();
 
@@ -93,7 +109,6 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
     };
 
     const handleExportData = () => {
-        // FIX: Added recurringPayables to the backup data object to match the BackupData type.
         const backupData: BackupData = {
             clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses, recurringPayables,
             companyProfile, appSettings,
@@ -162,7 +177,7 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                     <div className="space-y-6">
                         <Card title="Meu Perfil">
                             <div className="space-y-4">
-                                <FormField label="Nome Completo"><Input value={userProfile.fullName} onChange={(e) => setUserProfile(p => ({ ...p, fullName: e.target.value }))} /></FormField>
+                                <FormField label="Nome Completo"><Input value={userProfile.fullName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserProfile(p => ({ ...p, fullName: e.target.value }))} /></FormField>
                                 <div className="flex justify-end"><Button onClick={handleUserSave}>Salvar Perfil</Button></div>
                             </div>
                         </Card>
@@ -174,7 +189,7 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                         <Card title="Aparência">
                             <div className="flex items-center justify-between p-2">
                                 <span className="text-text-primary font-medium">Modo Escuro</span>
-                                <ToggleSwitch enabled={theme === 'dark'} onChange={(enabled) => setTheme(enabled ? 'dark' : 'light')} />
+                                <ToggleSwitch enabled={theme === 'dark'} onChange={(enabled: boolean) => setTheme(enabled ? 'dark' : 'light')} />
                             </div>
                         </Card>
                         <Card title="Perfil da Empresa">
