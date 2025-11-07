@@ -1,5 +1,4 @@
 import React, { useState, ReactNode, useEffect, useCallback } from 'react';
-import { App as CapacitorApp } from '@capacitor/app';
 import { View, DetailView, AgendaAction, ToastMessage, CompanyProfile } from './types';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { DataProvider, useData } from './src/context/DataContext';
@@ -217,21 +216,6 @@ const AppContent: React.FC = () => {
         setDetailView(null);
         setCurrentView(previousView);
     }, [currentView]);
-
-    useEffect(() => {
-        const backButtonListener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
-            if (canGoBack) {
-                window.history.back();
-            } else {
-                // If there's no web history, use our custom app navigation logic.
-                handleBack();
-            }
-        });
-
-        return () => {
-            backButtonListener.remove();
-        };
-    }, [handleBack]);
 
     const renderView = () => {
         switch (currentView) {
