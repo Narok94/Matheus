@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch, Select, Textarea } from '../components/common';
 import { AgendaIcon, DownloadIcon, EditIcon, TrashIcon, PlusIcon } from '../components/Icons';
@@ -25,8 +25,10 @@ export const ClientDetail: React.FC<{
     const [editingAsset, setEditingAsset] = useState<ClientEquipment | null>(null);
     const [assetToDelete, setAssetToDelete] = useState<ClientEquipment | null>(null);
 
-    const initialAssetState: Omit<ClientEquipment, 'id' | 'clientId'> = { equipmentId: '', serialNumber: '', location: '', status: InspectionStatus.Agendada };
-    const [assetFormState, setAssetFormState] = useState(initialAssetState);
+    const initialAssetState: Partial<ClientEquipment> = { equipmentId: '', serialNumber: '', location: '', status: InspectionStatus.Agendada, expiryDate: '', lastInspectionDate: '' };
+    const [assetFormState, setAssetFormState] = useState<Partial<ClientEquipment>>(initialAssetState);
+    const [quantity, setQuantity] = useState(1);
+
 
     useEffect(() => {
         setEditedClient(clients.find(c => c.id === clientId));
@@ -36,8 +38,10 @@ export const ClientDetail: React.FC<{
         if (isAssetModalOpen) {
             if (editingAsset) {
                 setAssetFormState(editingAsset);
+                setQuantity(1); // Not used in edit mode
             } else {
                 setAssetFormState(initialAssetState);
+                setQuantity(1);
             }
         }
     }, [isAssetModalOpen, editingAsset]);
@@ -48,6 +52,21 @@ export const ClientDetail: React.FC<{
 
     const clientAssets = clientEquipment.filter(e => e.clientId === client.id);
     const clientInspections = inspections.filter(i => i.clientId === client.id);
+    
+    const groupedAssets = useMemo(() => {
+        const groups: Record<string, ClientEquipment[]> = {};
+        clientAssets.forEach(asset => {
+            if (!groups[asset.equipmentId]) {
+                groups[asset.equipmentId] = [];
+            }
+            groups[asset.equipmentId].push(asset);
+        });
+        return Object.values(groups).sort((a,b) => {
+             const productA = equipment.find(p => p.id === a[0].equipmentId)?.name || '';
+             const productB = equipment.find(p => p.id === b[0].equipmentId)?.name || '';
+             return productA.localeCompare(productB);
+        });
+    }, [clientAssets, equipment]);
 
     // Client Edit Handlers
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -89,7 +108,19 @@ export const ClientDetail: React.FC<{
         if (editingAsset) {
             handleUpdateClientEquipment(assetFormState as ClientEquipment);
         } else {
-            handleAddClientEquipment({ ...assetFormState, clientId: client.id });
+            if (!assetFormState.equipmentId) return;
+            for(let i=0; i<quantity; i++) {
+                const newAsset: Omit<ClientEquipment, 'id'> = {
+                    clientId: client.id,
+                    equipmentId: assetFormState.equipmentId,
+                    serialNumber: "A preencher",
+                    location: "A definir",
+                    status: InspectionStatus.Agendada,
+                    expiryDate: assetFormState.expiryDate,
+                    lastInspectionDate: assetFormState.lastInspectionDate
+                };
+                handleAddClientEquipment(newAsset);
+            }
         }
         setAssetModalOpen(false);
         setEditingAsset(null);
@@ -209,24 +240,37 @@ export const ClientDetail: React.FC<{
                 </Card>
             )}
 
-            <Card title={`Equipamentos do Cliente (${clientAssets.length})`} collapsible actions={<Button variant="secondary" className="!py-1 !px-3 !text-xs" onClick={() => setAssetModalOpen(true)}><PlusIcon className="w-4 h-4 mr-1" /> Adicionar</Button>}>
-                {clientAssets.length > 0 ? clientAssets.map(asset => {
-                    const product = equipment.find(p => p.id === asset.equipmentId);
+            <Card title={`Equipamentos do Cliente (${clientAssets.length})`} actions={<Button variant="secondary" className="!py-1 !px-3 !text-xs" onClick={() => setAssetModalOpen(true)}><PlusIcon className="w-4 h-4 mr-1" /> Adicionar</Button>}>
+                <div className="space-y-2">
+                {groupedAssets.length > 0 ? groupedAssets.map(group => {
+                    const product = equipment.find(p => p.id === group[0].equipmentId);
                     return (
-                    <div key={asset.id} className="py-2 border-b border-border last:border-b-0">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <p className="font-semibold text-text-primary">{product?.name} <span className="text-text-secondary text-xs">({asset.serialNumber})</span></p>
-                                <p className="text-sm text-text-secondary">Vencimento: {asset.expiryDate ? parseLocalDate(asset.expiryDate).toLocaleDateString() : 'N/A'}</p>
-                            </div>
-                            {getStatusBadge(asset.status)}
-                        </div>
-                        <div className="flex justify-end space-x-2 mt-1">
-                            <button onClick={() => { setEditingAsset(asset); setAssetModalOpen(true); }} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
-                            <button onClick={() => openDeleteAssetModal(asset)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
-                        </div>
-                    </div>
-                )}) : <p className="text-text-secondary text-sm">Nenhum equipamento cadastrado.</p>}
+                        <Card key={group[0].equipmentId} title={`${product?.name} (${group.length} Unidades)`} collapsible className="bg-primary/50">
+                            {group.map(asset => (
+                                <div key={asset.id} className="py-2 border-b border-border last:border-b-0">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="font-semibold text-text-primary text-sm">Nº Série: <span className="font-normal">{asset.serialNumber}</span></p>
+                                            <p className="text-xs text-text-secondary">Local: {asset.location}</p>
+                                        </div>
+                                        {getStatusBadge(asset.status)}
+                                    </div>
+                                    <div className="flex justify-between items-end text-xs text-text-secondary mt-1">
+                                         <div>
+                                            <p>Manutenção: {asset.lastInspectionDate ? parseLocalDate(asset.lastInspectionDate).toLocaleDateString() : 'N/A'}</p>
+                                            <p>Próx. Recarga: {asset.expiryDate ? parseLocalDate(asset.expiryDate).toLocaleDateString() : 'N/A'}</p>
+                                        </div>
+                                        <div className="flex justify-end space-x-2">
+                                            <button onClick={() => { setEditingAsset(asset); setAssetModalOpen(true); }} className="p-1.5 hover:bg-secondary rounded-full"><EditIcon className="w-4 h-4" /></button>
+                                            <button onClick={() => openDeleteAssetModal(asset)} className="p-1.5 hover:bg-secondary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </Card>
+                    );
+                }) : <p className="text-text-secondary text-sm">Nenhum equipamento cadastrado.</p>}
+                </div>
             </Card>
 
             <Card title={`Histórico de Inspeções/Vistorias (${clientInspections.length})`} collapsible>
@@ -282,23 +326,43 @@ export const ClientDetail: React.FC<{
                 message={`Tem certeza que deseja excluir ${client.name}? Todos os equipamentos e inspeções associados também serão removidos. Esta ação não pode ser desfeita.`}
             />
             
-            {/* Asset Modals */}
-             <Modal isOpen={isAssetModalOpen} onClose={() => setAssetModalOpen(false)} title={editingAsset ? "Editar Equipamento do Cliente" : "Adicionar Equipamento ao Cliente"}>
+            {/* Asset Modal */}
+             <Modal isOpen={isAssetModalOpen} onClose={() => { setAssetModalOpen(false); setEditingAsset(null); }} title={editingAsset ? "Editar Equipamento" : "Adicionar Equipamentos"}>
                 <form onSubmit={handleAssetFormSubmit} className="space-y-4">
-                    <FormField label="Tipo de Equipamento (do Catálogo)">
-                        <Select name="equipmentId" value={assetFormState.equipmentId} onChange={handleAssetFormChange} required>
+                    <FormField label="Equipamento (do Catálogo)">
+                        <Select name="equipmentId" value={assetFormState.equipmentId || ''} onChange={handleAssetFormChange} required>
                             <option value="">Selecione um produto</option>
                             {equipment.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </Select>
                     </FormField>
-                    <FormField label="Número de Série"><Input name="serialNumber" value={assetFormState.serialNumber} onChange={handleAssetFormChange} required /></FormField>
-                    <FormField label="Localização"><Input name="location" value={assetFormState.location} onChange={handleAssetFormChange} required /></FormField>
-                    <FormField label="Status">
-                        <Select name="status" value={assetFormState.status} onChange={handleAssetFormChange} required>
-                            {Object.values(InspectionStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                        </Select>
-                    </FormField>
-                    <div className="flex justify-end pt-4"><Button type="submit">{editingAsset ? "Salvar Alterações" : "Adicionar Equipamento"}</Button></div>
+
+                    {!editingAsset ? (
+                        <>
+                            <FormField label="Quantidade">
+                                <Input type="number" name="quantity" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)} min="1" required />
+                            </FormField>
+                            <FormField label="Data da Próxima Recarga (Opcional)">
+                                <Input type="date" name="expiryDate" value={assetFormState.expiryDate || ''} onChange={handleAssetFormChange} />
+                            </FormField>
+                             <FormField label="Data da Última Manutenção (Opcional)">
+                                <Input type="date" name="lastInspectionDate" value={assetFormState.lastInspectionDate || ''} onChange={handleAssetFormChange} />
+                            </FormField>
+                        </>
+                    ) : (
+                        <>
+                            <FormField label="Número de Série"><Input name="serialNumber" value={assetFormState.serialNumber || ''} onChange={handleAssetFormChange} required /></FormField>
+                            <FormField label="Localização"><Input name="location" value={assetFormState.location || ''} onChange={handleAssetFormChange} required /></FormField>
+                            <FormField label="Data da Próxima Recarga"><Input type="date" name="expiryDate" value={assetFormState.expiryDate || ''} onChange={handleAssetFormChange} /></FormField>
+                            <FormField label="Data da Manutenção"><Input type="date" name="lastInspectionDate" value={assetFormState.lastInspectionDate || ''} onChange={handleAssetFormChange} /></FormField>
+                            <FormField label="Status">
+                                <Select name="status" value={assetFormState.status || InspectionStatus.Agendada} onChange={handleAssetFormChange} required>
+                                    {Object.values(InspectionStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                                </Select>
+                            </FormField>
+                        </>
+                    )}
+
+                    <div className="flex justify-end pt-4"><Button type="submit">{editingAsset ? "Salvar Alterações" : "Adicionar Equipamentos"}</Button></div>
                 </form>
             </Modal>
             <ConfirmationModal 
