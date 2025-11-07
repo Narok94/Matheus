@@ -1,7 +1,5 @@
-// FIX: Removed Capacitor-related imports and references as type definitions were not found.
-// This will disable native mobile back button handling but allows the app to compile.
 import React, { useState, ReactNode, useEffect, useCallback } from 'react';
-// FIX: Import ToastMessage to resolve type error.
+import { App as CapacitorApp } from '@capacitor/app';
 import { View, DetailView, AgendaAction, ToastMessage, CompanyProfile } from './types';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { DataProvider, useData } from './src/context/DataContext';
@@ -213,14 +211,27 @@ const AppContent: React.FC = () => {
             previousView = 'agenda';
         } else if (currentView === 'certificateDetail') {
             previousView = 'certificates';
+        } else if (currentView !== 'dashboard') { // Go back to dashboard from main views
+            previousView = 'dashboard';
         }
         setDetailView(null);
         setCurrentView(previousView);
     }, [currentView]);
 
-    // FIX: Removed Capacitor back button handler due to missing type definitions.
-    // The browser's back button will still function. For native mobile, this
-    // functionality would need to be re-added once the environment is set up.
+    useEffect(() => {
+        const backButtonListener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+            if (canGoBack) {
+                window.history.back();
+            } else {
+                // If there's no web history, use our custom app navigation logic.
+                handleBack();
+            }
+        });
+
+        return () => {
+            backButtonListener.remove();
+        };
+    }, [handleBack]);
 
     const renderView = () => {
         switch (currentView) {
