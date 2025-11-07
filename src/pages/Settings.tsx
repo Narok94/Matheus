@@ -30,7 +30,6 @@ const TabContent: React.FC<{ activeTab: Tab; tabName: Tab; children: ReactNode; 
 
 export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ showToast }) => {
     const { currentUserDetails, handleUpdateUser, handleLogout } = useAuth();
-    // FIX: Added recurringPayables to destructuring from useData hook.
     const { clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses, recurringPayables, handleImportData, lastBackupTimestamp, confirmAutoRestore: confirmDataAutoRestore } = useData();
     const { theme, setTheme, companyProfile, setCompanyProfile, appSettings, handleImportSettings, confirmAutoRestoreSettings } = useSettings();
 
@@ -93,7 +92,6 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
     };
 
     const handleExportData = () => {
-        // FIX: Added recurringPayables to the backup data object to match the BackupData type.
         const backupData: BackupData = {
             clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses, recurringPayables,
             companyProfile, appSettings,
