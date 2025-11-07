@@ -1,0 +1,8 @@
+{
+  "appId": "com.inspecpro.app",
+  "appName": "InspecPro",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
