@@ -53,19 +53,10 @@ export const Dashboard = ({ setView, onNewInspection }: { setView: (view: View) 
           })
           .reduce((sum, p) => sum + p.value, 0);
 
-      const totalPaid = expenses
-          .filter(p => {
-              if (p.status !== PaymentStatus.Pago || !p.paymentDate) return false;
-              const paymentDate = parseLocalDate(p.paymentDate);
-              return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
-          })
-          .reduce((sum, p) => sum + p.value, 0);
-
       return {
           totalToReceive: formatCurrency(totalToReceive),
           totalReceived: formatCurrency(totalReceived),
           totalToPay: formatCurrency(totalToPay),
-          totalPaid: formatCurrency(totalPaid),
       };
   }, [financial, expenses]);
   
@@ -107,14 +98,10 @@ export const Dashboard = ({ setView, onNewInspection }: { setView: (view: View) 
                       </div>
                   </div>
                   <div className="p-3 bg-primary rounded-lg border border-border">
-                      <div className="flex justify-between items-center text-sm">
+                      <div className="flex justify-start items-center text-sm">
                           <div>
                               <p className="text-text-secondary">A Pagar</p>
                               <p className="text-lg font-bold text-orange-500">{financialSummary.totalToPay}</p>
-                          </div>
-                           <div className="text-right">
-                              <p className="text-text-secondary">Pago</p>
-                              <p className="text-lg font-bold text-status-reproved">{financialSummary.totalPaid}</p>
                           </div>
                       </div>
                   </div>
