@@ -38,8 +38,8 @@ export const useData = () => {
     // Effect to seed mock data for mock users only once.
     useEffect(() => {
         if (initializedLoaded && !initialized) {
-            if (currentUser === 'admin') {
-                console.log("Seeding mock data for admin user...");
+            if (currentUser === 'admin' || currentUser === 'matheus') {
+                console.log(`Seeding mock data for ${currentUser} user...`);
                 setClients(MOCK_CLIENTS);
                 setEquipment(MOCK_EQUIPMENT);
                 setClientEquipment(MOCK_CLIENT_EQUIPMENT);
@@ -289,40 +289,31 @@ export const useData = () => {
             expenses: setExpenses,
             recurringPayables: setRecurringPayables,
         };
+
         for (const key of dataSetKeys) {
-            const backupValue = await get(`${dataKeyPrefix}-${key}_backup`);
-            if (backupValue) {
-                setters[key](backupValue);
+            const backupData = await get(`${dataKeyPrefix}-${key}_backup`);
+            if (backupData) {
+                setters[key](backupData);
             }
         }
     };
 
+
     return {
-        clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses, recurringPayables,
+        clients, setClients, handleAddClient, handleUpdateClient, handleDeleteClient,
+        equipment, setEquipment, handleAddEquipment, handleUpdateEquipment, handleDeleteEquipment,
+        clientEquipment, setClientEquipment, handleAddClientEquipment, handleUpdateClientEquipment, handleDeleteClientEquipment,
+        inspections, setInspections, handleAddInspection, handleUpdateInspection, handleDeleteInspection,
+        financial, setFinancial, handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial,
+        certificates, setCertificates, handleAddCertificate,
+        licenses, setLicenses, handleUpdateLicense,
+        deliveries, setDeliveries,
+        expenses, setExpenses, handleAddExpense, handleUpdateExpense, handleDeleteExpense,
+        recurringPayables, setRecurringPayables, handleAddRecurringPayable, handleUpdateRecurringPayable, handleDeleteRecurringPayable, handlePayRecurringExpense,
         isDataLoading,
-        // Client
-        handleAddClient, handleUpdateClient, handleDeleteClient,
-        // Equipment (Product)
-        handleAddEquipment, handleUpdateEquipment, handleDeleteEquipment,
-        // Client Equipment (Asset)
-        handleAddClientEquipment, handleUpdateClientEquipment, handleDeleteClientEquipment,
-        // Inspection
-        handleAddInspection, handleUpdateInspection, handleDeleteInspection,
-        // Financial
-        handleAddFinancial, handleUpdateFinancial, handleDeleteFinancial,
-        // Expense
-        handleAddExpense, handleUpdateExpense, handleDeleteExpense,
-        // Recurring Payables
-        handleAddRecurringPayable, handleUpdateRecurringPayable, handleDeleteRecurringPayable, handlePayRecurringExpense,
-        // Certificate
-        handleAddCertificate,
-        // License
-        handleUpdateLicense,
-        // Recurring Payment
-        handleMarkInstallmentAsPaid,
-        // Data
         handleImportData,
         lastBackupTimestamp,
         confirmAutoRestore,
+        handleMarkInstallmentAsPaid,
     };
 };
