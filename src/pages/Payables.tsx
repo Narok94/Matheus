@@ -220,7 +220,15 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                     )}
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-xs text-text-secondary mb-1">Venc.: {rec.isConditionalDueDate ? rec.dueDateCondition : (rec.dueDate ? parseLocalDate(rec.dueDate).toLocaleDateString() : 'N/A')}</p>
+                                    {rec.status === PaymentStatus.Pago && rec.paymentDate ? (
+                                        <p className="text-xs text-status-approved dark:text-green-400 font-semibold mb-1">
+                                            Pago em: {parseLocalDate(rec.paymentDate).toLocaleDateString()}
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-text-secondary mb-1">
+                                            Venc.: {rec.isConditionalDueDate ? rec.dueDateCondition : (rec.dueDate ? parseLocalDate(rec.dueDate).toLocaleDateString() : 'N/A')}
+                                        </p>
+                                    )}
                                     <FinancialStatusBadge record={rec} />
                                 </div>
                             </div>
@@ -326,11 +334,25 @@ export const Payables: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                             )}
 
                             <FormField label="Status">
-                                <Select value={singleExpenseState.status} onChange={e => setSingleExpenseState(p => ({...p, status: e.target.value as PaymentStatus}))}>
+                                <Select value={singleExpenseState.status} onChange={e => {
+                                    const newStatus = e.target.value as PaymentStatus;
+                                    setSingleExpenseState(p => ({
+                                        ...p,
+                                        status: newStatus,
+                                        paymentDate: (newStatus === PaymentStatus.Pago && !p.paymentDate) ? formatLocalDate(new Date()) : (newStatus === PaymentStatus.Pendente ? '' : p.paymentDate)
+                                    }));
+                                }}>
                                     <option value={PaymentStatus.Pendente}>Pendente</option>
                                     <option value={PaymentStatus.Pago}>Pago</option>
                                 </Select>
                             </FormField>
+                            {singleExpenseState.status === PaymentStatus.Pago && (
+                                <div className="animate-fade-in">
+                                    <FormField label="Data de Pagamento">
+                                        <Input type="date" value={singleExpenseState.paymentDate || ''} onChange={e => setSingleExpenseState(p => ({ ...p, paymentDate: e.target.value }))} required />
+                                    </FormField>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-4 animate-fade-in">

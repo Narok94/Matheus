@@ -91,20 +91,48 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
         }
     };
 
-    const handleExportData = () => {
+    const handleExportData = async () => {
         const backupData: BackupData = {
             clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses, recurringPayables,
             companyProfile, appSettings,
         };
         const jsonString = JSON.stringify(backupData, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `MDS_Backup_${new Date().toISOString().slice(0, 10)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast("Backup exportado com sucesso!");
+        const fileName = `MDS_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+
+        if ((window as any).showSaveFilePicker) {
+            try {
+                const handle = await (window as any).showSaveFilePicker({
+                    suggestedName: fileName,
+                    types: [{
+                        description: 'JSON Files',
+                        accept: { 'application/json': ['.json'] },
+                    }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                showToast("Backup salvo com sucesso!");
+            } catch (err: any) {
+                if (err.name === 'AbortError') {
+                    console.log("File save aborted by user.");
+                } else {
+                    console.error('Error saving file:', err);
+                    showToast("Erro ao salvar o backup.", "error");
+                }
+            }
+        } else {
+            // Fallback for browsers that don't support the API
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a); // Required for Firefox
+            a.click();
+            document.body.removeChild(a); // Clean up
+            URL.revokeObjectURL(url);
+            showToast("Backup exportado com sucesso!");
+        }
     };
 
     const handleFileImportChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -288,16 +288,17 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                                     <p className="text-xs text-text-secondary">{client?.name}</p>
                                 </div>
                                 <div className="text-right flex-shrink-0 ml-4">
-                                    <div className="text-xs text-text-secondary mb-1">
-                                        {rec.isConditionalDueDate ? (
-                                            <span>{rec.dueDateCondition}</span>
-                                        ) : (
-                                            <span>Venc.: {rec.dueDate ? parseLocalDate(rec.dueDate).toLocaleDateString() : 'N/A'}</span>
-                                        )}
-                                    </div>
-                                    {rec.status === PaymentStatus.Pago && rec.paymentDate && (
+                                    {rec.status === PaymentStatus.Pago && rec.paymentDate ? (
                                         <div className="text-xs text-status-approved dark:text-green-400 font-semibold mb-1">
-                                            Pago: {parseLocalDate(rec.paymentDate).toLocaleDateString()}
+                                            Pago em: {parseLocalDate(rec.paymentDate).toLocaleDateString()}
+                                        </div>
+                                    ) : (
+                                        <div className="text-xs text-text-secondary mb-1">
+                                            {rec.isConditionalDueDate ? (
+                                                <span>{rec.dueDateCondition}</span>
+                                            ) : (
+                                                <span>Venc.: {rec.dueDate ? parseLocalDate(rec.dueDate).toLocaleDateString() : 'N/A'}</span>
+                                            )}
                                         </div>
                                     )}
                                     <FinancialStatusBadge record={rec} />
@@ -414,14 +415,21 @@ export const Financial: React.FC<{ showToast: (msg: string, type?: 'success' | '
                     )}
 
                      <FormField label="Status">
-                        <Select value={formState.status} onChange={e => setFormState(p => ({...p, status: e.target.value as PaymentStatus}))}>
+                        <Select value={formState.status} onChange={e => {
+                            const newStatus = e.target.value as PaymentStatus;
+                            setFormState(p => ({
+                                ...p, 
+                                status: newStatus,
+                                paymentDate: (newStatus === PaymentStatus.Pago && !p.paymentDate) ? formatLocalDate(new Date()) : (newStatus === PaymentStatus.Pendente ? '' : p.paymentDate)
+                            }));
+                        }}>
                             <option value={PaymentStatus.Pendente}>Pendente</option>
                             <option value={PaymentStatus.Pago}>Pago</option>
                         </Select>
                     </FormField>
                      {formState.status === PaymentStatus.Pago && (
                          <div className="animate-fade-in">
-                            <FormField label="Data de Recebimento"><Input type="date" value={formState.paymentDate} onChange={e => setFormState(p => ({...p, paymentDate: e.target.value}))} /></FormField>
+                            <FormField label="Data de Recebimento"><Input type="date" value={formState.paymentDate} onChange={e => setFormState(p => ({...p, paymentDate: e.target.value}))} required /></FormField>
                          </div>
                     )}
                     <div className="flex justify-end pt-4"><Button type="submit">{editingRecord ? 'Salvar Alterações' : 'Salvar Registro'}</Button></div>
