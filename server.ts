@@ -7,7 +7,17 @@ import path from "path";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { query, initDB } from "./src/db/index.js";
+import crypto from "crypto";
+import { query, initDB } from "./src/db/index";
+
+// --- GLOBAL ERROR HANDLERS ---
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception thrown:', err);
+});
 
 console.log("Server starting...");
 
@@ -110,9 +120,10 @@ app.post("/api/auth/register", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const bcryptHash = await bcrypt.hash(passwordHash, salt);
 
+    const userId = crypto.randomUUID();
     const result = await query(
-      "INSERT INTO users (username, password_hash, email, full_name) VALUES ($1, $2, $3, $4) RETURNING id, username",
-      [username.toLowerCase(), bcryptHash, email, fullName]
+      "INSERT INTO users (id, username, password_hash, email, full_name) VALUES ($1, $2, $3, $4, $5) RETURNING id, username",
+      [userId, username.toLowerCase(), bcryptHash, email, fullName]
     );
 
     res.status(201).json(result.rows[0]);

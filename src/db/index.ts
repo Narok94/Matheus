@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import pg from 'pg';
-import { schema } from './schema.js';
+import { schema } from './schema';
 
 const { Pool } = pg;
 
