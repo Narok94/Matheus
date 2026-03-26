@@ -245,7 +245,9 @@ if (process.env.NODE_ENV !== "production") {
 
 // Start Server locally
 if (process.env.NODE_ENV !== "production") {
-  start();
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 }
 
 export default app;

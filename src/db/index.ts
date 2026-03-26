@@ -1,7 +1,6 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
+import { schema } from './schema';
 
 dotenv.config();
 
@@ -18,12 +17,6 @@ export const query = (text: string, params?: any[]) => pool.query(text, params);
 
 export const initDB = async () => {
   try {
-    const schemaPath = path.join(process.cwd(), 'src', 'db', 'schema.sql');
-    if (!fs.existsSync(schemaPath)) {
-      console.error('Schema file not found at:', schemaPath);
-      return;
-    }
-    const schema = fs.readFileSync(schemaPath, 'utf8');
     await query(schema);
     console.log('Database initialized successfully');
   } catch (error) {
