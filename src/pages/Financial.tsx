@@ -194,9 +194,9 @@ export const Financial: React.FC = () => {
                         <Card key={rec.id}>
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h4 className="font-semibold text-text-primary">R$ {rec.value.toFixed(2).replace('.', ',')}</h4>
+                                    <h4 className="font-semibold text-text-primary">{client?.name}</h4>
                                     <p className="text-sm text-text-secondary">{rec.description}</p>
-                                    <p className="text-xs text-text-secondary">{client?.name}</p>
+                                    <p className="text-xs text-text-secondary">R$ {rec.value.toFixed(2).replace('.', ',')}</p>
                                 </div>
                                 <div className="text-right flex-shrink-0 ml-4">
                                     <div className="flex items-center justify-end text-xs text-text-secondary mb-1">
@@ -206,7 +206,16 @@ export const Financial: React.FC = () => {
                                     <FinancialStatusBadge record={rec} />
                                 </div>
                             </div>
-                            <div className="flex justify-end space-x-2 mt-2 border-t border-border pt-2">
+                            <div className="flex justify-end items-center space-x-2 mt-2 border-t border-border pt-2">
+                                {rec.status === PaymentStatus.Pendente && (
+                                    <Button 
+                                        onClick={() => handleUpdateFinancial({ ...rec, status: PaymentStatus.Pago, paymentDate: new Date().toISOString().split('T')[0] })} 
+                                        variant="secondary" 
+                                        className="!py-1.5 !px-4 !text-xs mr-auto"
+                                    >
+                                        Marcar como Pago
+                                    </Button>
+                                )}
                                 <button onClick={() => openModal(rec)} className="p-1.5 hover:bg-primary rounded-full"><EditIcon className="w-4 h-4" /></button>
                                 <button onClick={() => openDeleteConfirm(rec)} className="p-1.5 hover:bg-primary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
                             </div>
