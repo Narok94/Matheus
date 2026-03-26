@@ -1,26 +1,33 @@
+import 'dotenv/config';
 import pg from 'pg';
-import dotenv from 'dotenv';
-import { schema } from './schema';
-
-dotenv.config();
+import { schema } from './schema.js';
 
 const { Pool } = pg;
 
+// Use pg.Pool which is more standard and works everywhere
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL || `postgres://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DATABASE}`,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  connectionString: process.env.POSTGRES_URL,
+  ssl: process.env.POSTGRES_URL ? { rejectUnauthorized: false } : false
 });
 
-export const query = (text: string, params?: any[]) => pool.query(text, params);
+export const query = async (text: string, params?: any[]) => {
+  if (!process.env.POSTGRES_URL) {
+    throw new Error("POSTGRES_URL environment variable is missing. Please configure it in Settings -> Environment Variables.");
+  }
+  return await pool.query(text, params);
+};
 
 export const initDB = async () => {
+  if (!process.env.POSTGRES_URL) {
+    console.warn('POSTGRES_URL is missing. Skipping database initialization.');
+    return;
+  }
   try {
-    await query(schema);
+    await pool.query(schema);
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
+    throw error;
   }
 };
 

@@ -1,13 +1,15 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from "cors";
-import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { query, initDB } from "./src/db/index";
+import { query, initDB } from "./src/db/index.js";
 
-dotenv.config();
+console.log("Server starting...");
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -16,14 +18,64 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+// Health Check Route
+app.get("/api/health", async (req, res) => {
+  console.log("Health check requested");
+  try {
+    console.log("Testing database connection...");
+    const result = await query("SELECT 1");
+    console.log("Database connected successfully");
+    
+    console.log("Testing bcrypt...");
+    if (!bcrypt || typeof bcrypt.hash !== 'function') {
+      console.error("Bcrypt not correctly imported:", bcrypt);
+      throw new Error("Bcrypt not correctly imported");
+    }
+    const testHash = await bcrypt.hash("test", 10);
+    console.log("Bcrypt working");
+    
+    res.json({ 
+      status: "ok", 
+      database: "connected", 
+      bcrypt: "working", 
+      env: {
+        hasPostgresUrl: !!process.env.POSTGRES_URL,
+        nodeEnv: process.env.NODE_ENV
+      }
+    });
+  } catch (error: any) {
+    console.error("Health check failed:", error);
+    res.status(500).json({ 
+      status: "error", 
+      database: "disconnected", 
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+// Manual DB Init Route
+app.get("/api/init", async (req, res) => {
+  try {
+    await initDB();
+    res.json({ success: true, message: "Database initialized" });
+  } catch (error: any) {
+    console.error("Manual init failed:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 let isDbInitialized = false;
 const ensureDb = async (req: any, res: any, next: any) => {
+  if (req.path === "/api/init") return next();
   if (!isDbInitialized) {
     try {
       await initDB();
       isDbInitialized = true;
     } catch (error) {
       console.error('Failed to initialize DB in middleware:', error);
+      // Don't block, but subsequent queries might fail
     }
   }
   next();
