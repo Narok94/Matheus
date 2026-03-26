@@ -1,8 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { UserIcon, LockIcon } from './Icons';
+import React, { useState, useMemo } from 'react';
+import { InspecProLogo, UserIcon, LockIcon } from './Icons';
 import { useAuth } from '../context/AuthContext';
-import { get } from '../idb';
-import { CompanyProfile } from '../../types';
 
 type ShowToastFn = (message: string, type?: 'success' | 'error') => void;
 
@@ -10,7 +8,13 @@ interface AuthPageProps {
     showToast: ShowToastFn;
 }
 
-interface LoginPageProps extends AuthPageProps {}
+interface LoginPageProps extends AuthPageProps {
+    onSwitchToRegister: () => void;
+}
+
+interface RegisterPageProps extends AuthPageProps {
+    onSwitchToLogin: () => void;
+}
 
 const DynamicBackground = () => {
     const particles = useMemo(() => Array.from({ length: 50 }).map((_, i) => ({
@@ -27,7 +31,7 @@ const DynamicBackground = () => {
             <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
                 <defs>
                     <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" strokeWidth="0.5"/>
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#3f3f46" strokeWidth="0.5"/>
                     </pattern>
                     <linearGradient id="scanline" x1="0" y1="0" x2="0" y2="100%">
                         <stop stopColor="#f97316" stopOpacity="0" offset="0%"/>
@@ -96,22 +100,18 @@ const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 const AuthFormCard: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-     <div className="relative z-10 w-full bg-slate-900/40 backdrop-blur-md border border-orange-500/30 rounded-2xl shadow-2xl shadow-orange-500/10 p-6 sm:p-8 animate-fade-in">
+     <div className="relative z-10 w-full max-w-sm bg-zinc-950/40 backdrop-blur-md border border-orange-400/30 rounded-2xl shadow-2xl shadow-orange-500/10 p-8 animate-fade-in">
         {children}
     </div>
 );
 
-const AuthHeader = ({ logoUrl }: { logoUrl?: string | null }) => (
+const AuthHeader = () => (
     <div className="text-center mb-8">
-        <div className="w-24 h-24 mx-auto mb-4 bg-slate-800/50 rounded-lg flex items-center justify-center p-2 text-center border border-slate-700">
-            {logoUrl ? (
-                <img src={logoUrl} alt="Company Logo" className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-            ) : (
-                <div className="text-xs leading-tight text-slate-400">Coloque o Logotipo em configuração</div>
-            )}
+        <div className="w-16 h-16 mx-auto mb-4">
+            <InspecProLogo className="text-orange-400 filter drop-shadow-[0_0_8px_rgba(251,146,60,0.7)]" />
         </div>
-        <h1 className="text-4xl font-bold text-white tracking-widest font-orbitron" style={{ textShadow: '0 0 5px #f97316, 0 0 10px #f97316' }}>MDS</h1>
-        <p className="text-base text-slate-400 tracking-wider mt-1">Laudos e Vistorias</p>
+        <h1 className="text-3xl font-bold text-white tracking-wider">InspecPro</h1>
+        <p className="text-sm text-slate-400">Gestão de Inspeções</p>
     </div>
 );
 
@@ -122,7 +122,7 @@ const InputWithIcon: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { ic
         </span>
         <input 
             {...props}
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-3 pl-10 pr-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all"
+            className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg py-3 pl-10 pr-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all"
         />
     </div>
 );
@@ -130,30 +130,14 @@ const InputWithIcon: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { ic
 const FormButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = (props) => (
     <button 
         {...props}
-        className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-orange-500/30 hover:shadow-orange-400/40 transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-orange-300 active:scale-95"
+        className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-orange-500/20 hover:shadow-orange-400/40 transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-orange-300 active:scale-95"
     />
 );
 
-export const LoginPage: React.FC<LoginPageProps> = ({ showToast }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ showToast, onSwitchToRegister }) => {
     const { handleLogin } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [logoUrl, setLogoUrl] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchLogo = async () => {
-            try {
-                // By convention, the 'admin' user holds the primary company profile.
-                const adminProfile = await get<CompanyProfile>('admin-companyProfile');
-                if (adminProfile?.logo) {
-                    setLogoUrl(adminProfile.logo);
-                }
-            } catch (error) {
-                console.error("Failed to load company logo for login screen:", error);
-            }
-        };
-        fetchLogo();
-    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -164,9 +148,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ showToast }) => {
         <>
             <DynamicBackground />
             <AuthLayout>
-                <div className="w-full md:max-w-sm">
+                <div className="w-full max-w-sm">
                     <AuthFormCard>
-                        <AuthHeader logoUrl={logoUrl} />
+                        <AuthHeader />
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <InputWithIcon
                                 icon={<UserIcon />}
@@ -188,6 +172,89 @@ export const LoginPage: React.FC<LoginPageProps> = ({ showToast }) => {
                             />
                             <FormButton type="submit">LOG IN</FormButton>
                         </form>
+
+                        <div className="text-center text-sm mt-6 flex justify-between text-orange-400">
+                            <a 
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    showToast("Função de recuperação em desenvolvimento.", "error");
+                                }}
+                                className="hover:underline"
+                            >
+                                Forgot Password?
+                            </a>
+                            <a 
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    onSwitchToRegister();
+                                }}
+                                className="hover:underline"
+                            >
+                                Sign Up
+                            </a>
+                        </div>
+                    </AuthFormCard>
+                </div>
+            </AuthLayout>
+        </>
+    );
+};
+
+export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchToLogin }) => {
+    const { handleRegister } = useAuth();
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (password.length < 4) {
+            showToast("A senha deve ter pelo menos 4 caracteres.", "error");
+            return;
+        }
+        await handleRegister(username, '', password, '', showToast, onSwitchToLogin);
+    };
+
+    return (
+        <>
+            <DynamicBackground />
+            <AuthLayout>
+                <div className="w-full max-w-sm">
+                    <AuthFormCard>
+                        <AuthHeader />
+                        <h2 className="text-center text-lg text-slate-300 -mt-4 mb-6">Create Account</h2>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <InputWithIcon
+                                icon={<UserIcon />}
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder="Username"
+                                required
+                            />
+                            <InputWithIcon
+                                icon={<LockIcon />}
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Password"
+                                required
+                            />
+                            <FormButton type="submit">SIGN UP</FormButton>
+                        </form>
+                        <div className="text-center text-sm mt-6">
+                            <a 
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    onSwitchToLogin();
+                                }}
+                                className="text-orange-400 hover:underline"
+                            >
+                                Already have an account? Log In
+                            </a>
+                        </div>
                     </AuthFormCard>
                 </div>
             </AuthLayout>

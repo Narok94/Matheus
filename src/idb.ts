@@ -1,7 +1,5 @@
-import { Client } from '../types';
-
 const DB_NAME = 'InspecProDB';
-const DB_VERSION = 2; // Incremented version to trigger upgrade
+const DB_VERSION = 1;
 const STORE_NAME = 'keyval';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -24,56 +22,9 @@ function getDB(): Promise<IDBDatabase> {
 
         request.onupgradeneeded = (event) => {
             const db = (event.target as IDBOpenDBRequest).result;
-            const oldVersion = event.oldVersion;
-            console.log(`Upgrading database from version ${oldVersion} to ${DB_VERSION}`);
-
-            // Step 1: Ensure the store exists.
-            let store: IDBObjectStore;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
-                store = db.createObjectStore(STORE_NAME);
-            } else {
-                const transaction = (event.target as IDBOpenDBRequest).transaction;
-                if (!transaction) {
-                    console.error("Upgrade transaction is not available.");
-                    return;
-                }
-                store = transaction.objectStore(STORE_NAME);
+                db.createObjectStore(STORE_NAME);
             }
-
-            // Step 2: Apply migrations sequentially.
-            if (oldVersion < 2) {
-                // This migration adds a _version field to all Client objects.
-                // It's a non-destructive example to establish the migration pattern for future updates.
-                console.log("Applying migration for v2: Adding _version to clients.");
-
-                store.openCursor().onsuccess = (e) => {
-                    const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
-                    if (cursor) {
-                        const key = cursor.key as string;
-                        if (typeof key === 'string' && key.endsWith('-clients')) {
-                            try {
-                                const clients = cursor.value as Client[];
-                                if (Array.isArray(clients)) {
-                                    const needsMigration = clients.some(c => !c.hasOwnProperty('_version'));
-                                    if (needsMigration) {
-                                        const updatedClients = clients.map(client => ({
-                                            ...client,
-                                            _version: 2,
-                                        }));
-                                        cursor.update(updatedClients);
-                                        console.log(`Migrated client data for key: ${key}`);
-                                    }
-                                }
-                            } catch (error) {
-                                console.error(`Failed to migrate client data for key: ${key}`, error);
-                            }
-                        }
-                        cursor.continue();
-                    }
-                };
-            }
-            // Future migrations would be chained here, e.g.:
-            // if (oldVersion < 3) { /* ... migrate to v3 ... */ }
         };
     });
     return dbPromise;
@@ -100,5 +51,53 @@ export async function set(key: string, value: any): Promise<void> {
         const request = store.put(value, key);
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
+    });
+}
+
+export async function exportAll(): Promise<Record<string, any>> {
+    const db = await getDB();
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const data: Record<string, any> = {};
+
+    return new Promise((resolve, reject) => {
+        const request = store.openCursor();
+        request.onsuccess = (event) => {
+            const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+            if (cursor) {
+                data[cursor.key as string] = cursor.value;
+                cursor.continue();
+            } else {
+                resolve(data);
+            }
+        };
+        request.onerror = () => reject(request.error);
+    });
+}
+
+export async function importAll(data: Record<string, any>): Promise<void> {
+    const db = await getDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+
+    return new Promise((resolve, reject) => {
+        const keys = Object.keys(data);
+        let index = 0;
+
+        function putNext() {
+            if (index >= keys.length) {
+                resolve();
+                return;
+            }
+            const key = keys[index];
+            const request = store.put(data[key], key);
+            request.onsuccess = () => {
+                index++;
+                putNext();
+            };
+            request.onerror = () => reject(request.error);
+        }
+
+        putNext();
     });
 }

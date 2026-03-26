@@ -20,7 +20,7 @@ export const Card: React.FC<CardProps> = ({ title, children, className, actions,
     );
 
     return (
-        <div onClick={onClick} className={`bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md rounded-xl shadow-lg dark:shadow-orange-900/10 border border-border ${className}`}>
+        <div onClick={onClick} className={`bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md rounded-xl shadow-lg dark:shadow-black/20 border border-border ${className}`}>
             {(title || actions) && (
                 <div 
                     className={`flex justify-between items-center p-4 ${!isCollapsed || !collapsible ? 'border-b border-border' : ''} ${collapsible ? 'cursor-pointer' : ''}`}
@@ -109,7 +109,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
 export const FloatingActionButton: React.FC<{ onClick: () => void, icon: ReactNode, className?: string }> = ({ onClick, icon, className }) => (
     <button
         onClick={onClick}
-        className={`fixed bottom-6 right-6 bg-gradient-to-br from-red-600 to-orange-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 hover:brightness-110 transition-transform duration-200 ease-in-out active:scale-95 z-10 ${className}`}
+        className={`fixed bottom-6 right-6 bg-gradient-to-br from-orange-500 to-red-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/40 hover:brightness-110 transition-transform duration-200 ease-in-out active:scale-95 z-10 ${className}`}
         aria-label="Adicionar"
     >
         {icon}
@@ -169,16 +169,10 @@ export const getStatusBadge = (status: InspectionStatus | PaymentStatus) => {
             break;
         case InspectionStatus.Pendente:
         case PaymentStatus.Pendente:
-             colorClasses = 'bg-yellow-100 text-status-pending border border-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-300 dark:border-yellow-500/30';
+             colorClasses = 'bg-orange-100 text-status-pending border border-orange-200 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/30';
              break;
         case InspectionStatus.Agendada:
-            colorClasses = 'bg-cyan-100 text-status-scheduled border border-cyan-200 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/30';
-            break;
-        case InspectionStatus.Concluída:
-            colorClasses = 'bg-slate-100 text-status-completed border border-slate-200 dark:bg-slate-500/20 dark:text-slate-300 dark:border-slate-500/30';
-            break;
-        case InspectionStatus.Cancelada:
-            colorClasses = 'bg-gray-100 text-status-cancelled border border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30 line-through';
+            colorClasses = 'bg-amber-100 text-status-scheduled border border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30';
             break;
     }
     return <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${colorClasses}`}>{status}</span>;
@@ -187,11 +181,6 @@ export const getStatusBadge = (status: InspectionStatus | PaymentStatus) => {
 type FinancialStatus = PaymentStatus | 'Atrasado';
 
 export const getFinancialStatus = (record: FinancialRecord | Expense): FinancialStatus => {
-    // Check if it's a FinancialRecord and has the conditional property
-    if ('isConditionalDueDate' in record && record.isConditionalDueDate) {
-        return record.status; // It's conditional, so it's just 'Pendente' or 'Pago', never 'Atrasado'
-    }
-
     if (record.status === PaymentStatus.Pendente && new Date(record.dueDate) < new Date()) {
         return 'Atrasado';
     }
@@ -206,7 +195,7 @@ export const FinancialStatusBadge: React.FC<{ record: FinancialRecord | Expense 
     }
     
     // Custom style for 'Atrasado'
-    const colorClasses = 'bg-orange-100 text-orange-600 border border-orange-200 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/30';
+    const colorClasses = 'bg-red-100 text-status-reproved border border-red-200 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30';
 
     return <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${colorClasses}`}>{status}</span>;
 }
@@ -251,7 +240,7 @@ type ButtonProps = {
 export const Button: React.FC<ButtonProps> = ({ children, onClick, type = 'button', variant = 'primary', className = '', disabled = false, loading = false, as = 'button' }) => {
     const baseClasses = "px-5 py-3 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary inline-flex items-center justify-center space-x-2 text-sm transform active:scale-95";
     const variantClasses = variant === 'primary' 
-        ? "bg-gradient-to-r from-red-600 to-orange-500 text-white hover:from-red-500 hover:to-orange-400 focus:ring-orange-400 shadow-lg shadow-orange-500/20"
+        ? "bg-gradient-to-r from-orange-500 to-red-600 text-white hover:from-orange-400 hover:to-red-500 focus:ring-orange-400 shadow-lg shadow-orange-500/20"
         : "bg-secondary/50 text-text-primary border border-border hover:bg-secondary/80 focus:ring-accent";
     const disabledClasses = (disabled || loading) ? "opacity-50 cursor-not-allowed" : "";
 

@@ -2,9 +2,7 @@ export enum InspectionStatus {
   Aprovado = 'Aprovado',
   Reprovado = 'Reprovado',
   Pendente = 'Pendente',
-  Agendada = 'Agendada',
-  Concluída = 'Concluída',
-  Cancelada = 'Cancelada'
+  Agendada = 'Agendada'
 }
 
 export enum PaymentStatus {
@@ -29,7 +27,6 @@ export enum InspectionItemStatus {
 
 
 export interface Client {
-  _version?: number; // Internal field for data migration
   id: string;
   name: string;
   document: string; // CNPJ/CPF
@@ -43,13 +40,14 @@ export interface Client {
   recurringInstallments?: number; // Total de parcelas
   recurringCycleStart?: string; // Data de início da cobrança
   paidInstallments?: number; // Parcelas pagas
-  licenseValidityNotes?: string;
 }
 
-// Represents a product in the catalog.
 export interface Equipment {
   id:string;
+  clientId: string;
   name: string;
+  serialNumber: string;
+  expiryDate: string;
   category: string; // Ex: 'Extintor', 'Hidrante'
   unitOfMeasure: string; // Ex: 'Unidade', 'Metro'
   costPrice?: number;
@@ -57,23 +55,12 @@ export interface Equipment {
   observations?: string;
   capacity: string;
   manufacturer: string;
-}
-
-// Represents an instance of an Equipment owned by a client.
-export interface ClientEquipment {
-  id: string;
-  clientId: string;
-  equipmentId: string; // Foreign key to Equipment
-  serialNumber: string;
-  expiryDate?: string;
-  location: string;
   lastInspectionDate?: string;
   status: InspectionStatus;
 }
 
-
 export interface InspectedItem {
-  clientEquipmentId: string; // Changed from equipmentId
+  equipmentId: string;
   location: string;
   situation: InspectionItemStatus;
   suggestedAction: string;
@@ -84,8 +71,6 @@ export interface Inspection {
   clientId: string;
   inspectedItems: InspectedItem[];
   date: string;
-  time?: string;
-  address?: string;
   inspector: string;
   observations: string;
   clientSignature?: string; // a base64 string or url
@@ -107,11 +92,9 @@ export interface FinancialRecord {
   description: string;
   value: number;
   issueDate: string;
-  dueDate: string; // Will be empty string if conditional
+  dueDate: string;
   paymentDate?: string;
   status: PaymentStatus;
-  isConditionalDueDate?: boolean;
-  dueDateCondition?: string;
 }
 
 export interface License {
@@ -135,27 +118,10 @@ export interface Expense { // For "Contas a Pagar"
   id: string;
   description: string;
   supplier?: string;
-  document?: string; // CPF/CNPJ
-  pixKey?: string;
   value: number;
-  dueDate: string; // Will be empty string if conditional
+  dueDate: string;
   paymentDate?: string;
   status: PaymentStatus;
-  isConditionalDueDate?: boolean;
-  dueDateCondition?: string;
-  recurringPayableId?: string; // Link to the master recurring payable
-}
-
-export interface RecurringPayable {
-  id: string;
-  description: string;
-  supplier?: string;
-  document?: string;
-  pixKey?: string;
-  value: number; // The recurring amount
-  recurringInstallments: number;
-  recurringCycleStart: string;
-  paidInstallments: number;
 }
 
 export type ToastMessage = {
@@ -187,22 +153,19 @@ export type AppSettings = {
     reminders: boolean; 
 };
 
-export type AgendaAction = {
-    action: 'openModal';
+export type PrefilledInspectionData = {
     clientId?: string;
 } | null;
 
 export type BackupData = {
     clients: Client[];
     equipment: Equipment[];
-    clientEquipment: ClientEquipment[];
     inspections: Inspection[];
     financial: FinancialRecord[];
     certificates: Certificate[];
     licenses: License[];
     deliveries: Delivery[];
     expenses: Expense[];
-    recurringPayables: RecurringPayable[];
     companyProfile: CompanyProfile;
     appSettings: AppSettings;
 };

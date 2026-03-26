@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mds-cache-v4'; // Increment version to trigger update
+const CACHE_NAME = 'inspecpro-cache-v3'; // Increment version to trigger update
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
@@ -36,29 +36,42 @@ self.addEventListener('activate', event => {
   );
 });
 
-// On fetch, use Network-First strategy for all assets
+// On fetch, use Stale-While-Revalidate strategy
 self.addEventListener('fetch', event => {
-  // We only want to handle GET requests.
+  // We only want to cache GET requests.
   if (event.request.method !== 'GET') {
     return;
   }
 
+  // For navigation requests (HTML pages), use a network-first strategy
+  // to ensure the user gets the latest version of the app shell.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+  
+  // For other requests (JS, CSS, images), use Stale-While-Revalidate.
   event.respondWith(
-    fetch(event.request)
-      .then(networkResponse => {
-        // If the request is successful, clone it and cache it.
-        return caches.open(CACHE_NAME).then(cache => {
-          if (networkResponse.status === 200) {
-            cache.put(event.request, networkResponse.clone());
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.match(event.request).then(response => {
+        const fetchPromise = fetch(event.request).then(networkResponse => {
+          // If we got a valid response, update the cache.
+          if (networkResponse && networkResponse.status === 200) {
+             cache.put(event.request, networkResponse.clone());
           }
           return networkResponse;
+        }).catch(err => {
+            // Fetch failed, probably offline. We've already served from cache if available.
+            console.warn('[Service Worker] Fetch failed; returning offline page instead.', err);
         });
-      })
-      .catch(() => {
-        // If the network request fails (e.g., offline),
-        // try to serve the response from the cache.
-        return caches.match(event.request);
-      })
+
+        // Return the cached response immediately if available,
+        // and the fetch promise will update the cache in the background.
+        return response || fetchPromise;
+      });
+    })
   );
 });
 
@@ -68,7 +81,7 @@ self.addEventListener('fetch', event => {
 // Ouve por eventos de push para exibir notificações.
 self.addEventListener('push', event => {
   console.log('[Service Worker] Push Recebido.');
-  const title = 'Alerta MDS';
+  const title = 'Alerta InspecPro';
   const options = {
     body: 'Um equipamento está próximo do vencimento. Verifique o painel.',
     icon: '/icons/icon-192x192.png',

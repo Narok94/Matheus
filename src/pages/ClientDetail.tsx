@@ -1,75 +1,35 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch, Select, Textarea } from '../components/common';
-import { AgendaIcon, DownloadIcon, EditIcon, TrashIcon, PlusIcon } from '../components/Icons';
+import { Card, Modal, getStatusBadge, Button, Input, FormField, ConfirmationModal, ToggleSwitch } from '../components/common';
+import { AgendaIcon, DownloadIcon, EditIcon, TrashIcon } from '../components/Icons';
 import { capitalizeWords, formatDocument, formatPhone, setWorksheetColumns, parseLocalDate } from '../utils';
-import { Client, ClientEquipment, InspectionStatus } from '../../types';
+import { Client } from '../../types';
 
 export const ClientDetail: React.FC<{ 
     clientId: string; 
     onScheduleInspection: (clientId: string) => void; 
     onViewInspection: (inspectionId: string) => void;
 }> = ({ clientId, onScheduleInspection, onViewInspection }) => {
-    const { 
-        clients, equipment, clientEquipment, inspections, handleUpdateClient, handleDeleteClient, 
-        handleAddClientEquipment, handleUpdateClientEquipment, handleDeleteClientEquipment 
-    } = useData();
+    const { clients, equipment, inspections, handleUpdateClient, handleDeleteClient } = useData();
 
     const client = clients.find(c => c.id === clientId);
 
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
     const [editedClient, setEditedClient] = useState<Client | undefined>(client);
-    
-    const [isAssetModalOpen, setAssetModalOpen] = useState(false);
-    const [editingAsset, setEditingAsset] = useState<ClientEquipment | null>(null);
-    const [assetToDelete, setAssetToDelete] = useState<ClientEquipment | null>(null);
-
-    const initialAssetState: Partial<ClientEquipment> = { equipmentId: '', serialNumber: '', location: '', status: InspectionStatus.Agendada, expiryDate: '', lastInspectionDate: '' };
-    const [assetFormState, setAssetFormState] = useState<Partial<ClientEquipment>>(initialAssetState);
-    const [quantity, setQuantity] = useState(1);
-
 
     useEffect(() => {
         setEditedClient(clients.find(c => c.id === clientId));
     }, [clientId, clients]);
-    
-    useEffect(() => {
-        if (isAssetModalOpen) {
-            if (editingAsset) {
-                setAssetFormState(editingAsset);
-                setQuantity(1); // Not used in edit mode
-            } else {
-                setAssetFormState(initialAssetState);
-                setQuantity(1);
-            }
-        }
-    }, [isAssetModalOpen, editingAsset]);
 
     if (!client || !editedClient) {
         return <div className="p-4 text-text-secondary">Cliente não encontrado ou carregando...</div>;
     }
 
-    const clientAssets = clientEquipment.filter(e => e.clientId === client.id);
+    const clientEquipment = equipment.filter(e => e.clientId === client.id);
     const clientInspections = inspections.filter(i => i.clientId === client.id);
-    
-    const groupedAssets = useMemo(() => {
-        const groups: Record<string, ClientEquipment[]> = {};
-        clientAssets.forEach(asset => {
-            if (!groups[asset.equipmentId]) {
-                groups[asset.equipmentId] = [];
-            }
-            groups[asset.equipmentId].push(asset);
-        });
-        return Object.values(groups).sort((a,b) => {
-             const productA = equipment.find(p => p.id === a[0].equipmentId)?.name || '';
-             const productB = equipment.find(p => p.id === b[0].equipmentId)?.name || '';
-             return productA.localeCompare(productB);
-        });
-    }, [clientAssets, equipment]);
 
-    // Client Edit Handlers
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         let formattedValue: string | number = value;
         if (name === 'document') formattedValue = formatDocument(value);
@@ -97,46 +57,6 @@ export const ClientDetail: React.FC<{
         setEditModalOpen(false);
     };
     
-    // Asset Handlers
-    const handleAssetFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setAssetFormState(prev => ({...prev, [name]: value}));
-    };
-    
-    const handleAssetFormSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (editingAsset) {
-            handleUpdateClientEquipment(assetFormState as ClientEquipment);
-        } else {
-            if (!assetFormState.equipmentId) return;
-            for(let i=0; i<quantity; i++) {
-                const newAsset: Omit<ClientEquipment, 'id'> = {
-                    clientId: client.id,
-                    equipmentId: assetFormState.equipmentId,
-                    serialNumber: "A preencher",
-                    location: "A definir",
-                    status: InspectionStatus.Agendada,
-                    expiryDate: assetFormState.expiryDate,
-                    lastInspectionDate: assetFormState.lastInspectionDate
-                };
-                handleAddClientEquipment(newAsset);
-            }
-        }
-        setAssetModalOpen(false);
-        setEditingAsset(null);
-    };
-    
-    const openDeleteAssetModal = (asset: ClientEquipment) => {
-        setAssetToDelete(asset);
-    };
-    
-    const confirmDeleteAsset = () => {
-        if (assetToDelete) {
-            handleDeleteClientEquipment(assetToDelete.id);
-            setAssetToDelete(null);
-        }
-    };
-    
     const handleExportReport = () => {
         const XLSX = (window as any).XLSX;
     
@@ -155,15 +75,12 @@ export const ClientDetail: React.FC<{
         clientWorksheet['!cols'] = [{ wch: 15 }, { wch: 40 }];
     
         let equipmentWorksheet;
-        if (clientAssets.length > 0) {
-            const equipmentDataForSheet = clientAssets.map(asset => {
-                const product = equipment.find(p => p.id === asset.equipmentId);
-                return { "Nome": product?.name, "Nº Série": asset.serialNumber, "Localização": asset.location, "Status": asset.status, "Vencimento": asset.expiryDate ? parseLocalDate(asset.expiryDate).toLocaleDateString() : 'N/A', "Últ. Inspeção": asset.lastInspectionDate ? parseLocalDate(asset.lastInspectionDate).toLocaleDateString() : 'N/A' }
-            });
+        if (clientEquipment.length > 0) {
+            const equipmentDataForSheet = clientEquipment.map(eq => ({ "Nome": eq.name, "Nº Série": eq.serialNumber, "Categoria": eq.category, "Capacidade": eq.capacity, "Fabricante": eq.manufacturer, "Status": eq.status, "Vencimento": parseLocalDate(eq.expiryDate).toLocaleDateString(), "Últ. Inspeção": eq.lastInspectionDate ? parseLocalDate(eq.lastInspectionDate).toLocaleDateString() : 'N/A' }));
             equipmentWorksheet = XLSX.utils.json_to_sheet(equipmentDataForSheet);
             setWorksheetColumns(equipmentWorksheet, equipmentDataForSheet);
         } else {
-            equipmentWorksheet = XLSX.utils.aoa_to_sheet([["Nenhum equipamento cadastrado para este cliente."]]);
+            equipmentWorksheet = XLSX.utils.aoa_to_sheet([["Nenhum equipamento cadastrado."]]);
         }
     
         let inspectionWorksheet;
@@ -172,13 +89,13 @@ export const ClientDetail: React.FC<{
             inspectionWorksheet = XLSX.utils.json_to_sheet(inspectionDataForSheet);
             setWorksheetColumns(inspectionWorksheet, inspectionDataForSheet);
         } else {
-            inspectionWorksheet = XLSX.utils.aoa_to_sheet([["Nenhum histórico de inspeção/vistoria."]]);
+            inspectionWorksheet = XLSX.utils.aoa_to_sheet([["Nenhum histórico de inspeção."]]);
         }
     
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, clientWorksheet, "Dados do Cliente");
         XLSX.utils.book_append_sheet(workbook, equipmentWorksheet, "Equipamentos");
-        XLSX.utils.book_append_sheet(workbook, inspectionWorksheet, "Inspeções e Vistorias");
+        XLSX.utils.book_append_sheet(workbook, inspectionWorksheet, "Inspeções");
     
         XLSX.writeFile(workbook, `Relatorio_${client.name.replace(/\s+/g, '_')}.xlsx`);
     };
@@ -202,18 +119,10 @@ export const ClientDetail: React.FC<{
                 </div>
             </div>
 
-            {client.licenseValidityNotes && (
-                <Card title="Validade das Licenças" collapsible>
-                    <p className="text-text-secondary text-sm whitespace-pre-wrap">
-                        {client.licenseValidityNotes}
-                    </p>
-                </Card>
-            )}
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Button onClick={() => onScheduleInspection(client.id)} className="w-full justify-center">
                     <AgendaIcon className="w-5 h-5" />
-                    <span>Agendar Inspeção/Vistoria</span>
+                    <span>Agendar Inspeção</span>
                 </Button>
                  <Button onClick={handleExportReport} variant="secondary" className="w-full justify-center">
                     <DownloadIcon className="w-5 h-5" />
@@ -240,40 +149,19 @@ export const ClientDetail: React.FC<{
                 </Card>
             )}
 
-            <Card title={`Equipamentos do Cliente (${clientAssets.length})`} actions={<Button variant="secondary" className="!py-1 !px-3 !text-xs" onClick={() => setAssetModalOpen(true)}><PlusIcon className="w-4 h-4 mr-1" /> Adicionar</Button>}>
-                <div className="space-y-2">
-                {groupedAssets.length > 0 ? groupedAssets.map(group => {
-                    const product = equipment.find(p => p.id === group[0].equipmentId);
-                    return (
-                        <Card key={group[0].equipmentId} title={`${product?.name} (${group.length} Unidades)`} collapsible className="bg-primary/50">
-                            {group.map(asset => (
-                                <div key={asset.id} className="py-2 border-b border-border last:border-b-0">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="font-semibold text-text-primary text-sm">Nº Série: <span className="font-normal">{asset.serialNumber}</span></p>
-                                            <p className="text-xs text-text-secondary">Local: {asset.location}</p>
-                                        </div>
-                                        {getStatusBadge(asset.status)}
-                                    </div>
-                                    <div className="flex justify-between items-end text-xs text-text-secondary mt-1">
-                                         <div>
-                                            <p>Manutenção: {asset.lastInspectionDate ? parseLocalDate(asset.lastInspectionDate).toLocaleDateString() : 'N/A'}</p>
-                                            <p>Próx. Recarga: {asset.expiryDate ? parseLocalDate(asset.expiryDate).toLocaleDateString() : 'N/A'}</p>
-                                        </div>
-                                        <div className="flex justify-end space-x-2">
-                                            <button onClick={() => { setEditingAsset(asset); setAssetModalOpen(true); }} className="p-1.5 hover:bg-secondary rounded-full"><EditIcon className="w-4 h-4" /></button>
-                                            <button onClick={() => openDeleteAssetModal(asset)} className="p-1.5 hover:bg-secondary rounded-full text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </Card>
-                    );
-                }) : <p className="text-text-secondary text-sm">Nenhum equipamento cadastrado.</p>}
-                </div>
+            <Card title={`Equipamentos (${clientEquipment.length})`} collapsible>
+                {clientEquipment.length > 0 ? clientEquipment.map(eq => (
+                    <div key={eq.id} className="flex justify-between items-center py-2 border-b border-border last:border-b-0">
+                        <div>
+                            <p className="font-semibold text-text-primary">{eq.name} <span className="text-text-secondary text-xs">({eq.serialNumber})</span></p>
+                            <p className="text-sm text-text-secondary">Vencimento: {parseLocalDate(eq.expiryDate).toLocaleDateString()}</p>
+                        </div>
+                        {getStatusBadge(eq.status)}
+                    </div>
+                )) : <p className="text-text-secondary text-sm">Nenhum equipamento cadastrado.</p>}
             </Card>
 
-            <Card title={`Histórico de Inspeções/Vistorias (${clientInspections.length})`} collapsible>
+            <Card title={`Histórico de Inspeções (${clientInspections.length})`} collapsible>
                 {clientInspections.length > 0 ? clientInspections.map(insp => (
                     <div key={insp.id} onClick={() => onViewInspection(insp.id)} className="flex justify-between items-center py-2 border-b border-border last:border-b-0 cursor-pointer hover:bg-primary/50 -mx-4 px-4 rounded-md">
                         <div>
@@ -282,7 +170,7 @@ export const ClientDetail: React.FC<{
                         </div>
                         {getStatusBadge(insp.status)}
                     </div>
-                )) : <p className="text-text-secondary text-sm">Nenhuma inspeção/vistoria realizada.</p>}
+                )) : <p className="text-text-secondary text-sm">Nenhuma inspeção realizada.</p>}
             </Card>
             
              <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Cliente">
@@ -294,9 +182,6 @@ export const ClientDetail: React.FC<{
                     <FormField label="Nome do Contato"><Input name="contactName" value={editedClient.contactName} onChange={handleInputChange} required /></FormField>
                     <FormField label="Telefone de Contato"><Input name="contact" type="tel" value={editedClient.contact} onChange={handleInputChange} required /></FormField>
                     <FormField label="Email"><Input name="email" type="email" value={editedClient.email} onChange={handleInputChange} /></FormField>
-                    <FormField label="Validade das Licenças (Notas)">
-                        <Textarea name="licenseValidityNotes" value={editedClient.licenseValidityNotes || ''} onChange={handleInputChange} placeholder="Ex: Alvará de Funcionamento vence em 10/12/2025..." />
-                    </FormField>
                     
                     <div className="pt-4 space-y-4">
                         <div className="flex items-center justify-between p-3 bg-primary/50 rounded-lg">
@@ -324,53 +209,6 @@ export const ClientDetail: React.FC<{
                 onConfirm={() => handleDeleteClient(client.id)}
                 title="Confirmar Exclusão"
                 message={`Tem certeza que deseja excluir ${client.name}? Todos os equipamentos e inspeções associados também serão removidos. Esta ação não pode ser desfeita.`}
-            />
-            
-            {/* Asset Modal */}
-             <Modal isOpen={isAssetModalOpen} onClose={() => { setAssetModalOpen(false); setEditingAsset(null); }} title={editingAsset ? "Editar Equipamento" : "Adicionar Equipamentos"}>
-                <form onSubmit={handleAssetFormSubmit} className="space-y-4">
-                    <FormField label="Equipamento (do Catálogo)">
-                        <Select name="equipmentId" value={assetFormState.equipmentId || ''} onChange={handleAssetFormChange} required>
-                            <option value="">Selecione um produto</option>
-                            {equipment.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                        </Select>
-                    </FormField>
-
-                    {!editingAsset ? (
-                        <>
-                            <FormField label="Quantidade">
-                                <Input type="number" name="quantity" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)} min="1" required />
-                            </FormField>
-                            <FormField label="Data da Próxima Recarga (Opcional)">
-                                <Input type="date" name="expiryDate" value={assetFormState.expiryDate || ''} onChange={handleAssetFormChange} />
-                            </FormField>
-                             <FormField label="Data da Última Manutenção (Opcional)">
-                                <Input type="date" name="lastInspectionDate" value={assetFormState.lastInspectionDate || ''} onChange={handleAssetFormChange} />
-                            </FormField>
-                        </>
-                    ) : (
-                        <>
-                            <FormField label="Número de Série"><Input name="serialNumber" value={assetFormState.serialNumber || ''} onChange={handleAssetFormChange} required /></FormField>
-                            <FormField label="Localização"><Input name="location" value={assetFormState.location || ''} onChange={handleAssetFormChange} required /></FormField>
-                            <FormField label="Data da Próxima Recarga"><Input type="date" name="expiryDate" value={assetFormState.expiryDate || ''} onChange={handleAssetFormChange} /></FormField>
-                            <FormField label="Data da Manutenção"><Input type="date" name="lastInspectionDate" value={assetFormState.lastInspectionDate || ''} onChange={handleAssetFormChange} /></FormField>
-                            <FormField label="Status">
-                                <Select name="status" value={assetFormState.status || InspectionStatus.Agendada} onChange={handleAssetFormChange} required>
-                                    {Object.values(InspectionStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                                </Select>
-                            </FormField>
-                        </>
-                    )}
-
-                    <div className="flex justify-end pt-4"><Button type="submit">{editingAsset ? "Salvar Alterações" : "Adicionar Equipamentos"}</Button></div>
-                </form>
-            </Modal>
-            <ConfirmationModal 
-                isOpen={!!assetToDelete}
-                onClose={() => setAssetToDelete(null)}
-                onConfirm={confirmDeleteAsset}
-                title="Confirmar Exclusão"
-                message={`Tem certeza que deseja excluir o equipamento "${equipment.find(p => p.id === assetToDelete?.equipmentId)?.name}"? Esta ação não pode ser desfeita.`}
             />
         </div>
     );

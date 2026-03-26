@@ -26,19 +26,14 @@ export const useAuth = () => {
             username: 'matheus', 
             passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // Hashed "1234"
             fullName: 'Matheus' 
-        },
-        { 
-            username: 'henrique', 
-            passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // Hashed "1234"
-            fullName: 'Henrique Costa'
         }
     ]);
     const [loginAttempts, setLoginAttempts, isLoginAttemptsLoaded] = useIndexedDB<Record<string, LoginAttempt>>('loginAttempts', {});
 
-    // This effect ensures that default users exist and are correct, even if the user has old data in IndexedDB.
+    // This effect ensures that default users exist, even if the user has old data in IndexedDB
     useEffect(() => {
         if (isUsersLoaded) {
-            const defaultUsers: User[] = [
+            const defaultUsersToAdd: User[] = [
                 { 
                     username: 'admin', 
                     passwordHash: '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918',
@@ -46,39 +41,18 @@ export const useAuth = () => {
                 },
                 { 
                     username: 'matheus', 
-                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // Hashed "1234"
-                    fullName: 'Matheus' 
-                },
-                {
-                    username: 'henrique',
                     passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
-                    fullName: 'Henrique Costa'
+                    fullName: 'Matheus' 
                 }
             ];
 
             setUsers(currentUsers => {
-                const updatedUsers = [...currentUsers];
-                let hasChanged = false;
-
-                defaultUsers.forEach(defaultUser => {
-                    const existingUserIndex = updatedUsers.findIndex(u => u.username === defaultUser.username);
-                    if (existingUserIndex > -1) {
-                        // User exists, verify data and update if necessary
-                        const existingUser = updatedUsers[existingUserIndex];
-                        if (existingUser.passwordHash !== defaultUser.passwordHash || existingUser.fullName !== defaultUser.fullName) {
-                            updatedUsers[existingUserIndex] = { ...existingUser, ...defaultUser }; // Overwrite with correct data
-                            hasChanged = true;
-                        }
-                    } else {
-                        // User doesn't exist, add them
-                        updatedUsers.push(defaultUser);
-                        hasChanged = true;
-                    }
-                });
+                const existingUsernames = new Set(currentUsers.map(u => u.username));
+                const usersToAppend = defaultUsersToAdd.filter(u => !existingUsernames.has(u.username));
                 
-                if (hasChanged) {
-                    console.log("Ensuring default users are up-to-date in IndexedDB.");
-                    return updatedUsers;
+                if (usersToAppend.length > 0) {
+                    console.log("Adding missing default users to IndexedDB.");
+                    return [...currentUsers, ...usersToAppend];
                 }
                 
                 return currentUsers; // No changes needed

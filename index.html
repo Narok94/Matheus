@@ -3,10 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MDS - Inspeções e Vistorias</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+    <title>InspecPro - Gestão de Inspeções</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
@@ -14,10 +11,6 @@
         darkMode: 'class',
         theme: {
           extend: {
-            fontFamily: {
-              sans: ['Poppins', 'sans-serif'],
-              orbitron: ['Orbitron', 'sans-serif'],
-            },
             colors: {
               'primary': 'var(--color-primary)',
               'secondary': 'var(--color-secondary)',
@@ -25,12 +18,10 @@
               'text-primary': 'var(--color-text-primary)',
               'text-secondary': 'var(--color-text-secondary)',
               'border': 'var(--color-border)',
-              'status-approved': '#22c55e',
-              'status-reproved': '#dc2626',
-              'status-pending': '#facc15',
-              'status-scheduled': '#3b82f6',
-              'status-completed': '#64748b',
-              'status-cancelled': '#94a3b8',
+              'status-approved': '#28a745',
+              'status-reproved': '#ef4444',
+              'status-pending': '#f97316',
+              'status-scheduled': '#f59e0b',
             },
             animation: {
                 'fade-in': 'fadeIn 0.5s ease-out forwards',
@@ -47,19 +38,21 @@
     </script>
     <style>
     :root {
-        --color-primary: #fafafa; /* Zinc 50 */
-        --color-secondary: #ffffff;
-        --color-accent: #dc2626; /* Red 600 */
-        --color-text-primary: #1e293b; /* Slate 800 */
-        --color-text-secondary: #64748b; /* Slate 500 */
-        --color-border: #e2e8f0; /* Slate 200 */
+        /* Light Theme */
+        --color-primary: #f4f4f5; /* Zinc 100 */
+        --color-secondary: #ffffff; /* White */
+        --color-accent: #f97316; /* Orange 500 */
+        --color-text-primary: #18181b; /* Zinc 900 */
+        --color-text-secondary: #71717a; /* Zinc 500 */
+        --color-border: rgba(0, 0, 0, 0.1);
     }
     .dark {
+        /* Firefighter Theme */
         --color-primary: #18181b; /* Zinc 900 */
         --color-secondary: #27272a; /* Zinc 800 */
         --color-accent: #f97316; /* Orange 500 */
-        --color-text-primary: #e2e8f0; /* Slate 200 */
-        --color-text-secondary: #94a3b8; /* Slate 400 */
+        --color-text-primary: #f4f4f5; /* Zinc 100 */
+        --color-text-secondary: #a1a1aa; /* Zinc 400 */
         --color-border: rgba(249, 115, 22, 0.2); /* Transparent Orange */
     }
 
@@ -92,8 +85,9 @@
 
     /* --- LOGIN PAGE THEME --- */
     body.login-page-active {
-        background-color: #18181b; /* Zinc 900, matching dark theme */
+        background-color: #18181b;
         position: relative;
+        overflow: hidden;
         z-index: 1;
     }
     
@@ -107,7 +101,6 @@
         pointer-events: none;
     }
     </style>
-<link rel="manifest" href="/manifest.json">
 <script type="importmap">
 {
   "imports": {
@@ -116,7 +109,8 @@
     "react/": "https://aistudiocdn.com/react@^18.2.0/",
     "vite": "https://aistudiocdn.com/vite@^7.1.12",
     "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.0",
-    "@capacitor/cli": "https://aistudiocdn.com/@capacitor/cli@^7.4.4"
+    "@capacitor/cli": "https://aistudiocdn.com/@capacitor/cli@^7.4.4",
+    "@capacitor/app": "https://aistudiocdn.com/@capacitor/app@^7.1.0"
   }
 }
 </script>

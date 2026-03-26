@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.mds.inspecoes',
-  appName: 'MDS Inspeções',
+  appId: 'com.inspecpro.app',
+  appName: 'InspecPro',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

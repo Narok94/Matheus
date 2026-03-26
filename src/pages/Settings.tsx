@@ -4,7 +4,8 @@ import { useData } from '../context/DataContext';
 import { useSettings } from '../context/SettingsContext';
 import { BackupData, CompanyProfile } from '../../types';
 import { Card, Button, Input, FormField, ToggleSwitch, ConfirmationModal } from '../components/common';
-import { LogoutIcon, DownloadIcon, UploadIcon, RestoreIcon, BuildingIcon } from '../components/Icons';
+import { LogoutIcon, DownloadIcon, UploadIcon, RestoreIcon, BuildingIcon, DatabaseIcon } from '../components/Icons';
+import { exportAll, importAll } from '../idb';
 
 type Tab = 'profile' | 'system' | 'account';
 
@@ -30,12 +31,15 @@ const TabContent: React.FC<{ activeTab: Tab; tabName: Tab; children: ReactNode; 
 
 export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ showToast }) => {
     const { currentUserDetails, handleUpdateUser, handleLogout } = useAuth();
-    const { clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses, recurringPayables, handleImportData, lastBackupTimestamp, confirmAutoRestore: confirmDataAutoRestore } = useData();
+    // FIX: Destructure licenses, deliveries, and expenses from useData to include them in the backup.
+    const { clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses, handleImportData, lastBackupTimestamp, confirmAutoRestore: confirmDataAutoRestore } = useData();
     const { theme, setTheme, companyProfile, setCompanyProfile, appSettings, handleImportSettings, confirmAutoRestoreSettings } = useSettings();
 
     const [activeTab, setActiveTab] = useState<Tab>('system');
     const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
+    const [isFullImportConfirmOpen, setFullImportConfirmOpen] = useState(false);
     const [dataToImport, setDataToImport] = useState<BackupData | null>(null);
+    const [fullDataToImport, setFullDataToImport] = useState<Record<string, any> | null>(null);
     const [isAutoRestoreConfirmOpen, setAutoRestoreConfirmOpen] = useState(false);
     
     const [localProfile, setLocalProfile] = useState<CompanyProfile>(companyProfile);
@@ -91,47 +95,37 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
         }
     };
 
-    const handleExportData = async () => {
+    const handleExportData = () => {
+        // FIX: Add licenses, deliveries, and expenses to the backupData object to match the BackupData type.
         const backupData: BackupData = {
-            clients, equipment, clientEquipment, inspections, financial, certificates, licenses, deliveries, expenses, recurringPayables,
+            clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses,
             companyProfile, appSettings,
         };
         const jsonString = JSON.stringify(backupData, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
-        const fileName = `MDS_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `InspecPro_Dados_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("Backup de dados exportado!");
+    };
 
-        if ((window as any).showSaveFilePicker) {
-            try {
-                const handle = await (window as any).showSaveFilePicker({
-                    suggestedName: fileName,
-                    types: [{
-                        description: 'JSON Files',
-                        accept: { 'application/json': ['.json'] },
-                    }],
-                });
-                const writable = await handle.createWritable();
-                await writable.write(blob);
-                await writable.close();
-                showToast("Backup salvo com sucesso!");
-            } catch (err: any) {
-                if (err.name === 'AbortError') {
-                    console.log("File save aborted by user.");
-                } else {
-                    console.error('Error saving file:', err);
-                    showToast("Erro ao salvar o backup.", "error");
-                }
-            }
-        } else {
-            // Fallback for browsers that don't support the API
+    const handleFullExport = async () => {
+        try {
+            const data = await exportAll();
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a); // Required for Firefox
+            a.download = `InspecPro_SISTEMA_COMPLETO_${new Date().toISOString().slice(0, 10)}.json`;
             a.click();
-            document.body.removeChild(a); // Clean up
             URL.revokeObjectURL(url);
-            showToast("Backup exportado com sucesso!");
+            showToast("Backup completo do sistema exportado!");
+        } catch (error) {
+            showToast("Erro ao exportar backup completo.", "error");
         }
     };
 
@@ -143,9 +137,17 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
         reader.onload = (event) => {
             try {
                 const parsedData = JSON.parse(event.target?.result as string);
-                if (!parsedData.clients || !parsedData.equipment) throw new Error("Arquivo de backup inválido.");
-                setDataToImport(parsedData);
-                setImportConfirmOpen(true);
+                
+                // Check if it's a full system backup (contains users or sessions)
+                if (parsedData.users || parsedData.sessions) {
+                    setFullDataToImport(parsedData);
+                    setFullImportConfirmOpen(true);
+                } else if (parsedData.clients || parsedData.equipment) {
+                    setDataToImport(parsedData);
+                    setImportConfirmOpen(true);
+                } else {
+                    throw new Error("Arquivo de backup inválido.");
+                }
             } catch (error) {
                 showToast("Erro ao processar o arquivo de backup.", "error");
             }
@@ -161,6 +163,19 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
         setDataToImport(null);
         setImportConfirmOpen(false);
         showToast("Dados importados com sucesso!");
+    };
+
+    const confirmFullImport = async () => {
+        if (!fullDataToImport) return;
+        try {
+            await importAll(fullDataToImport);
+            setFullDataToImport(null);
+            setFullImportConfirmOpen(false);
+            showToast("Sistema restaurado! Recarregando...", "success");
+            setTimeout(() => window.location.reload(), 1500);
+        } catch (error) {
+            showToast("Erro ao restaurar sistema.", "error");
+        }
     };
     
     const confirmAutoRestore = async () => {
@@ -239,18 +254,27 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                                 <li className="flex justify-between items-center p-3">
                                      <div>
                                         <p className="font-semibold text-text-primary">Importar Backup</p>
-                                        <p className="text-xs text-text-secondary">Substitua os dados por um arquivo.</p>
+                                        <p className="text-xs text-text-secondary">Substitua os dados ou restaure o sistema.</p>
                                     </div>
                                      <Button as="label" variant="secondary" className="cursor-pointer !p-2.5">
                                         <UploadIcon className="w-5 h-5"/>
                                         <input type="file" accept=".json" className="hidden" onChange={handleFileImportChange} />
                                      </Button>
                                 </li>
+                                <li className="flex justify-between items-center p-3 bg-accent/5">
+                                    <div>
+                                        <p className="font-semibold text-accent">Backup Total do Sistema</p>
+                                        <p className="text-xs text-text-secondary">Exporta TUDO (contas, sessões e dados).</p>
+                                    </div>
+                                    <Button onClick={handleFullExport} variant="secondary" className="!p-2.5 border-accent/30 text-accent">
+                                        <DatabaseIcon className="w-5 h-5"/>
+                                    </Button>
+                                </li>
                                 {lastBackupTimestamp && (
                                      <li className="flex justify-between items-center p-3">
                                         <div>
                                             <p className="font-semibold text-text-primary">Restauração Automática</p>
-                                            <p className="text-xs text-text-secondary">Último: {new Date(lastBackupTimestamp).toLocaleString('pt-BR')}</p>
+                                            <p className="text-xs text-text-secondary">Último: {new Date(lastBackupTimestamp).toLocaleDateString()}</p>
                                         </div>
                                         <Button onClick={() => setAutoRestoreConfirmOpen(true)} variant="secondary" className="text-accent border-accent/30 hover:bg-accent/10 !p-2.5">
                                             <RestoreIcon className="w-5 h-5"/>
@@ -273,6 +297,7 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
             </div>
             
             <ConfirmationModal isOpen={isImportConfirmOpen} onClose={() => setImportConfirmOpen(false)} onConfirm={confirmImport} title="Confirmar Importação" message="Isso substituirá todos os dados atuais pelos dados do backup. Esta ação não pode ser desfeita."/>
+            <ConfirmationModal isOpen={isFullImportConfirmOpen} onClose={() => setFullImportConfirmOpen(false)} onConfirm={confirmFullImport} title="Restaurar Sistema Completo" message="ATENÇÃO: Isso restaurará todas as contas de usuário, sessões e dados. O aplicativo será recarregado."/>
             <ConfirmationModal isOpen={isAutoRestoreConfirmOpen} onClose={() => setAutoRestoreConfirmOpen(false)} onConfirm={confirmAutoRestore} title="Confirmar Restauração" message="Isso substituirá todos os dados atuais pelos do último backup automático. Deseja continuar?"/>
         </div>
     );

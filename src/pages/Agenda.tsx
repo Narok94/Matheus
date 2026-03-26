@@ -1,10 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { InspectionStatus, AgendaAction, InspectedItem, Inspection } from '../../types';
-import { Card, Modal, getStatusBadge, Button, Input, Select, Textarea, FormField, EmptyState, FloatingActionButton, ConfirmationModal } from '../components/common';
-import { AgendaIcon, PlusIcon, EditIcon, CancelIcon, TrashIcon } from '../components/Icons';
+import { InspectionStatus, PrefilledInspectionData, InspectedItem, InspectionItemStatus, Equipment } from '../../types';
+import { Card, Modal, getStatusBadge, Button, Input, Select, Textarea, FormField, EmptyState, FloatingActionButton } from '../components/common';
+import { AgendaIcon, PlusIcon } from '../components/Icons';
 import { Calendar } from '../components/Calendar';
-import { formatLocalDate } from '../utils';
 
 const StatusFilter: React.FC<{
     selectedStatus: InspectionStatus | 'all';
@@ -30,92 +29,105 @@ const StatusFilter: React.FC<{
     );
 };
 
-const initialInspectionState = { clientId: '', inspectedItems: [] as InspectedItem[], date: '', time: '', address: '', inspector: 'Admin', observations: '', status: InspectionStatus.Agendada };
+const InspectedItemForm: React.FC<{
+    item: InspectedItem;
+    equipment: Equipment;
+    onUpdate: (field: keyof InspectedItem, value: string) => void;
+}> = ({ item, equipment, onUpdate }) => {
+    return (
+        <div className="p-3 bg-secondary rounded-lg border border-border space-y-3">
+            <p className="font-semibold text-text-primary">{equipment.name} <span className="text-xs text-text-secondary">({equipment.serialNumber})</span></p>
+            <FormField label="Localização">
+                <Input value={item.location} onChange={e => onUpdate('location', e.target.value)} placeholder="Ex: Térreo, Corredor B" required />
+            </FormField>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                 <FormField label="Situação">
+                    <Select value={item.situation} onChange={e => onUpdate('situation', e.target.value as InspectionItemStatus)}>
+                        <option value={InspectionItemStatus.Conforme}>Conforme</option>
+                        <option value={InspectionItemStatus.NaoConforme}>Não Conforme</option>
+                    </Select>
+                </FormField>
+                 <FormField label="Ação Sugerida">
+                    <Input value={item.suggestedAction} onChange={e => onUpdate('suggestedAction', e.target.value)} placeholder="Ex: Reparo, Troca" required />
+                </FormField>
+            </div>
+        </div>
+    )
+}
+
 
 export const Agenda: React.FC<{ 
-    action: AgendaAction, 
-    onActionHandled: () => void, 
+    prefilledData: PrefilledInspectionData, 
+    onPrefillHandled: () => void, 
     showToast: (msg: string, type?: 'success' | 'error') => void,
     onViewInspection: (inspectionId: string) => void 
-}> = ({ action, onActionHandled, showToast, onViewInspection }) => {
-    const { inspections, clients, handleAddInspection, handleUpdateInspection, handleDeleteInspection } = useData();
-    
+}> = ({ prefilledData, onPrefillHandled, showToast, onViewInspection }) => {
+    const { inspections, clients, equipment, handleAddInspection } = useData();
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [filter, setFilter] = useState<InspectionStatus | 'all'>('all');
     const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
     
+    const initialInspectionState = { clientId: '', inspectedItems: [] as InspectedItem[], date: '', inspector: 'João Silva', observations: '', status: InspectionStatus.Agendada };
     const [newInspection, setNewInspection] = useState(initialInspectionState);
-
-    // State for Edit, Cancel, Delete actions
-    const [isEditModalOpen, setEditModalOpen] = useState(false);
-    const [isCancelModalOpen, setCancelModalOpen] = useState(false);
-    const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
-    const [editedInspection, setEditedInspection] = useState<Inspection | null>(null);
     
+    const clientEquipment = useMemo(() => {
+        return equipment.filter(e => e.clientId === newInspection.clientId);
+    }, [equipment, newInspection.clientId]);
+
     const inspectionDates = useMemo(() => 
         inspections.map(i => i.date), 
     [inspections]);
 
     useEffect(() => {
-        if (action?.action === 'openModal') {
-            const inspectionDate = new Date();
-            const selectedClient = action.clientId ? clients.find(c => c.id === action.clientId) : null;
-            
-            setNewInspection({
-                ...initialInspectionState,
-                clientId: action.clientId || '',
-                date: formatLocalDate(inspectionDate),
-                address: selectedClient?.address || '',
-            });
-
+        if(prefilledData?.clientId) {
+            const inspectionDate = new Date(); // Using today's date for prefill
+            setNewInspection(prev => ({
+                ...prev,
+                clientId: prefilledData.clientId || '',
+                date: inspectionDate.toISOString().split('T')[0],
+            }));
             setSelectedDate(inspectionDate);
             setAddModalOpen(true);
-            onActionHandled();
+            onPrefillHandled();
         }
-    }, [action, onActionHandled, clients]);
+    }, [prefilledData, onPrefillHandled]);
     
-    // Auto-fill address when client is selected in Add Modal
-    useEffect(() => {
-        if (newInspection.clientId) {
-            const client = clients.find(c => c.id === newInspection.clientId);
-            if (client) {
-                setNewInspection(prev => ({ ...prev, address: client.address }));
-            }
-        } else {
-            setNewInspection(prev => ({ ...prev, address: '' }));
-        }
-    }, [newInspection.clientId, clients]);
-    
-    // Clear edited inspection state when edit modal is closed
-    useEffect(() => {
-        if (!isEditModalOpen) {
-            setEditedInspection(null);
-            setSelectedInspection(null);
-        }
-    }, [isEditModalOpen]);
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setNewInspection(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (newInspection.inspectedItems.length === 0) {
+            showToast("Selecione e detalhe ao menos um equipamento para a inspeção.", "error");
+            return;
+        }
         handleAddInspection(newInspection);
         setNewInspection(initialInspectionState);
         setAddModalOpen(false);
-        showToast("Inspeção/Vistoria agendada com sucesso!");
+        showToast("Inspeção agendada com sucesso!");
+    };
+    
+    const handleEquipmentSelection = (equipmentId: string, isSelected: boolean) => {
+        setNewInspection(prev => {
+            const currentItems = prev.inspectedItems;
+            if (isSelected) {
+                const newItem: InspectedItem = { equipmentId, location: '', situation: InspectionItemStatus.Conforme, suggestedAction: 'Nenhuma' };
+                return { ...prev, inspectedItems: [...currentItems, newItem] };
+            } else {
+                return { ...prev, inspectedItems: currentItems.filter(item => item.equipmentId !== equipmentId) };
+            }
+        });
+    };
+    
+    const handleInspectedItemUpdate = (equipmentId: string, field: keyof InspectedItem, value: string) => {
+        setNewInspection(prev => ({
+            ...prev,
+            inspectedItems: prev.inspectedItems.map(item => item.equipmentId === equipmentId ? { ...item, [field]: value } : item)
+        }));
     };
 
     const sortedAndFilteredInspections = useMemo(() => {
         let items = inspections;
 
         if (selectedDate) {
-            const selectedISO = formatLocalDate(selectedDate);
+            const selectedISO = selectedDate.toISOString().split('T')[0];
             items = items.filter(i => i.date === selectedISO);
         }
         
@@ -130,68 +142,16 @@ export const Agenda: React.FC<{
         const dateForNewInspection = selectedDate || new Date();
         setNewInspection({
             ...initialInspectionState,
-            date: formatLocalDate(dateForNewInspection)
+            date: dateForNewInspection.toISOString().split('T')[0]
         });
         setAddModalOpen(true);
     };
-
-    // --- Action Handlers ---
-    const handleOpenEditModal = (inspection: Inspection) => {
-        setSelectedInspection(inspection);
-        setEditedInspection(inspection);
-        setEditModalOpen(true);
-    };
-    const handleOpenCancelModal = (inspection: Inspection) => {
-        setSelectedInspection(inspection);
-        setCancelModalOpen(true);
-    };
-    const handleOpenDeleteModal = (inspection: Inspection) => {
-        setSelectedInspection(inspection);
-        setDeleteModalOpen(true);
-    };
-
-    const handleConfirmCancel = () => {
-        if (selectedInspection) {
-            handleUpdateInspection({ ...selectedInspection, status: InspectionStatus.Cancelada });
-            showToast('Inspeção/Vistoria cancelada.');
-        }
-        setCancelModalOpen(false);
-        setSelectedInspection(null);
-    };
-
-    const handleConfirmDelete = () => {
-        if (selectedInspection) {
-            handleDeleteInspection(selectedInspection.id);
-            showToast('Inspeção/Vistoria excluída.');
-        }
-        setDeleteModalOpen(false);
-        setSelectedInspection(null);
-    };
-
-    const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        if (editedInspection) {
-            setEditedInspection({ ...editedInspection, [name]: value });
-        }
-    };
-
-    const handleEditSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (editedInspection) {
-            handleUpdateInspection(editedInspection);
-            showToast('Inspeção/Vistoria atualizada com sucesso!');
-            setEditModalOpen(false);
-        }
-    };
-
 
     const statusColors: Record<InspectionStatus, string> = {
         [InspectionStatus.Aprovado]: 'bg-status-approved',
         [InspectionStatus.Reprovado]: 'bg-status-reproved',
         [InspectionStatus.Pendente]: 'bg-status-pending',
         [InspectionStatus.Agendada]: 'bg-status-scheduled',
-        [InspectionStatus.Concluída]: 'bg-status-completed',
-        [InspectionStatus.Cancelada]: 'bg-status-cancelled',
     };
 
     return (
@@ -206,7 +166,7 @@ export const Agenda: React.FC<{
             
             <div className="flex justify-between items-center pt-4">
                 <h2 className="text-xl font-bold text-text-primary">
-                    {selectedDate ? `Inspeções/Vistorias do Dia` : 'Todas as Inspeções/Vistorias'}
+                    {selectedDate ? `Inspeções do Dia` : 'Todas as Inspeções'}
                 </h2>
                 {selectedDate && (
                     <Button variant="secondary" className="!py-1 !px-3 !text-xs" onClick={() => setSelectedDate(null)}>
@@ -221,113 +181,78 @@ export const Agenda: React.FC<{
                 {sortedAndFilteredInspections.length > 0 ? sortedAndFilteredInspections.map(insp => {
                     const client = clients.find(c => c.id === insp.clientId);
                     return (
-                        <div key={insp.id} className="bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md rounded-lg flex items-stretch border border-transparent transition-all duration-300 shadow-lg dark:shadow-cyan-900/10">
+                        <div key={insp.id} onClick={() => onViewInspection(insp.id)} className="bg-secondary/70 dark:bg-secondary/70 backdrop-blur-md rounded-lg flex items-stretch cursor-pointer hover:border-accent border border-transparent transition-all duration-300 hover:-translate-y-px active:scale-[0.99] shadow-lg dark:shadow-black/20">
                             <div className={`w-2 flex-shrink-0 rounded-l-lg ${statusColors[insp.status]}`}></div>
                             <div className="p-3 flex-grow flex flex-col justify-between">
-                                <div onClick={() => onViewInspection(insp.id)} className="cursor-pointer">
-                                    <div className="flex justify-between items-start">
-                                        <h4 className="font-bold text-text-primary pr-2">{client?.name || 'Cliente não encontrado'}</h4>
-                                        <div className="flex-shrink-0">
-                                            {getStatusBadge(insp.status)}
-                                        </div>
+                                <div className="flex justify-between items-start">
+                                    <h4 className="font-bold text-text-primary pr-2">{client?.name || 'Cliente não encontrado'}</h4>
+                                    <div className="flex-shrink-0">
+                                        {getStatusBadge(insp.status)}
                                     </div>
                                 </div>
                                 <div className="text-xs text-text-secondary mt-2 flex justify-between items-end">
-                                    <div onClick={() => onViewInspection(insp.id)} className="cursor-pointer flex-grow">
-                                        <p>Inspetor: {insp.inspector}</p>
-                                        <p>{insp.inspectedItems.length} item(ns)</p>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                        <button onClick={(e) => { e.stopPropagation(); handleOpenEditModal(insp); }} className="p-2 hover:bg-primary rounded-full text-text-secondary hover:text-accent"><EditIcon className="w-4 h-4" /></button>
-                                        <button onClick={(e) => { e.stopPropagation(); handleOpenCancelModal(insp); }} className="p-2 hover:bg-primary rounded-full text-text-secondary hover:text-yellow-500"><CancelIcon className="w-4 h-4" /></button>
-                                        <button onClick={(e) => { e.stopPropagation(); handleOpenDeleteModal(insp); }} className="p-2 hover:bg-primary rounded-full text-text-secondary hover:text-status-reproved"><TrashIcon className="w-4 h-4" /></button>
-                                    </div>
+                                    <span>Inspetor: {insp.inspector}</span>
+                                    <span>{insp.inspectedItems.length} item(ns)</span>
                                 </div>
                             </div>
                         </div>
                     )
-                }) : <EmptyState message={selectedDate ? "Nenhuma inspeção/vistoria agendada para este dia." : "Nenhuma inspeção/vistoria encontrada para este filtro."} icon={<AgendaIcon className="w-12 h-12" />} action={<Button onClick={handleOpenAddModal}>Agendar Inspeção/Vistoria</Button>} />}
+                }) : <EmptyState message={selectedDate ? "Nenhuma inspeção agendada para este dia." : "Nenhuma inspeção encontrada para este filtro."} icon={<AgendaIcon className="w-12 h-12" />} action={<Button onClick={handleOpenAddModal}>Agendar Inspeção</Button>} />}
             </div>
 
              <FloatingActionButton onClick={handleOpenAddModal} icon={<PlusIcon />} />
-             <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Agendar Nova Inspeção/Vistoria">
+             <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Agendar Nova Inspeção">
                 <form onSubmit={handleFormSubmit} className="space-y-4">
-                    <FormField label="Empresa">
-                        <Select name="clientId" value={newInspection.clientId} onChange={handleInputChange} required>
+                    <FormField label="Cliente">
+                        <Select name="clientId" value={newInspection.clientId} onChange={(e) => setNewInspection(p => ({...p, clientId: e.target.value, inspectedItems: []}))} required>
                             <option value="">Selecione um cliente</option>
                             {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </Select>
                     </FormField>
+
+                    {newInspection.clientId && (
+                        <>
+                        <FormField label="Selecionar Equipamentos">
+                            <div className="max-h-60 overflow-y-auto bg-primary/50 p-2 rounded-lg border border-border space-y-2 mt-1">
+                                {clientEquipment.length > 0 ? clientEquipment.map(eq => (
+                                    <label key={eq.id} className="flex items-center space-x-3 p-2 hover:bg-secondary rounded-md cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
+                                            checked={newInspection.inspectedItems.some(item => item.equipmentId === eq.id)}
+                                            onChange={(e) => handleEquipmentSelection(eq.id, e.target.checked)}
+                                        />
+                                        <span className="text-sm text-text-primary">{eq.name} ({eq.serialNumber})</span>
+                                    </label>
+                                )) : <p className="text-xs text-text-secondary text-center p-2">Nenhum equipamento para este cliente.</p>}
+                            </div>
+                        </FormField>
+                         {newInspection.inspectedItems.length > 0 && (
+                            <FormField label="Detalhes dos Itens a Inspecionar">
+                                <div className="space-y-3 mt-1">
+                                    {newInspection.inspectedItems.map(item => {
+                                        const equipmentDetails = clientEquipment.find(eq => eq.id === item.equipmentId);
+                                        if (!equipmentDetails) return null;
+                                        return <InspectedItemForm key={item.equipmentId} item={item} equipment={equipmentDetails} onUpdate={(field, value) => handleInspectedItemUpdate(item.equipmentId, field, value)} />
+                                    })}
+                                </div>
+                            </FormField>
+                        )}
+                        </>
+                    )}
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField label="Data">
-                            <Input type="date" name="date" value={newInspection.date} onChange={handleInputChange} required />
-                        </FormField>
-                        <FormField label="Horário">
-                             <Input type="time" name="time" value={newInspection.time} onChange={handleInputChange} />
-                        </FormField>
-                    </div>
-
-                    <FormField label="Endereço da Vistoria">
-                        <Input name="address" value={newInspection.address || ''} onChange={handleInputChange} required />
-                    </FormField>
-
-                    <FormField label="Observação (O que será vistoriado?)">
-                        <Textarea 
-                            name="observations" 
-                            value={newInspection.observations} 
-                            onChange={handleInputChange}
-                            placeholder="Ex: 5 extintores PQS, 2 hidrantes de parede, etc."
-                        />
-                    </FormField>
-
+                    <FormField label="Data da Inspeção"><Input type="date" name="date" value={newInspection.date} onChange={(e) => setNewInspection(p => ({...p, date: e.target.value}))} required /></FormField>
+                    <FormField label="Observações Gerais"><Textarea name="observations" value={newInspection.observations} onChange={(e) => setNewInspection(p => ({...p, observations: e.target.value}))} /></FormField>
                     <div className="flex justify-end pt-4">
-                        <Button type="submit" disabled={!newInspection.clientId}>
+                        <Button 
+                            type="submit" 
+                            disabled={!newInspection.clientId || newInspection.inspectedItems.length === 0}
+                        >
                             Agendar
                         </Button>
                     </div>
                 </form>
             </Modal>
-             {editedInspection && <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Inspeção/Vistoria">
-                <form onSubmit={handleEditSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField label="Data">
-                            <Input type="date" name="date" value={editedInspection.date} onChange={handleEditInputChange} required />
-                        </FormField>
-                        <FormField label="Horário">
-                                <Input type="time" name="time" value={editedInspection.time || ''} onChange={handleEditInputChange} />
-                        </FormField>
-                    </div>
-                    <FormField label="Endereço da Vistoria">
-                        <Input name="address" value={editedInspection.address || ''} onChange={handleEditInputChange} required />
-                    </FormField>
-                    <FormField label="Inspetor">
-                        <Input name="inspector" value={editedInspection.inspector} onChange={handleEditInputChange} required />
-                    </FormField>
-                    <FormField label="Observações">
-                        <Textarea name="observations" value={editedInspection.observations} onChange={handleEditInputChange} />
-                    </FormField>
-                    <div className="flex justify-end pt-4">
-                        <Button type="submit">Salvar Alterações</Button>
-                    </div>
-                </form>
-            </Modal>}
-
-            <ConfirmationModal
-                isOpen={isCancelModalOpen}
-                onClose={() => setCancelModalOpen(false)}
-                onConfirm={handleConfirmCancel}
-                title="Confirmar Cancelamento"
-                message={`Tem certeza que deseja cancelar esta inspeção/vistoria para "${clients.find(c => c.id === selectedInspection?.clientId)?.name}"?`}
-            />
-
-            <ConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
-                title="Confirmar Exclusão"
-                message={`Tem certeza que deseja EXCLUIR esta inspeção/vistoria? Esta ação é permanente e não pode ser desfeita.`}
-            />
         </div>
     );
 };
