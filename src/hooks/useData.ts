@@ -67,7 +67,7 @@ export const useData = () => {
     
     // Inspection
     const handleAddInspection = (inspectionData: Omit<Inspection, 'id'>) => {
-        const newInspection: Inspection = { ...inspectionData, id: `ins-${crypto.randomUUID()}` };
+        const newInspection: Inspection = { ...inspectionData, id: `ins-${generateUUID()}` };
         setInspections(prev => [...prev, newInspection]);
     };
     const handleUpdateInspection = (updatedInspection: Inspection) => {
@@ -105,7 +105,7 @@ export const useData = () => {
         expiryDate.setFullYear(issueDate.getFullYear() + 1);
 
         const newCertificate: Certificate = {
-            id: `cert-${crypto.randomUUID()}`,
+            id: `cert-${generateUUID()}`,
             inspectionId: inspection.id,
             clientId: inspection.clientId,
             issueDate: issueDate.toISOString().split('T')[0],
