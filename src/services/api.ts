@@ -13,9 +13,16 @@ export const api = {
       headers,
       body: JSON.stringify(data),
     });
+    
+    const contentType = response.headers.get('content-type');
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'API Error');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro na API');
+      } else {
+        const text = await response.text();
+        throw new Error(`Erro do Servidor: ${text.substring(0, 100)}...`);
+      }
     }
     return response.json();
   },
@@ -28,9 +35,16 @@ export const api = {
     const response = await fetch(`${API_URL}/api${endpoint}`, {
       headers,
     });
+    
+    const contentType = response.headers.get('content-type');
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'API Error');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro na API');
+      } else {
+        const text = await response.text();
+        throw new Error(`Erro do Servidor: ${text.substring(0, 100)}...`);
+      }
     }
     return response.json();
   },

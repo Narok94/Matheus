@@ -1,17 +1,13 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
-import { fileURLToPath } from "url";
 import cors from "cors";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { query, initDB } from "./src/db/index.js";
+import { query, initDB } from "./src/db/index";
 
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -20,6 +16,20 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+let isDbInitialized = false;
+const ensureDb = async (req: any, res: any, next: any) => {
+  if (!isDbInitialized) {
+    try {
+      await initDB();
+      isDbInitialized = true;
+    } catch (error) {
+      console.error('Failed to initialize DB in middleware:', error);
+    }
+  }
+  next();
+};
+
+app.use(ensureDb);
 
 // --- AUTH MIDDLEWARE ---
 const authenticateToken = (req: any, res: any, next: any) => {
@@ -233,16 +243,9 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// Initialize Database and Start Server
-async function start() {
-  await initDB();
-  if (process.env.NODE_ENV !== "production") {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  }
+// Start Server locally
+if (process.env.NODE_ENV !== "production") {
+  start();
 }
-
-start();
 
 export default app;
