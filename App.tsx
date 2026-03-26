@@ -211,7 +211,7 @@ const AppContent: React.FC = () => {
         });
 
         return () => {
-            listenerPromise.then(listener => listener.remove());
+            listenerPromise.then((listener: any) => listener.remove());
         };
     }, [currentView, handleBack]);
 
