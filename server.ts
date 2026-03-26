@@ -305,11 +305,11 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// Start Server locally
-if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
+// Start Server
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Database URL configured: ${!!process.env.POSTGRES_URL}`);
+});
 
 export default app;

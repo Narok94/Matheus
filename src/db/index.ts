@@ -7,7 +7,10 @@ const { Pool } = pg;
 // Use pg.Pool which is more standard and works everywhere
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL,
-  ssl: process.env.POSTGRES_URL ? { rejectUnauthorized: false } : false
+  ssl: process.env.POSTGRES_URL ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 5000, // 5 seconds timeout
+  idleTimeoutMillis: 30000,
+  max: 10 // Limit pool size for serverless-like environments
 });
 
 export const query = async (text: string, params?: any[]) => {
