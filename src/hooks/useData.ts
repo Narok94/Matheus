@@ -4,6 +4,7 @@ import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CE
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';
 import { get } from '../idb';
+import { api } from '../services/api';
 
 export const useData = () => {
     const { currentUser } = useAuth();
@@ -185,6 +186,25 @@ export const useData = () => {
         }
     };
 
+    const syncData = async (jwtToken: string, companyProfile: any, appSettings: any) => {
+        try {
+            // Push local data to server
+            const backupData: BackupData = {
+                clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses,
+                companyProfile, appSettings,
+            };
+            await api.post('/sync', backupData, jwtToken);
+            
+            // Pull latest data from server
+            const remoteData = await api.get('/sync', jwtToken);
+            handleImportData(remoteData);
+            return remoteData;
+        } catch (error) {
+            console.error('Sync failed:', error);
+            throw error;
+        }
+    };
+
     return {
         clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses,
         isDataLoading,
@@ -208,5 +228,6 @@ export const useData = () => {
         handleImportData,
         lastBackupTimestamp,
         confirmAutoRestore,
+        syncData,
     };
 };
