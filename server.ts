@@ -48,9 +48,8 @@ app.get("/api/health", async (req, res) => {
     console.error("Health check failed:", error);
     res.status(500).json({ 
       status: "error", 
-      database: "disconnected", 
-      error: error.message,
-      stack: error.stack
+      message: error.message,
+      stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
     });
   }
 });
@@ -117,9 +116,9 @@ app.post("/api/auth/register", async (req, res) => {
     );
 
     res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error: any) {
+    console.error("Registration error:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
   }
 });
 
@@ -139,9 +138,9 @@ app.post("/api/auth/login", async (req, res) => {
 
     const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, username: user.username, email: user.email, fullName: user.full_name } });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error: any) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
   }
 });
 
@@ -172,9 +171,9 @@ app.get("/api/sync", authenticateToken, async (req: any, res) => {
       companyProfile: profile.rows[0] || { name: "InspecPro", logo: "" },
       appSettings: settings.rows[0] || { reminders: true }
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error: any) {
+    console.error("Sync GET error:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
   }
 });
 
@@ -273,10 +272,10 @@ app.post("/api/sync", authenticateToken, async (req: any, res) => {
 
     await query("COMMIT");
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     await query("ROLLBACK");
-    console.error(error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Sync POST error:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
   }
 });
 

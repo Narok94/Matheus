@@ -1,4 +1,5 @@
 import { useMemo, Dispatch } from 'react';
+import { generateUUID } from '../utils';
 import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, PaymentStatus } from '../../types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES, MOCK_LICENSES, MOCK_DELIVERIES, MOCK_EXPENSES } from '../../data';
 import { useIndexedDB } from './useIndexedDB';
@@ -38,7 +39,7 @@ export const useData = () => {
     // --- CRUD Handlers ---
     // Client
     const handleAddClient = (clientData: Omit<Client, 'id'>) => {
-        const newClient: Client = { ...clientData, id: `cli-${crypto.randomUUID()}` };
+        const newClient: Client = { ...clientData, id: `cli-${generateUUID()}` };
         setClients(prev => [...prev, newClient]);
     };
     const handleUpdateClient = (updatedClient: Client) => {
@@ -54,7 +55,7 @@ export const useData = () => {
     
     // Equipment
     const handleAddEquipment = (equipmentData: Omit<Equipment, 'id'>) => {
-        const newEquipment: Equipment = { ...equipmentData, id: `eq-${crypto.randomUUID()}` };
+        const newEquipment: Equipment = { ...equipmentData, id: `eq-${generateUUID()}` };
         setEquipment(prev => [...prev, newEquipment]);
     };
     const handleUpdateEquipment = (updatedEquipment: Equipment) => {
@@ -75,7 +76,7 @@ export const useData = () => {
     
     // Financial (Receivables)
     const handleAddFinancial = (recordData: Omit<FinancialRecord, 'id'>) => {
-        const newRecord: FinancialRecord = { ...recordData, id: `fin-${crypto.randomUUID()}` };
+        const newRecord: FinancialRecord = { ...recordData, id: `fin-${generateUUID()}` };
         setFinancial(prev => [...prev, newRecord]);
     };
      const handleUpdateFinancial = (updatedRecord: FinancialRecord) => {
@@ -87,7 +88,7 @@ export const useData = () => {
 
     // Expenses (Payables)
     const handleAddExpense = (expenseData: Omit<Expense, 'id'>) => {
-        const newExpense: Expense = { ...expenseData, id: `exp-${crypto.randomUUID()}` };
+        const newExpense: Expense = { ...expenseData, id: `exp-${generateUUID()}` };
         setExpenses(prev => [...prev, newExpense]);
     };
     const handleUpdateExpense = (updatedExpense: Expense) => {
