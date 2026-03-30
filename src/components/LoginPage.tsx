@@ -157,42 +157,32 @@ export const LoginPage: React.FC<LoginPageProps> = ({ showToast, onSwitchToRegis
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Username"
+                                placeholder="Usuário"
                                 required
-                                aria-label="Username"
+                                aria-label="Usuário"
                             />
                             <InputWithIcon
                                 icon={<LockIcon />}
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Password"
+                                placeholder="Senha"
                                 required
-                                aria-label="Password"
+                                aria-label="Senha"
                             />
-                            <FormButton type="submit">LOG IN</FormButton>
+                            <FormButton type="submit">ENTRAR</FormButton>
                         </form>
 
-                        <div className="text-center text-sm mt-6 flex justify-between text-orange-400">
-                            <a 
-                                href="#"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    showToast("Função de recuperação em desenvolvimento.", "error");
-                                }}
-                                className="hover:underline"
-                            >
-                                Forgot Password?
-                            </a>
+                        <div className="text-center text-sm mt-6">
                             <a 
                                 href="#"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     onSwitchToRegister();
                                 }}
-                                className="hover:underline"
+                                className="text-orange-400 hover:underline"
                             >
-                                Sign Up
+                                Criar Conta
                             </a>
                         </div>
                     </AuthFormCard>
@@ -223,14 +213,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchT
                 <div className="w-full max-w-sm">
                     <AuthFormCard>
                         <AuthHeader />
-                        <h2 className="text-center text-lg text-slate-300 -mt-4 mb-6">Create Account</h2>
+                        <h2 className="text-center text-lg text-slate-300 -mt-4 mb-6">Criar Conta</h2>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <InputWithIcon
                                 icon={<UserIcon />}
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Username"
+                                placeholder="Usuário"
                                 required
                             />
                             <InputWithIcon
@@ -238,10 +228,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchT
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Password"
+                                placeholder="Senha"
                                 required
                             />
-                            <FormButton type="submit">SIGN UP</FormButton>
+                            <FormButton type="submit">CADASTRAR</FormButton>
                         </form>
                         <div className="text-center text-sm mt-6">
                             <a 
@@ -252,7 +242,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ showToast, onSwitchT
                                 }}
                                 className="text-orange-400 hover:underline"
                             >
-                                Already have an account? Log In
+                                Já tem uma conta? Entrar
                             </a>
                         </div>
                     </AuthFormCard>

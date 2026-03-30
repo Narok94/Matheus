@@ -17,6 +17,7 @@ import {
     CertificateIcon, FinancialIcon, SettingsIcon, ReportsIcon, InspecProLogo
 } from './src/components/Icons';
 import { useIdleTimer } from './src/hooks/useIdleTimer';
+import { DatabaseStatus } from './src/components/DatabaseStatus';
 
 
 const viewTitles: Record<View, string> = {
@@ -107,7 +108,8 @@ const Sidebar = ({ currentView, setView, companyProfile }: { currentView: View, 
                     />
                 ))}
             </nav>
-            <div className="mt-auto">
+            <div className="mt-auto space-y-4">
+                 <DatabaseStatus />
                  <NavLink
                     icon={<SettingsIcon />}
                     label="Configurações"

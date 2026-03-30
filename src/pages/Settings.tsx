@@ -32,7 +32,7 @@ const TabContent: React.FC<{ activeTab: Tab; tabName: Tab; children: ReactNode; 
 export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'error') => void }> = ({ showToast }) => {
     const { currentUserDetails, handleUpdateUser, handleLogout } = useAuth();
     // FIX: Destructure licenses, deliveries, and expenses from useData to include them in the backup.
-    const { clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses, handleImportData, lastBackupTimestamp, confirmAutoRestore: confirmDataAutoRestore } = useData();
+    const { clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses, handleImportData, lastBackupTimestamp, confirmAutoRestore: confirmDataAutoRestore, syncData } = useData();
     const { theme, setTheme, companyProfile, setCompanyProfile, appSettings, handleImportSettings, confirmAutoRestoreSettings } = useSettings();
 
     const [activeTab, setActiveTab] = useState<Tab>('system');
@@ -190,6 +190,26 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
         }
     };
 
+    const { jwtToken } = useAuth();
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    const handleSync = async () => {
+        if (!jwtToken) {
+            showToast("Você precisa estar logado para sincronizar.", "error");
+            return;
+        }
+        setIsSyncing(true);
+        try {
+            const remoteData = await syncData(jwtToken, companyProfile, appSettings);
+            handleImportSettings(remoteData);
+            showToast("Sincronização concluída com sucesso!", "success");
+        } catch (error: any) {
+            showToast(error.message || "Erro ao sincronizar dados.", "error");
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     return (
         <div className="p-4 flex flex-col h-full">
             <div className="flex border-b border-border mb-6">
@@ -242,6 +262,15 @@ export const Settings: React.FC<{ showToast: (msg: string, type?: 'success' | 'e
                         </Card>
                         <Card title="Backup e Restauração">
                             <ul className="divide-y divide-border">
+                                <li className="flex justify-between items-center p-3 bg-primary/10">
+                                    <div>
+                                        <p className="font-semibold text-primary">Sincronizar com Nuvem</p>
+                                        <p className="text-xs text-text-secondary">Sincronize seus dados com o banco de dados Vercel.</p>
+                                    </div>
+                                    <Button onClick={handleSync} disabled={isSyncing} variant="primary" className="!p-2.5">
+                                        <DatabaseIcon className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`}/>
+                                    </Button>
+                                </li>
                                 <li className="flex justify-between items-center p-3">
                                     <div>
                                         <p className="font-semibold text-text-primary">Backup Manual</p>

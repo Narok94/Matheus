@@ -1,16 +1,15 @@
-import { useMemo, Dispatch } from 'react';
+import { useMemo, Dispatch, useEffect, useState } from 'react';
 import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, PaymentStatus } from '../../types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES, MOCK_LICENSES, MOCK_DELIVERIES, MOCK_EXPENSES } from '../../data';
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';
 import { get } from '../idb';
+import { api } from '../services/api';
 
 export const useData = () => {
     const { currentUser } = useAuth();
     const dataKeyPrefix = useMemo(() => {
         if (!currentUser) return 'guest';
-        // By changing the key prefix, we effectively reset the user's data to the initial state one time.
-        // Old data remains under the old key but will no longer be accessed.
         if (currentUser === 'matheus') return 'matheus-v2';
         return currentUser;
     }, [currentUser]);
@@ -27,77 +26,127 @@ export const useData = () => {
     const [deliveries, setDeliveries, deliveriesLoaded] = useIndexedDB<Delivery[]>(`${dataKeyPrefix}-deliveries`, isInitialMockLoad ? MOCK_DELIVERIES : []);
     const [expenses, setExpenses, expensesLoaded] = useIndexedDB<Expense[]>(`${dataKeyPrefix}-expenses`, isInitialMockLoad ? MOCK_EXPENSES : []);
     
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    // Initial sync from DB
+    useEffect(() => {
+        const syncFromDB = async () => {
+            if (!currentUser || currentUser === 'guest') return;
+            setIsSyncing(true);
+            try {
+                // Initialize DB if needed (only once)
+                await api.initDb();
+
+                const [dbClients, dbEq, dbInsp, dbFin, dbCert, dbExp] = await Promise.all([
+                    api.getClients(),
+                    api.getEquipment(),
+                    api.getInspections(),
+                    api.getFinancialRecords(),
+                    api.getCertificates(),
+                    api.getExpenses()
+                ]);
+
+                if (dbClients.length > 0) setClients(dbClients);
+                if (dbEq.length > 0) setEquipment(dbEq);
+                if (dbInsp.length > 0) setInspections(dbInsp);
+                if (dbFin.length > 0) setFinancial(dbFin);
+                if (dbCert.length > 0) setCertificates(dbCert);
+                if (dbExp.length > 0) setExpenses(dbExp);
+            } catch (error) {
+                console.error("Failed to sync from PostgreSQL:", error);
+            } finally {
+                setIsSyncing(false);
+            }
+        };
+
+        syncFromDB();
+    }, [currentUser]);
+
     // Auto-backup timestamp state
     const iDBLastBackup = useIndexedDB<string | null>(`${dataKeyPrefix}-lastBackupTimestamp`, null);
     const lastBackupTimestamp = iDBLastBackup[0];
     const lastBackupTimestampLoaded = iDBLastBackup[2];
     
-    const isDataLoading = !clientsLoaded || !equipmentLoaded || !inspectionsLoaded || !financialLoaded || !certificatesLoaded || !lastBackupTimestampLoaded || !licensesLoaded || !deliveriesLoaded || !expensesLoaded;
+    const isDataLoading = !clientsLoaded || !equipmentLoaded || !inspectionsLoaded || !financialLoaded || !certificatesLoaded || !lastBackupTimestampLoaded || !licensesLoaded || !deliveriesLoaded || !expensesLoaded || isSyncing;
 
     // --- CRUD Handlers ---
     // Client
-    const handleAddClient = (clientData: Omit<Client, 'id'>) => {
+    const handleAddClient = async (clientData: Omit<Client, 'id'>) => {
         const newClient: Client = { ...clientData, id: `cli-${crypto.randomUUID()}` };
         setClients(prev => [...prev, newClient]);
+        try { await api.saveClient(newClient); } catch (e) { console.error(e); }
     };
-    const handleUpdateClient = (updatedClient: Client) => {
+    const handleUpdateClient = async (updatedClient: Client) => {
         setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+        try { await api.saveClient(updatedClient); } catch (e) { console.error(e); }
     };
-    const handleDeleteClient = (clientId: string) => {
+    const handleDeleteClient = async (clientId: string) => {
         setClients(prev => prev.filter(c => c.id !== clientId));
         setEquipment(prev => prev.filter(e => e.clientId !== clientId));
         setInspections(prev => prev.filter(i => i.clientId !== clientId));
         setFinancial(prev => prev.filter(f => f.clientId !== clientId));
         setCertificates(prev => prev.filter(cert => cert.clientId !== clientId));
+        try { await api.deleteClient(clientId); } catch (e) { console.error(e); }
     };
     
     // Equipment
-    const handleAddEquipment = (equipmentData: Omit<Equipment, 'id'>) => {
+    const handleAddEquipment = async (equipmentData: Omit<Equipment, 'id'>) => {
         const newEquipment: Equipment = { ...equipmentData, id: `eq-${crypto.randomUUID()}` };
         setEquipment(prev => [...prev, newEquipment]);
+        try { await api.saveEquipment(newEquipment); } catch (e) { console.error(e); }
     };
-    const handleUpdateEquipment = (updatedEquipment: Equipment) => {
+    const handleUpdateEquipment = async (updatedEquipment: Equipment) => {
         setEquipment(prev => prev.map(eq => eq.id === updatedEquipment.id ? updatedEquipment : eq));
+        try { await api.saveEquipment(updatedEquipment); } catch (e) { console.error(e); }
     };
-    const handleDeleteEquipment = (equipmentId: string) => {
+    const handleDeleteEquipment = async (equipmentId: string) => {
         setEquipment(prev => prev.filter(eq => eq.id !== equipmentId));
+        try { await api.deleteEquipment(equipmentId); } catch (e) { console.error(e); }
     };
     
     // Inspection
-    const handleAddInspection = (inspectionData: Omit<Inspection, 'id'>) => {
+    const handleAddInspection = async (inspectionData: Omit<Inspection, 'id'>) => {
         const newInspection: Inspection = { ...inspectionData, id: `ins-${crypto.randomUUID()}` };
         setInspections(prev => [...prev, newInspection]);
+        try { await api.saveInspection(newInspection); } catch (e) { console.error(e); }
     };
-    const handleUpdateInspection = (updatedInspection: Inspection) => {
+    const handleUpdateInspection = async (updatedInspection: Inspection) => {
         setInspections(prev => prev.map(insp => insp.id === updatedInspection.id ? updatedInspection : insp));
+        try { await api.saveInspection(updatedInspection); } catch (e) { console.error(e); }
     };
     
     // Financial (Receivables)
-    const handleAddFinancial = (recordData: Omit<FinancialRecord, 'id'>) => {
+    const handleAddFinancial = async (recordData: Omit<FinancialRecord, 'id'>) => {
         const newRecord: FinancialRecord = { ...recordData, id: `fin-${crypto.randomUUID()}` };
         setFinancial(prev => [...prev, newRecord]);
+        try { await api.saveFinancialRecord(newRecord); } catch (e) { console.error(e); }
     };
-     const handleUpdateFinancial = (updatedRecord: FinancialRecord) => {
+     const handleUpdateFinancial = async (updatedRecord: FinancialRecord) => {
         setFinancial(prev => prev.map(rec => rec.id === updatedRecord.id ? updatedRecord : rec));
+        try { await api.saveFinancialRecord(updatedRecord); } catch (e) { console.error(e); }
     };
-    const handleDeleteFinancial = (recordId: string) => {
+    const handleDeleteFinancial = async (recordId: string) => {
         setFinancial(prev => prev.filter(rec => rec.id !== recordId));
+        try { await api.deleteFinancialRecord(recordId); } catch (e) { console.error(e); }
     };
 
     // Expenses (Payables)
-    const handleAddExpense = (expenseData: Omit<Expense, 'id'>) => {
+    const handleAddExpense = async (expenseData: Omit<Expense, 'id'>) => {
         const newExpense: Expense = { ...expenseData, id: `exp-${crypto.randomUUID()}` };
         setExpenses(prev => [...prev, newExpense]);
+        try { await api.saveExpense(newExpense); } catch (e) { console.error(e); }
     };
-    const handleUpdateExpense = (updatedExpense: Expense) => {
+    const handleUpdateExpense = async (updatedExpense: Expense) => {
         setExpenses(prev => prev.map(exp => exp.id === updatedExpense.id ? updatedExpense : exp));
+        try { await api.saveExpense(updatedExpense); } catch (e) { console.error(e); }
     };
-    const handleDeleteExpense = (expenseId: string) => {
+    const handleDeleteExpense = async (expenseId: string) => {
         setExpenses(prev => prev.filter(exp => exp.id !== expenseId));
+        try { await api.deleteExpense(expenseId); } catch (e) { console.error(e); }
     };
 
     // Certificate
-    const handleAddCertificate = (inspection: Inspection) => {
+    const handleAddCertificate = async (inspection: Inspection) => {
         const issueDate = new Date();
         const expiryDate = new Date();
         expiryDate.setFullYear(issueDate.getFullYear() + 1);
@@ -110,6 +159,7 @@ export const useData = () => {
             expiryDate: expiryDate.toISOString().split('T')[0],
         };
         setCertificates(prev => [...prev, newCertificate]);
+        try { await api.saveCertificate(newCertificate); } catch (e) { console.error(e); }
     };
     
     // License
