@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { AppSettings, CompanyProfile } from '../../types';
+import { AppSettings, BackupData, CompanyProfile } from '../../types';
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';
 import { get } from '../idb';
@@ -25,9 +25,9 @@ export const useSettings = () => {
 
     const isSettingsLoading = !themeLoaded || !companyProfileLoaded || !appSettingsLoaded;
     
-    const handleImportSettings = (parsedData: any) => {
-        if (parsedData.companyProfile) setCompanyProfile(parsedData.companyProfile);
-        if (parsedData.appSettings) setAppSettings(parsedData.appSettings);
+    const handleImportSettings = (parsedData: BackupData) => {
+        setCompanyProfile(parsedData.companyProfile || { name: 'Empresa ABC' });
+        setAppSettings(parsedData.appSettings || { reminders: true });
     };
 
     const confirmAutoRestoreSettings = async () => {

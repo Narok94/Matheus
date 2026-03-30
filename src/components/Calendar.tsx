@@ -50,16 +50,16 @@ export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect, 
             numDays = 7;
         }
 
-        const day = new Date(startDate);
+        let day = new Date(startDate);
         for (let i = 0; i < numDays; i++) {
             const date = new Date(day);
-            date.setDate(day.getDate() + i);
             const isToday = areDatesEqual(date, today);
             const isSelected = areDatesEqual(date, selectedDate);
             const isCurrentMonth = date.getMonth() === month;
             const hasEvent = highlightedDates.includes(date.toISOString().split('T')[0]);
 
             grid.push({ date, isToday, isSelected, isCurrentMonth, hasEvent });
+            day.setDate(day.getDate() + 1);
         }
         return grid;
     }, [displayDate, selectedDate, highlightedDates, view]);

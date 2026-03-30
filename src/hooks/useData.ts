@@ -1,11 +1,9 @@
 import { useMemo, Dispatch } from 'react';
-import { generateUUID } from '../utils';
 import { Client, Equipment, Inspection, FinancialRecord, Certificate, BackupData, License, Delivery, Expense, PaymentStatus } from '../../types';
 import { MOCK_CLIENTS, MOCK_EQUIPMENT, MOCK_INSPECTIONS, MOCK_FINANCIAL, MOCK_CERTIFICATES, MOCK_LICENSES, MOCK_DELIVERIES, MOCK_EXPENSES } from '../../data';
 import { useIndexedDB } from './useIndexedDB';
 import { useAuth } from '../context/AuthContext';
 import { get } from '../idb';
-import { api } from '../services/api';
 
 export const useData = () => {
     const { currentUser } = useAuth();
@@ -39,7 +37,7 @@ export const useData = () => {
     // --- CRUD Handlers ---
     // Client
     const handleAddClient = (clientData: Omit<Client, 'id'>) => {
-        const newClient: Client = { ...clientData, id: `cli-${generateUUID()}` };
+        const newClient: Client = { ...clientData, id: `cli-${crypto.randomUUID()}` };
         setClients(prev => [...prev, newClient]);
     };
     const handleUpdateClient = (updatedClient: Client) => {
@@ -55,7 +53,7 @@ export const useData = () => {
     
     // Equipment
     const handleAddEquipment = (equipmentData: Omit<Equipment, 'id'>) => {
-        const newEquipment: Equipment = { ...equipmentData, id: `eq-${generateUUID()}` };
+        const newEquipment: Equipment = { ...equipmentData, id: `eq-${crypto.randomUUID()}` };
         setEquipment(prev => [...prev, newEquipment]);
     };
     const handleUpdateEquipment = (updatedEquipment: Equipment) => {
@@ -67,7 +65,7 @@ export const useData = () => {
     
     // Inspection
     const handleAddInspection = (inspectionData: Omit<Inspection, 'id'>) => {
-        const newInspection: Inspection = { ...inspectionData, id: `ins-${generateUUID()}` };
+        const newInspection: Inspection = { ...inspectionData, id: `ins-${crypto.randomUUID()}` };
         setInspections(prev => [...prev, newInspection]);
     };
     const handleUpdateInspection = (updatedInspection: Inspection) => {
@@ -76,7 +74,7 @@ export const useData = () => {
     
     // Financial (Receivables)
     const handleAddFinancial = (recordData: Omit<FinancialRecord, 'id'>) => {
-        const newRecord: FinancialRecord = { ...recordData, id: `fin-${generateUUID()}` };
+        const newRecord: FinancialRecord = { ...recordData, id: `fin-${crypto.randomUUID()}` };
         setFinancial(prev => [...prev, newRecord]);
     };
      const handleUpdateFinancial = (updatedRecord: FinancialRecord) => {
@@ -88,7 +86,7 @@ export const useData = () => {
 
     // Expenses (Payables)
     const handleAddExpense = (expenseData: Omit<Expense, 'id'>) => {
-        const newExpense: Expense = { ...expenseData, id: `exp-${generateUUID()}` };
+        const newExpense: Expense = { ...expenseData, id: `exp-${crypto.randomUUID()}` };
         setExpenses(prev => [...prev, newExpense]);
     };
     const handleUpdateExpense = (updatedExpense: Expense) => {
@@ -105,7 +103,7 @@ export const useData = () => {
         expiryDate.setFullYear(issueDate.getFullYear() + 1);
 
         const newCertificate: Certificate = {
-            id: `cert-${generateUUID()}`,
+            id: `cert-${crypto.randomUUID()}`,
             inspectionId: inspection.id,
             clientId: inspection.clientId,
             issueDate: issueDate.toISOString().split('T')[0],
@@ -187,25 +185,6 @@ export const useData = () => {
         }
     };
 
-    const syncData = async (jwtToken: string, companyProfile: any, appSettings: any) => {
-        try {
-            // Push local data to server
-            const backupData: BackupData = {
-                clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses,
-                companyProfile, appSettings,
-            };
-            await api.post('/sync', backupData, jwtToken);
-            
-            // Pull latest data from server
-            const remoteData = await api.get('/sync', jwtToken);
-            handleImportData(remoteData);
-            return remoteData;
-        } catch (error) {
-            console.error('Sync failed:', error);
-            throw error;
-        }
-    };
-
     return {
         clients, equipment, inspections, financial, certificates, licenses, deliveries, expenses,
         isDataLoading,
@@ -229,6 +208,5 @@ export const useData = () => {
         handleImportData,
         lastBackupTimestamp,
         confirmAutoRestore,
-        syncData,
     };
 };

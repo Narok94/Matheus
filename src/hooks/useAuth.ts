@@ -1,8 +1,7 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 import { useIndexedDB } from './useIndexedDB';
 import { User } from '../../types';
 import { sha256 } from '../utils';
-import { api } from '../services/api';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
@@ -15,14 +14,65 @@ type LoginAttempt = {
 type ShowToastFn = (message: string, type?: 'success' | 'error') => void;
 
 export const useAuth = () => {
-    const [jwtToken, setJwtToken, isJwtTokenLoaded] = useIndexedDB<string | null>('jwtToken', null);
-    const [currentUserDetails, setCurrentUserDetails, isUserDetailsLoaded] = useIndexedDB<User | null>('currentUserDetails', null);
+    const [sessionToken, setSessionToken, isSessionTokenLoaded] = useIndexedDB<string | null>('sessionToken', null);
+    const [sessions, setSessions, isSessionsLoaded] = useIndexedDB<Record<string, string>>('sessions', {});
+    const [users, setUsers, isUsersLoaded] = useIndexedDB<User[]>('users', [
+        { 
+            username: 'admin', 
+            passwordHash: '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', // Hashed "admin"
+            fullName: 'Administrador' 
+        },
+        { 
+            username: 'matheus', 
+            passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // Hashed "1234"
+            fullName: 'Matheus' 
+        }
+    ]);
     const [loginAttempts, setLoginAttempts, isLoginAttemptsLoaded] = useIndexedDB<Record<string, LoginAttempt>>('loginAttempts', {});
 
-    const currentUser = useMemo(() => currentUserDetails?.username || null, [currentUserDetails]);
+    // This effect ensures that default users exist, even if the user has old data in IndexedDB
+    useEffect(() => {
+        if (isUsersLoaded) {
+            const defaultUsersToAdd: User[] = [
+                { 
+                    username: 'admin', 
+                    passwordHash: '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918',
+                    fullName: 'Administrador' 
+                },
+                { 
+                    username: 'matheus', 
+                    passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
+                    fullName: 'Matheus' 
+                }
+            ];
+
+            setUsers(currentUsers => {
+                const existingUsernames = new Set(currentUsers.map(u => u.username));
+                const usersToAppend = defaultUsersToAdd.filter(u => !existingUsernames.has(u.username));
+                
+                if (usersToAppend.length > 0) {
+                    console.log("Adding missing default users to IndexedDB.");
+                    return [...currentUsers, ...usersToAppend];
+                }
+                
+                return currentUsers; // No changes needed
+            });
+        }
+    }, [isUsersLoaded, setUsers]);
+
+    const currentUser = useMemo(() => {
+        if (sessionToken && sessions[sessionToken]) {
+            return sessions[sessionToken];
+        }
+        return null;
+    }, [sessionToken, sessions]);
+
+    const currentUserDetails = useMemo(() => {
+        return users.find(u => u.username === currentUser);
+    }, [currentUser, users]);
     
-    const isAuthenticated = !!jwtToken;
-    const isAuthLoading = !isJwtTokenLoaded || !isUserDetailsLoaded || !isLoginAttemptsLoaded;
+    const isAuthenticated = !!currentUser;
+    const isAuthLoading = !isSessionTokenLoaded || !isSessionsLoaded || !isUsersLoaded || !isLoginAttemptsLoaded;
 
     const handleLogin = async (username: string, pass: string, showToast: ShowToastFn) => {
         const lowerCaseUsername = username.toLowerCase();
@@ -34,68 +84,78 @@ export const useAuth = () => {
             return;
         }
 
-        try {
+        const user = users.find(u => u.username === lowerCaseUsername);
+        if (user) {
             const passHash = await sha256(pass.trim());
-            const response = await api.post('/auth/login', { username: lowerCaseUsername, passwordHash: passHash });
-            
-            setJwtToken(response.token);
-            setCurrentUserDetails(response.user);
-
-            if (userAttempt) {
-                setLoginAttempts(prev => {
-                    const newAttempts = { ...prev };
-                    delete newAttempts[lowerCaseUsername];
-                    return newAttempts;
-                });
-            }
-            showToast('Login realizado com sucesso!', 'success');
-        } catch (error: any) {
-            const newCount = (userAttempt?.count || 0) + 1;
-            if (newCount >= MAX_LOGIN_ATTEMPTS) {
-                setLoginAttempts(prev => ({
-                    ...prev,
-                    [lowerCaseUsername]: { count: newCount, lockUntil: Date.now() + LOCK_DURATION_MS }
-                }));
-                showToast(`Conta bloqueada por ${LOCK_DURATION_MS / 60000} minutos.`, 'error');
+            if (user.passwordHash === passHash) {
+                if (userAttempt) {
+                    setLoginAttempts(prev => {
+                        const newAttempts = { ...prev };
+                        delete newAttempts[lowerCaseUsername];
+                        return newAttempts;
+                    });
+                }
+                const newSessionToken = crypto.randomUUID();
+                setSessions(prev => ({ ...prev, [newSessionToken]: user.username }));
+                setSessionToken(newSessionToken);
             } else {
-                 setLoginAttempts(prev => ({
-                    ...prev,
-                    [lowerCaseUsername]: { count: newCount, lockUntil: null }
-                }));
-                showToast(error.message || 'Credenciais inválidas.', 'error');
+                const newCount = (userAttempt?.count || 0) + 1;
+                if (newCount >= MAX_LOGIN_ATTEMPTS) {
+                    setLoginAttempts(prev => ({
+                        ...prev,
+                        [lowerCaseUsername]: { count: newCount, lockUntil: Date.now() + LOCK_DURATION_MS }
+                    }));
+                    showToast(`Conta bloqueada por ${LOCK_DURATION_MS / 60000} minutos.`, 'error');
+                } else {
+                     setLoginAttempts(prev => ({
+                        ...prev,
+                        [lowerCaseUsername]: { count: newCount, lockUntil: null }
+                    }));
+                    showToast(`Credenciais inválidas. Tentativa ${newCount} de ${MAX_LOGIN_ATTEMPTS}.`, 'error');
+                }
             }
+        } else {
+            showToast('Credenciais inválidas.', 'error');
         }
     };
 
     const handleRegister = async (username: string, email: string, pass: string, fullName: string, showToast: ShowToastFn, onSuccess: () => void) => {
-        try {
-            const passwordHash = await sha256(pass);
-            await api.post('/auth/register', { 
-                username: username.toLowerCase(), 
-                passwordHash,
-                email,
-                fullName
-            });
-            showToast(`Usuário "${username}" registrado com sucesso!`, 'success');
-            onSuccess();
-        } catch (error: any) {
-            showToast(error.message || 'Erro ao registrar usuário.', 'error');
+        const existingUser = users.find(u => u.username === username.toLowerCase());
+        if (existingUser) {
+            showToast('Este nome de usuário já está em uso.', 'error');
+            return;
         }
+
+        const passwordHash = await sha256(pass);
+        const newUser: User = { username: username.toLowerCase(), passwordHash };
+        if (email) newUser.email = email;
+        if (fullName) newUser.fullName = fullName;
+
+        setUsers(prev => [...prev, newUser]);
+        showToast(`Usuário "${username}" registrado com sucesso!`, 'success');
+        onSuccess();
     };
 
     const handleLogout = useCallback(async (reason: 'inactivity' | 'manual', showToast: ShowToastFn) => {
-        setJwtToken(null);
-        setCurrentUserDetails(null);
+        // Automatic backup on logout is now handled in useData hook
+        if (sessionToken) {
+            setSessions(prev => {
+                const newSessions = { ...prev };
+                delete newSessions[sessionToken];
+                return newSessions;
+            });
+        }
+        setSessionToken(null);
         
         if (reason === 'inactivity') {
             showToast('Sessão encerrada por inatividade.', 'error');
         } else {
             showToast('Você saiu da sua conta.');
         }
-    }, [setJwtToken, setCurrentUserDetails]);
+    }, [sessionToken, setSessions, setSessionToken]);
     
     const handleUpdateUser = (updatedUser: User) => {
-        setCurrentUserDetails(updatedUser);
+        setUsers(prevUsers => prevUsers.map(u => u.username === updatedUser.username ? updatedUser : u));
     };
 
     return {
@@ -107,6 +167,5 @@ export const useAuth = () => {
         handleRegister,
         handleLogout,
         handleUpdateUser,
-        jwtToken,
     };
 };
